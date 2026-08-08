@@ -2,7 +2,6 @@
 
     <!-- 1. TOP ROW: Duplicate Graph Selection Buttons -->
     <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-800/80">
-        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2 shrink-0">Duplicate Graphs:</span>
         <template x-for="(graph, idx) in duplicateGraphs" :key="idx">
             <button @click="selectGraph(idx)"
                     class="text-xs px-3 py-1.5 rounded-md font-mono font-semibold transition border flex items-center gap-2 shadow-sm shrink-0"
@@ -166,8 +165,18 @@
 
     <!-- 3. TAG CARDS (Retagging Interface) -->
     <template x-if="lhsPost">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        <div class="relative grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             
+            <!-- Static Block Arrow Indicator -->
+            <div class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
+                <svg class="w-12 h-12 text-blue-500/90 fill-current drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                    viewBox="0 0 24 24" 
+                    xmlns="http://www.w3.org/2000/svg">
+                    <!-- Solid, balanced block arrow path -->
+                    <path d="M20 10H11V6L4 12L11 18V14H20V10Z" />
+                </svg>
+            </div>
+
             <!-- LHS: Kept Post Tag Card -->
             <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 flex flex-col justify-between shadow-sm">
                 <div class="space-y-3">
