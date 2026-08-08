@@ -9,39 +9,77 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('summaryManager', (resMgr) => ({
         resMgr: /** @type {ResolutionManagerComponent} */ (resMgr),
 
-        /** @type {Map<number, number>} Canonical kept/parent post ID per graph index */
-        canonicalSelections: new Map(),
-
-        init() {
-            // Auto-select first post in each graph as default 'Keep' or 'Parent'
-            this.resMgr.graphs.forEach(
-                /**
-                 * @param {ResolutionGraph} graph
-                 * @param {number} index
-                 */
-                (graph, index) => {
-                    if (graph.posts.size > 0) {
-                        const firstId = Array.from(graph.posts)[0];
-                        this.canonicalSelections.set(index, firstId);
-                    }
-            });
-        },
-
         /**
-         * @param {number} graphIndex
-         * @param {number} postId
-         */
-        setCanonical(graphIndex, postId) {
-            this.canonicalSelections.set(graphIndex, postId);
-        },
-
-        /**
-         * @param {number} graphIndex
+         * Checks if a post is the canonical/head post for the graph
+         * @param {ResolutionGraph} graph
          * @param {number} postId
          * @returns {boolean}
          */
-        isCanonical(graphIndex, postId) {
-            return this.canonicalSelections.get(graphIndex) === postId;
+        isCanonical(graph, postId) {
+            return graph?.head === postId;
+        },
+
+        /**
+         * Copies description from a source post to the graph's head post
+         * @param {ResolutionGraph} graph
+         * @param {number} sourcePostId
+         */
+        copyDescriptionToHead(graph, sourcePostId) {
+            const headPost = this.resMgr.getPost(graph.head);
+            const sourcePost = this.resMgr.getPost(Number(sourcePostId));
+            if (headPost && sourcePost) {
+                headPost.description = sourcePost.description || '';
+            }
+        },
+
+        /**
+         * Collects all unique sources across all posts in the graph
+         * @param {ResolutionGraph} graph
+         * @returns {string[]}
+         */
+        getAllSources(graph) {
+            if (!graph || !graph.posts) return [];
+            const allSources = new Set();
+            for (const postId of graph.posts) {
+                const post = this.resMgr.getPost(postId);
+                const sources = post?.sources || post?.original?.sources || [];
+                sources.forEach(src => {
+                    if (src && src.trim().length > 0) allSources.add(src.trim());
+                });
+            }
+            return Array.from(allSources);
+        },
+
+        /**
+         * Toggles a source URL on the head post of a graph
+         * @param {ResolutionGraph} graph
+         * @param {string} sourceUrl
+         */
+        toggleHeadSource(graph, sourceUrl) {
+            const headPost = this.resMgr.getPost(graph.head);
+            if (!headPost) return;
+
+            if (!Array.isArray(headPost.sources)) {
+                headPost.sources = [];
+            }
+
+            const index = headPost.sources.indexOf(sourceUrl);
+            if (index > -1) {
+                headPost.sources.splice(index, 1);
+            } else {
+                headPost.sources.push(sourceUrl);
+            }
+        },
+
+        /**
+         * Checks if the head post currently contains a specific source
+         * @param {ResolutionGraph} graph
+         * @param {string} sourceUrl
+         * @returns {boolean}
+         */
+        headHasSource(graph, sourceUrl) {
+            const headPost = this.resMgr.getPost(graph.head);
+            return headPost?.sources?.includes(sourceUrl) ?? false;
         },
 
         /**
@@ -81,7 +119,6 @@ document.addEventListener('alpine:init', () => {
         async applyChanges(postId) {
             const post = this.resMgr.getPost(postId);
             if (!post) return;
-            // Wire up API calls here
             console.log('Applying resolution updates for post:', postId, post);
         },
 

@@ -2,7 +2,7 @@
     
     <!-- Iterates through each ResolutionGraph in resolutionManager -->
     <template x-for="(graph, graphIdx) in resMgr.graphs" :key="graphIdx">
-        <div class="border border-gray-800 rounded-lg bg-gray-900/80 p-4 space-y-3 shadow-lg">
+        <div class="border border-gray-800 rounded-lg bg-gray-900/80 p-4 space-y-4 shadow-lg">
             
             <!-- Graph Header Info -->
             <div class="flex items-center justify-between border-b border-gray-800 pb-2">
@@ -20,6 +20,61 @@
                 <span class="text-xs text-gray-500" x-text="`${graph.posts.size} post(s)`"></span>
             </div>
 
+            <!-- Metadata Transfer Controls (Description & Sources Copier) -->
+            <template x-if="graph.posts.size > 1">
+                <div class="bg-gray-950/60 border border-gray-800/80 rounded-lg p-3 space-y-3 text-xs">
+                    <div class="flex items-center justify-between border-b border-gray-800/80 pb-2">
+                        <span class="font-bold text-gray-300 flex items-center gap-1.5">
+                            <span>📋</span>
+                            <span>Merge Metadata to Kept Post (#<span x-text="graph.head"></span>)</span>
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Description Selector -->
+                        <div class="space-y-1.5">
+                            <label class="font-semibold text-gray-400 text-[11px] block">Select Description:</label>
+                            <select @change="copyDescriptionToHead(graph, $event.target.value)"
+                                    class="w-full bg-gray-900 border border-gray-800 rounded px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono truncate">
+                                <template x-for="pId in Array.from(graph.posts)" :key="pId">
+                                    <option :value="pId" 
+                                            :selected="resMgr.getPost(graph.head)?.description === resMgr.getPost(pId)?.description"
+                                            x-text="`Post #${pId}: ${resMgr.getPost(pId)?.description ? (resMgr.getPost(pId).description.substring(0, 45) + '...') : '(Empty)'}`">
+                                    </option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <!-- Sources Selector -->
+                        <div class="space-y-1.5">
+                            <label class="font-semibold text-gray-400 text-[11px] block">Sources to Keep:</label>
+                            <div class="space-y-1 max-h-28 overflow-y-auto bg-gray-900 border border-gray-800 rounded p-2">
+                                <template x-if="getAllSources(graph).length === 0">
+                                    <span class="text-gray-600 text-[11px] italic">No sources found in graph.</span>
+                                </template>
+                                <template x-for="src in getAllSources(graph)" :key="src">
+                                    <label class="flex items-center gap-2 cursor-pointer hover:text-gray-200 transition">
+                                        <input type="checkbox" 
+                                               :checked="headHasSource(graph, src)" 
+                                               @change="toggleHeadSource(graph, src)"
+                                               class="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-0 accent-blue-600">
+                                        <span class="font-mono text-[10px] truncate" x-text="src"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- User Action Instructions Banner -->
+            <div class="bg-blue-950/30 border border-blue-900/40 rounded-md p-2.5 text-xs text-blue-200/90 flex items-center gap-2">
+                <span class="text-blue-400 text-sm shrink-0">💡</span>
+                <div>
+                    Pick a description and sources to copy over to the kept post if wanted, review your changes below, then click the buttons on the right to submit your changes.
+                </div>
+            </div>
+
             <!-- Table-like Container for Graph Rows -->
             <div class="border border-gray-800 rounded-lg overflow-hidden divide-y divide-gray-800">
                 <template x-for="postId in Array.from(graph.posts)" :key="postId">
@@ -28,12 +83,12 @@
                             <div class="p-4 transition flex flex-col md:flex-row gap-4 items-start justify-between"
                                  :class="{
                                      /* Duplicate Theme */
-                                     'bg-blue-950/20': graph.type === 'duplicate' && isCanonical(graphIdx, postId),
-                                     'bg-amber-950/20': graph.type === 'duplicate' && !isCanonical(graphIdx, postId),
+                                     'bg-blue-950/20': graph.type === 'duplicate' && isCanonical(graph, postId),
+                                     'bg-amber-950/20': graph.type === 'duplicate' && !isCanonical(graph, postId),
                                      
                                      /* Variant Theme */
-                                     'bg-emerald-950/20': graph.type === 'variant' && isCanonical(graphIdx, postId),
-                                     'bg-yellow-950/20': graph.type === 'variant' && !isCanonical(graphIdx, postId),
+                                     'bg-emerald-950/20': graph.type === 'variant' && isCanonical(graph, postId),
+                                     'bg-yellow-950/20': graph.type === 'variant' && !isCanonical(graph, postId),
 
                                      /* Unrelated / Unknown Theme */
                                      'bg-gray-950/40': graph.type === 'unrelated' || graph.type === 'unknown'
@@ -48,16 +103,14 @@
                                            class="font-mono font-bold text-blue-400 hover:underline" 
                                            x-text="`#${postId}`"></a>
 
-                                        <!-- Rating (Single letter, formatted via tags) -->
+                                        <!-- Rating -->
                                         <div class="flex items-center gap-1 font-mono text-[10px]">
-                                            <!-- Unchanged Rating -->
                                             <template x-if="post.getEffectiveRating() === post.original.rating">
                                                 <span class="px-1.5 py-0.5 rounded font-bold uppercase text-gray-400 bg-gray-800"
                                                       x-text="`${$store.tags?.getRatingLabel(post.getEffectiveRating())}`">
                                                 </span>
                                             </template>
 
-                                            <!-- Changed Rating: {Original} -> {New} -->
                                             <template x-if="post.getEffectiveRating() !== post.original.rating">
                                                 <div class="flex items-center gap-0.5" :title="`Rating changed from ${post.original.rating}`">
                                                     <span class="text-gray-500 font-bold uppercase" 
@@ -71,7 +124,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 2. Image Viewport (Compact max-height) -->
+                                    <!-- 2. Image Viewport -->
                                     <div class="w-full h-40 bg-black flex items-center justify-center p-1 overflow-hidden">
                                         <template x-if="post.original.fileUrl">
                                             <img :src="post.original.fileUrl" 
@@ -91,14 +144,14 @@
                                         </span>
                                     </div>
 
-                                    <!-- 4. Status Badge (Non-interactive Pure Status Indicators) -->
+                                    <!-- 4. Status Badge -->
                                     <template x-if="graph.type === 'duplicate'">
                                         <div>
-                                            <div x-show="isCanonical(graphIdx, postId)" 
+                                            <div x-show="isCanonical(graph, postId)" 
                                                  class="border-t border-gray-800 bg-blue-950/60 text-blue-300 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 KEEP
                                             </div>
-                                            <div x-show="!isCanonical(graphIdx, postId)" 
+                                            <div x-show="!isCanonical(graph, postId)" 
                                                  class="border-t border-amber-900/60 bg-amber-950/60 text-amber-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 FLAG DUPLICATE
                                             </div>
@@ -107,11 +160,11 @@
 
                                     <template x-if="graph.type === 'variant'">
                                         <div>
-                                            <div x-show="isCanonical(graphIdx, postId)" 
+                                            <div x-show="isCanonical(graph, postId)" 
                                                  class="border-t border-gray-800 bg-emerald-950/60 text-emerald-300 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 PARENT
                                             </div>
-                                            <div x-show="!isCanonical(graphIdx, postId)" 
+                                            <div x-show="!isCanonical(graph, postId)" 
                                                  class="border-t border-yellow-900/60 bg-yellow-950/60 text-yellow-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 CHILD
                                             </div>
@@ -123,10 +176,10 @@
                                 <!-- Middle Section: Diff UI (Tags, Description, Sources) -->
                                 <div class="flex-1 w-full space-y-2.5 text-xs">
                                     
-                                    <!-- 1. Keep / Parent / Edit Diff View -->
-                                    <template x-if="graph.type === 'unrelated' || isCanonical(graphIdx, postId) || graph.type === 'variant'">
+                                    <!-- Keep / Parent / Edit Diff View -->
+                                    <template x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
                                         <div class="space-y-2">
-                                            <!-- Categorized & Sorted Tag Edits (Including removed tags via concatenation) -->
+                                            <!-- Categorized & Sorted Tag Edits -->
                                             <div>
                                                 <span class="text-gray-400 font-semibold block mb-1">Tags:</span>
                                                 <div class="flex flex-wrap gap-1">
@@ -134,11 +187,8 @@
                                                         <span class="px-1.5 py-0.5 rounded text-[11px] transition-colors"
                                                               :style="$store.tags?.getTagStyle(tag.category)"
                                                               :class="{
-                                                                  /* Added Tag Highlight */
                                                                   'bg-green-950/80 border border-green-700/60': getAddedTags(post).includes(tag.name),
-                                                                  /* Removed Tag Highlight */
                                                                   'bg-red-950/60 line-through border border-red-900/60 opacity-70': getRemovedTags(post).includes(tag.name),
-                                                                  /* Unchanged Tag Background */
                                                                   'bg-gray-800/90': !getAddedTags(post).includes(tag.name) && !getRemovedTags(post).includes(tag.name)
                                                               }">
                                                             <span x-text="getAddedTags(post).includes(tag.name) ? `+ ${tag.name}` : tag.name"></span>
@@ -172,8 +222,8 @@
                                         </div>
                                     </template>
 
-                                    <!-- 2. Flag Input View (Duplicate Non-Canonical Posts) -->
-                                    <template x-if="graph.type === 'duplicate' && !isCanonical(graphIdx, postId)">
+                                    <!-- Flag Input View (Duplicate Non-Canonical Posts) -->
+                                    <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
                                         <div class="space-y-2">
                                             <label class="text-xs text-amber-300 font-semibold block">Flag Note:</label>
                                             <textarea x-model="post.flag_note" 
@@ -186,8 +236,7 @@
 
                                 <!-- Right Section: Action Controls -->
                                 <div class="w-full md:w-auto flex md:flex-col justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-800">
-                                    <!-- Apply Button -->
-                                    <template x-if="graph.type === 'unrelated' || isCanonical(graphIdx, postId) || graph.type === 'variant'">
+                                    <template x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
                                         <button @click="applyChanges(postId)" 
                                                 class="w-full md:w-28 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
                                             <span style="font-variant-emoji: text;">✓</span>
@@ -195,8 +244,7 @@
                                         </button>
                                     </template>
 
-                                    <!-- Flag Button -->
-                                    <template x-if="graph.type === 'duplicate' && !isCanonical(graphIdx, postId)">
+                                    <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
                                         <button @click="submitFlag(postId)" 
                                                 class="w-full md:w-28 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
                                             <span style="font-variant-emoji: text;">🚩</span>

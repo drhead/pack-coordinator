@@ -63,7 +63,7 @@ export const alpineHelpers = {
          * @returns {string} Space-separated Tailwind class list.
          */
         getTagClasses(tag, post, mode = 'display', context = {}) {
-            const { hoveredImplicationData, hoveredMergedData, newTags, isLhs } = context;
+            const { hoveredImplicationData, newTags, isLhs } = context;
             const tagName = tag.name;
             const postId = post?.post_id;
             
@@ -129,17 +129,6 @@ export const alpineHelpers = {
                     classes.push('opacity-30 cursor-not-allowed');
                 } else {
                     classes.push('cursor-pointer hover:brightness-125');
-                }
-            }
-
-            // 4. Merged Tag Hover States (Display mode)
-            if (mode === 'display' && hoveredMergedData) {
-                if (hoveredMergedData.targetPostId === postId) {
-                    classes.push('opacity-100');
-                } else if (hoveredMergedData.tags.has(tagName)) {
-                    classes.push('opacity-100 brightness-125 font-bold');
-                } else {
-                    classes.push('opacity-30');
                 }
             }
 

@@ -61,31 +61,10 @@
 
     <!-- Post Tags Display Container -->
     <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-1.5">
-                <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider block">Post Tags</span>
-                <span class="text-gray-600 font-mono text-[10px] font-medium"
-                    x-text="`(${(post.tags || []).length})`"></span>
-            </div>
-            
-            <!-- Copy Merged Tags Action Button -->
-            <button type="button"
-                    @click="$store.tags.copyMergedTags(post, cluster.posts)"
-                    @mouseenter="hoveredMergedData = $store.tags.getMergedHoverData(post, cluster.posts)"
-                    @mouseleave="hoveredMergedData = null"
-                    class="text-gray-500 hover:text-gray-300 hover:bg-gray-800/60 border border-transparent hover:border-gray-700/60 text-[10px] px-1.5 py-0.5 rounded transition flex items-center gap-1 active:scale-95 shadow-sm">
-                <span>📋 Copy Merged Tags</span>
-                
-                <!-- Merged Tag Count Delta Indicator -->
-                <span class="font-mono text-[10px] font-semibold"
-                    :class="{
-                        'text-emerald-400': $store.tags.getMergedTagDelta(post, cluster.posts) > 0,
-                        'text-amber-400': $store.tags.getMergedTagDelta(post, cluster.posts) < 0,
-                        'text-gray-600': $store.tags.getMergedTagDelta(post, cluster.posts) === 0
-                    }"
-                    x-text="`(${$store.tags.getMergedTagDelta(post, cluster.posts) > 0 ? '+' : ''}${$store.tags.getMergedTagDelta(post, cluster.posts)})`">
-                </span>
-            </button>
+        <div class="flex items-center space-x-1.5">
+            <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider block">Post Tags</span>
+            <span class="text-gray-600 font-mono text-[10px] font-medium"
+                x-text="`(${(post.tags || []).length})`"></span>
         </div>
 
         <!-- Empty Tags Fallback -->
@@ -97,7 +76,7 @@
         <div class="flex flex-wrap gap-x-1 gap-y-1">
             <template x-for="tag in $store.tags.getSortedTags(post.tags, post)" :key="tag.category + ':' + tag.name">
                 <span class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
-                    :class="tagpill.getTagClasses(tag, post, 'display', { hoveredImplicationData, hoveredMergedData })"
+                    :class="tagpill.getTagClasses(tag, post, 'display', { hoveredImplicationData })"
                     :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
                     :title="tagpill.getTagTitle(tag.name)"
                     @mouseenter="hoveredImplicationData = $store.tags.getImplicationChain(post.post_id, tag.name, post.tags)"
