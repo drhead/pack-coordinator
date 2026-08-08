@@ -20,58 +20,11 @@
                 <span class="text-xs text-gray-500" x-text="`${graph.posts.size} post(s)`"></span>
             </div>
 
-            <!-- Metadata Transfer Controls (Description & Sources Copier) -->
-            <template x-if="graph.posts.size > 1">
-                <div class="bg-gray-950/60 border border-gray-800/80 rounded-lg p-3 space-y-3 text-xs">
-                    <div class="flex items-center justify-between border-b border-gray-800/80 pb-2">
-                        <span class="font-bold text-gray-300 flex items-center gap-1.5">
-                            <span>📋</span>
-                            <span>Merge Metadata to Kept Post (#<span x-text="graph.head"></span>)</span>
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Description Selector -->
-                        <div class="space-y-1.5">
-                            <label class="font-semibold text-gray-400 text-[11px] block">Select Description:</label>
-                            <select @change="copyDescriptionToHead(graph, $event.target.value)"
-                                    class="w-full bg-gray-900 border border-gray-800 rounded px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-blue-500 font-mono truncate">
-                                <template x-for="pId in Array.from(graph.posts)" :key="pId">
-                                    <option :value="pId" 
-                                            :selected="resMgr.getPost(graph.head)?.description === resMgr.getPost(pId)?.description"
-                                            x-text="`Post #${pId}: ${resMgr.getPost(pId)?.description ? (resMgr.getPost(pId).description.substring(0, 45) + '...') : '(Empty)'}`">
-                                    </option>
-                                </template>
-                            </select>
-                        </div>
-
-                        <!-- Sources Selector -->
-                        <div class="space-y-1.5">
-                            <label class="font-semibold text-gray-400 text-[11px] block">Sources to Keep:</label>
-                            <div class="space-y-1 max-h-28 overflow-y-auto bg-gray-900 border border-gray-800 rounded p-2">
-                                <template x-if="getAllSources(graph).length === 0">
-                                    <span class="text-gray-600 text-[11px] italic">No sources found in graph.</span>
-                                </template>
-                                <template x-for="src in getAllSources(graph)" :key="src">
-                                    <label class="flex items-center gap-2 cursor-pointer hover:text-gray-200 transition">
-                                        <input type="checkbox" 
-                                               :checked="headHasSource(graph, src)" 
-                                               @change="toggleHeadSource(graph, src)"
-                                               class="rounded bg-gray-950 border-gray-700 text-blue-600 focus:ring-0 accent-blue-600">
-                                        <span class="font-mono text-[10px] truncate" x-text="src"></span>
-                                    </label>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </template>
-
             <!-- User Action Instructions Banner -->
             <div class="bg-blue-950/30 border border-blue-900/40 rounded-md p-2.5 text-xs text-blue-200/90 flex items-center gap-2">
                 <span class="text-blue-400 text-sm shrink-0">💡</span>
                 <div>
-                    Pick a description and sources to copy over to the kept post if wanted, review your changes below, then click the buttons on the right to submit your changes.
+                    Review proposed changes below, copy over descriptions or sources to the kept post if needed, then click the action buttons to finalize.
                 </div>
             </div>
 
@@ -153,7 +106,7 @@
                                             </div>
                                             <div x-show="!isCanonical(graph, postId)" 
                                                  class="border-t border-amber-900/60 bg-amber-950/60 text-amber-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
-                                                FLAG DUPLICATE
+                                                FLAG
                                             </div>
                                         </div>
                                     </template>
@@ -174,7 +127,7 @@
                                 </div>
 
                                 <!-- Middle Section: Diff UI (Tags, Description, Sources) -->
-                                <div class="flex-1 w-full space-y-2.5 text-xs">
+                                <div class="flex-1 w-full space-y-3 text-xs">
                                     
                                     <!-- Keep / Parent / Edit Diff View -->
                                     <template x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
@@ -196,42 +149,93 @@
                                                     </template>
                                                 </div>
                                             </div>
-
-                                            <!-- Description Diff -->
-                                            <div>
-                                                <span class="text-gray-400 font-semibold block mb-1">Description:</span>
-                                                <div class="p-2 rounded border text-xs"
-                                                     :class="isDescriptionEdited(post) ? 'bg-amber-950/30 border-amber-800/60 text-amber-200' : 'bg-gray-950 border-gray-800 text-gray-500'">
-                                                    <p x-text="post.description || '(No description)'" class="line-clamp-3 whitespace-pre-wrap"></p>
-                                                </div>
-                                            </div>
-
-                                            <!-- Sources Diff -->
-                                            <div>
-                                                <span class="text-gray-400 font-semibold block mb-1">Sources:</span>
-                                                <ul class="space-y-0.5 font-mono text-[11px] break-all">
-                                                    <template x-for="src in post.sources" :key="src">
-                                                        <li class="flex items-center gap-1.5"
-                                                            :class="post.original.sources?.includes(src) ? 'text-gray-500' : 'text-green-400 font-medium'">
-                                                            <span x-text="post.original.sources?.includes(src) ? '•' : '+'"></span>
-                                                            <span x-text="src"></span>
-                                                        </li>
-                                                    </template>
-                                                </ul>
-                                            </div>
                                         </div>
                                     </template>
 
                                     <!-- Flag Input View (Duplicate Non-Canonical Posts) -->
                                     <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
                                         <div class="space-y-2">
-                                            <label class="text-xs text-amber-300 font-semibold block">Flag Note:</label>
+                                            <label class="text-xs text-gray-400 font-semibold block">Flag Note (optional):</label>
                                             <textarea x-model="post.flag_note" 
                                                       placeholder="Reason for flagging duplicate..."
-                                                      rows="4"
+                                                      rows="2"
                                                       class="w-full bg-gray-950 border border-amber-900/60 rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500"></textarea>
                                         </div>
                                     </template>
+
+                                    <!-- Description Section with Context Controls -->
+                                    <div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-gray-400 font-semibold">Description:</span>
+                                            
+                                            <!-- Controls for Kept Post (Reset) -->
+                                            <template x-if="isCanonical(graph, postId) && isDescriptionEdited(post)">
+                                                <button @click="resetHeadDescription(graph)" 
+                                                        class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                    ↺ Reset to Original
+                                                </button>
+                                            </template>
+
+                                            <!-- Controls for Flagged Posts (Copy to Kept Post) -->
+                                            <template x-if="!isCanonical(graph, postId) && graph.head && post.description">
+                                                <button @click="copyDescriptionToHead(graph, post.original.post_id)"
+                                                        :disabled="resMgr.getPost(graph.head)?.description === post.description"
+                                                        class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 disabled:opacity-40 disabled:cursor-not-allowed border border-gray-700 rounded px-1.5 py-0.5 transition flex items-center gap-1 font-mono">
+                                                    <span>📋 Copy to Kept Post</span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                        
+                                        <div class="p-2 rounded border text-xs"
+                                             :class="isDescriptionEdited(post) ? 'bg-amber-950/30 border-amber-800/60 text-amber-200' : 'bg-gray-950 border-gray-800 text-gray-400'">
+                                            <p x-text="post.description || '(No description)'" class="line-clamp-3 whitespace-pre-wrap"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sources Section with Context Controls -->
+                                    <div>
+                                        <span class="text-gray-400 font-semibold block mb-1">Sources:</span>
+                                        <ul class="space-y-1 font-mono text-[11px] break-all">
+                                            <template x-if="!post.sources || post.sources.length === 0">
+                                                <li class="text-gray-600 italic font-sans">(No sources)</li>
+                                            </template>
+
+                                            <template x-for="src in post.sources" :key="src">
+                                                <li class="flex items-center justify-between gap-2 group bg-gray-950/50 p-1 rounded border border-gray-800/60">
+                                                    <div class="flex items-center gap-1.5 min-w-0">
+                                                        <span :class="post.original.sources?.includes(src) ? 'text-gray-500' : 'text-green-400 font-medium'"
+                                                              x-text="post.original.sources?.includes(src) ? '•' : '+'"></span>
+                                                        <span class="truncate" :class="post.original.sources?.includes(src) ? 'text-gray-400' : 'text-green-300'" x-text="src"></span>
+                                                    </div>
+
+                                                    <!-- Kept Post: Remove Source Button -->
+                                                    <template x-if="isCanonical(graph, postId)">
+                                                        <button @click="removeSourceFromHead(graph, src)" 
+                                                                title="Remove source from kept post"
+                                                                class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
+                                                            ✕
+                                                        </button>
+                                                    </template>
+
+                                                    <!-- Flagged Post: Copy Source Button or Status -->
+                                                    <template x-if="!isCanonical(graph, postId) && graph.head">
+                                                        <div>
+                                                            <template x-if="headHasSource(graph, src)">
+                                                                <span class="text-[10px] text-emerald-400/80 font-sans px-1">(In kept post)</span>
+                                                            </template>
+                                                            <template x-if="!headHasSource(graph, src)">
+                                                                <button @click="addSourceToHead(graph, src)" 
+                                                                        class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 rounded px-1.5 py-0.5 transition font-mono whitespace-nowrap">
+                                                                    + Copy to Kept
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+
                                 </div>
 
                                 <!-- Right Section: Action Controls -->

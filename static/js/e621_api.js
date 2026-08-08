@@ -246,6 +246,113 @@ async function _updatePoolPostIds(poolId, postIds) {
 }
 
 /**
+ * Submits an "inferior" duplicate flag for a post to e621.
+ * 
+ * @param {number} postId The post ID being flagged.
+ * @param {number} parentId The ID of the superior/kept post.
+ * @param {string} [note] Optional note detailing the flag context.
+ * @returns {Promise<Object>} Response object from e621.
+ */
+async function _flagPostInferior(postId, parentId, note = '') {
+    if (!postId || !parentId) {
+        throw new Error('Both postId and parentId are required to flag a post as inferior.');
+    }
+
+    const headers = getApiHeaders();
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
+    const params = new URLSearchParams({
+        'post_flag[post_id]': String(postId),
+        'post_flag[reason_name]': 'inferior',
+        'post_flag[parent_id]': String(parentId)
+    });
+
+    if (note && note.trim().length > 0) {
+        params.append('post_flag[note]', note.trim());
+    }
+
+    const response = await rateLimitedFetch('https://e621.net/post_flags.json', {
+        method: 'POST',
+        headers,
+        body: params
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to flag post #${postId}: HTTP ${response.status}`);
+    }
+
+    return await response.json();
+}
+
+/**
+ * Sends a PATCH request to e621 to update post metadata using old/new comparison fields.
+ * 
+ * @param {number} postId ID of the post to update.
+ * @param {Object} edits Object containing parameter changes.
+ * @param {string} [edits.tag_string] New space-delimited tags string.
+ * @param {string} [edits.old_tag_string] Previous space-delimited tags string.
+ * @param {string} [edits.source] New newline-delimited sources string.
+ * @param {string} [edits.old_source] Previous newline-delimited sources string.
+ * @param {string} [edits.description] New description string.
+ * @param {string} [edits.old_description] Previous description string.
+ * @param {string} [edits.rating] New rating ('s', 'q', 'e').
+ * @param {string} [edits.old_rating] Previous rating.
+ * @param {number|string} [edits.parent_id] New parent post ID.
+ * @param {number|string} [edits.old_parent_id] Previous parent post ID.
+ * @param {string} [edits.edit_reason] Reason for edits.
+ * @returns {Promise<Object>} Updated post object returned by e621.
+ */
+async function _updatePost(postId, edits) {
+    if (!postId) {
+        throw new Error('Post ID is required to update a post.');
+    }
+
+    const headers = getApiHeaders();
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+
+    const params = new URLSearchParams();
+
+    // Map provided parameters to e621 post form keys
+    const fieldMap = {
+        tag_string: 'post[tag_string]',
+        old_tag_string: 'post[old_tag_string]',
+        source: 'post[source]',
+        old_source: 'post[old_source]',
+        description: 'post[description]',
+        old_description: 'post[old_description]',
+        rating: 'post[rating]',
+        old_rating: 'post[old_rating]',
+        parent_id: 'post[parent_id]',
+        old_parent_id: 'post[old_parent_id]',
+        edit_reason: 'post[edit_reason]'
+    };
+
+    let hasChanges = false;
+    for (const [key, formKey] of Object.entries(fieldMap)) {
+        if (edits[key] !== undefined && edits[key] !== null) {
+            params.append(formKey, String(edits[key]));
+            hasChanges = true;
+        }
+    }
+
+    if (!hasChanges) {
+        throw new Error(`No change fields provided for post #${postId}.`);
+    }
+
+    const response = await rateLimitedFetch(`https://e621.net/posts/${postId}.json`, {
+        method: 'PATCH',
+        headers,
+        body: params
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to update post #${postId}: HTTP ${response.status}`);
+    }
+
+    return await response.json();
+}
+
+/**
  * @typedef {Object} PoolSubstitution
  * @property {number} originalPostId - The post ID expected to currently be in the pool.
  * @property {number} replacementPostId - The post ID to swap into its place.
@@ -290,4 +397,84 @@ export async function substitutePoolPosts(poolId, substitutions) {
 
     // 5. Submit updated list to e621 API
     return await _updatePoolPostIds(poolId, updatedPostIds);
+}
+
+/**
+ * Submits an inferior duplicate flag for a non-canonical ResolutionPost.
+ * 
+ * @param {ResolutionPost} resPost The resolution post state containing flag details.
+ * @param {number} superiorPostId The post ID to mark as superior/parent in the flag.
+ * @returns {Promise<Object>} Response object from e621.
+ */
+export async function flagResolutionPostInferior(resPost, superiorPostId) {
+    if (!resPost || !resPost.original?.post_id) {
+        throw new Error('Invalid ResolutionPost provided for flagging.');
+    }
+
+    const postId = Number(resPost.original.post_id);
+    return await _flagPostInferior(postId, superiorPostId, resPost.flag_note);
+}
+
+/**
+ * Evaluates changes on a ResolutionPost and submits a PATCH update to e621 if edits exist.
+ * 
+ * @param {ResolutionPost} resPost The resolution post containing proposed changes.
+ * @param {string} [editReason='Cluster resolution update'] Audit message for the edit.
+ * @returns {Promise<Object|null>} Updated e621 response object, or `null` if no changes were detected.
+ */
+export async function applyResolutionPostEdits(resPost, editReason = 'Cluster resolution update') {
+    if (!resPost || !resPost.original?.post_id) {
+        throw new Error('Invalid ResolutionPost provided for edit submission.');
+    }
+
+    const original = resPost.original;
+    const postId = Number(original.post_id);
+    /** @type {Record<string, any>} */
+    const edits = {};
+
+    // 1. Tags Diff
+    const origTags = Array.isArray(original.tags) ? original.tags : [];
+    const currentTags = Array.isArray(resPost.tags) ? resPost.tags : [];
+    if (origTags.join(' ') !== currentTags.join(' ')) {
+        edits.old_tag_string = origTags.join(' ');
+        edits.tag_string = currentTags.join(' ');
+    }
+
+    // 2. Sources Diff
+    const origSources = Array.isArray(original.sources) ? original.sources : [];
+    const currentSources = Array.isArray(resPost.sources) ? resPost.sources : [];
+    if (origSources.join('\n') !== currentSources.join('\n')) {
+        edits.old_source = origSources.join('\n');
+        edits.source = currentSources.join('\n');
+    }
+
+    // 3. Description Diff
+    const origDesc = original.description ?? '';
+    const currentDesc = resPost.description ?? '';
+    if (origDesc !== currentDesc) {
+        edits.old_description = origDesc;
+        edits.description = currentDesc;
+    }
+
+    // 4. Rating Diff
+    if (resPost.rating !== null && resPost.rating !== original.rating) {
+        edits.old_rating = original.rating;
+        edits.rating = resPost.rating;
+    }
+
+    // 5. Parent ID Diff
+    const origParent = original.parent_id ?? null;
+    const currentParent = resPost.parent_id ?? null;
+    if (origParent !== currentParent) {
+        edits.old_parent_id = origParent !== null ? origParent : '';
+        edits.parent_id = currentParent !== null ? currentParent : '';
+    }
+
+    // If no fields changed, skip unnecessary HTTP call
+    if (Object.keys(edits).length === 0) {
+        return null;
+    }
+
+    edits.edit_reason = editReason;
+    return await _updatePost(postId, edits);
 }

@@ -33,29 +33,22 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Collects all unique sources across all posts in the graph
+         * Resets the head post description back to its original value
          * @param {ResolutionGraph} graph
-         * @returns {string[]}
          */
-        getAllSources(graph) {
-            if (!graph || !graph.posts) return [];
-            const allSources = new Set();
-            for (const postId of graph.posts) {
-                const post = this.resMgr.getPost(postId);
-                const sources = post?.sources || post?.original?.sources || [];
-                sources.forEach(src => {
-                    if (src && src.trim().length > 0) allSources.add(src.trim());
-                });
+        resetHeadDescription(graph) {
+            const headPost = this.resMgr.getPost(graph.head);
+            if (headPost) {
+                headPost.description = headPost.original.description || '';
             }
-            return Array.from(allSources);
         },
 
         /**
-         * Toggles a source URL on the head post of a graph
+         * Adds a source URL to the graph's head post if not already present
          * @param {ResolutionGraph} graph
          * @param {string} sourceUrl
          */
-        toggleHeadSource(graph, sourceUrl) {
+        addSourceToHead(graph, sourceUrl) {
             const headPost = this.resMgr.getPost(graph.head);
             if (!headPost) return;
 
@@ -63,11 +56,23 @@ document.addEventListener('alpine:init', () => {
                 headPost.sources = [];
             }
 
+            if (!headPost.sources.includes(sourceUrl)) {
+                headPost.sources.push(sourceUrl);
+            }
+        },
+
+        /**
+         * Removes a source URL from the graph's head post
+         * @param {ResolutionGraph} graph
+         * @param {string} sourceUrl
+         */
+        removeSourceFromHead(graph, sourceUrl) {
+            const headPost = this.resMgr.getPost(graph.head);
+            if (!headPost || !Array.isArray(headPost.sources)) return;
+
             const index = headPost.sources.indexOf(sourceUrl);
             if (index > -1) {
                 headPost.sources.splice(index, 1);
-            } else {
-                headPost.sources.push(sourceUrl);
             }
         },
 
