@@ -7,19 +7,23 @@ document.addEventListener('alpine:init', () => {
      */
 
     window.Alpine.data('summaryManager', (resMgr) => ({
-        /** @type {ResolutionManagerComponent} */
-        resMgr: resMgr,
+        resMgr: /** @type {ResolutionManagerComponent} */ (resMgr),
 
         /** @type {Map<number, number>} Canonical kept/parent post ID per graph index */
         canonicalSelections: new Map(),
 
         init() {
             // Auto-select first post in each graph as default 'Keep' or 'Parent'
-            this.resMgr.graphs.forEach((graph, index) => {
-                if (graph.posts.size > 0) {
-                    const firstId = Array.from(graph.posts)[0];
-                    this.canonicalSelections.set(index, firstId);
-                }
+            this.resMgr.graphs.forEach(
+                /**
+                 * @param {ResolutionGraph} graph
+                 * @param {number} index
+                 */
+                (graph, index) => {
+                    if (graph.posts.size > 0) {
+                        const firstId = Array.from(graph.posts)[0];
+                        this.canonicalSelections.set(index, firstId);
+                    }
             });
         },
 
