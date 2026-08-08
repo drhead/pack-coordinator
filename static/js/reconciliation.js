@@ -24,6 +24,7 @@ export function ReconciliationManager(manager) {
         isActive: false,
         isLoading: false,
         isSummary: false,
+        isArtistWarningDismissed: false,
 
         /** @type {ResolutionManagerComponent} */
         resolutionManager: manager,
@@ -110,8 +111,9 @@ export function ReconciliationManager(manager) {
         },
 
         set activeRating(val) {
-            if (this.lhsResolutionPost && val) {
-                this.lhsResolutionPost.rating = val;
+            if (this.lhsResolutionPost) {
+                // Toggle off back to null if clicking already active rating
+                this.lhsResolutionPost.rating = (this.lhsResolutionPost.rating === val) ? null : val;
             }
         },
 
@@ -173,7 +175,7 @@ export function ReconciliationManager(manager) {
         },
 
         get isRatingChanged() {
-            return this.activeRating !== this.originalRating;
+            return this.activeRating !== null && this.activeRating !== this.originalRating;
         },
 
         get hasRatingConflict() {
@@ -183,8 +185,44 @@ export function ReconciliationManager(manager) {
                 .map(id => this.getLocalClusterPost(id))
                 .filter(Boolean);
 
-            const initialRatings = graphPosts.map(p => p?.rating);
-            return new Set(initialRatings).size > 1 && !this.isRatingChanged;
+            const initialRatings = graphPosts.map(p => p?.rating).filter(Boolean);
+            const hasMismatch = new Set(initialRatings).size > 1;
+
+            // Rating conflict exists if original ratings differ and no rating is chosen yet
+            return hasMismatch && !this.activeRating;
+        },
+
+        get hasArtistMismatch() {
+            if (!this.currentGraph) return false;
+
+            const graphPosts = Array.from(this.currentGraph.posts)
+                .map(id => this.getLocalClusterPost(id))
+                .filter(Boolean);
+
+            if (graphPosts.length < 2) return false;
+
+            const artistTagSets = graphPosts.map(post => {
+                const sortedTags = this.getSortedTags(post);
+                const artistTags = sortedTags
+                    .filter(t => t.category === 'ARTIST')
+                    .map(t => t.name);
+                return new Set(artistTags);
+            });
+
+            const firstSet = artistTagSets[0];
+            for (let i = 1; i < artistTagSets.length; i++) {
+                const currentSet = artistTagSets[i];
+                if (firstSet.size !== currentSet.size) return true;
+                for (const tag of firstSet) {
+                    if (!currentSet.has(tag)) return true;
+                }
+            }
+
+            return false;
+        },
+
+        dismissArtistWarning() {
+            this.isArtistWarningDismissed = true;
         },
 
         /**
@@ -341,6 +379,7 @@ export function ReconciliationManager(manager) {
             this.customParentId = '';
             this.activeRhsIndex = 0;
             this.isSummary = false;
+            this.isArtistWarningDismissed = false;
 
             // Automatically mark non-head posts for deletion/flagging
             for (const pId of this.currentGraph.posts) {
@@ -418,6 +457,8 @@ export function ReconciliationManager(manager) {
          * @param {RootData} rootData
          */
         advance(rootData) {
+            if (this.hasRatingConflict) return;
+
             if (this.activeRhsIndex < this.rhsPostIds.length - 1) {
                 this.activeRhsIndex++;
             } else if (this.activeGraphIndex < this.duplicateGraphs.length - 1) {

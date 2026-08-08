@@ -34,8 +34,8 @@ export class ResolutionPost {
         /** @type {string[]} */
         this.tags = Array.isArray(original.tags) ? [...original.tags] : [];
 
-        /** @type {PostRating} */
-        this.rating = original.rating;
+        /** @type {PostRating|null} */
+        this.rating = null;
 
         /** @type {number|null} */
         this.parent_id = original.parent_id ?? null;

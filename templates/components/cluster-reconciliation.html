@@ -13,9 +13,8 @@
                 <!-- Graph Number Label -->
                 <span x-text="`#${idx + 1}`"></span>
 
-                <!-- Dot indicator container (one dot per post in graph) -->
+                <!-- Dot indicator container -->
                 <div class="flex items-center gap-1 ml-0.5">
-                    <!-- Fallback to (graph.posts || graph) depending on your data shape -->
                     <template x-for="post in (graph.posts || graph.nodes || graph)" :key="post.id || post">
                         <span class="w-2 h-2 rounded-full transition-colors"
                             :class="activeGraphIndex === idx ? 'bg-amber-300' : 'bg-amber-500/70'"></span>
@@ -64,25 +63,55 @@
                 </template>
             </div>
 
-            <!-- UNIFIED ACTION & NAVIGATION BAR (Directly below Image Display) -->
+            <!-- UNIFIED ACTION & NAVIGATION BAR -->
             <div class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
                 
-                <!-- Status Info -->
-                <div class="text-xs text-gray-400 font-mono w-full md:w-1/4 text-left">
-                    <template x-if="rhsPostIds.length > 0">
-                        <span>Post <span class="font-bold text-gray-200" x-text="activeRhsIndex + 1"></span> of <span class="font-bold text-gray-200" x-text="rhsPostIds.length"></span> in Graph <span class="font-bold text-gray-200" x-text="activeGraphIndex + 1"></span></span>
+                <!-- Warnings / Instructions Center View -->
+                <div class="text-xs font-medium flex-1 w-full">
+                    
+                    <!-- Blocking Rating Conflict Warning -->
+                    <template x-if="hasRatingConflict">
+                        <div class="flex items-center gap-2 text-red-400 font-semibold bg-red-950/50 border border-red-800/60 rounded px-3 py-1.5">
+                            <span class="text-sm">⚠️</span>
+                            <span>Rating conflict detected between posts in this duplicate graph. Please select an appropriate rating for the post using the selector below to advance.</span>
+                        </div>
                     </template>
-                </div>
 
-                <!-- Centered Instruction Text -->
-                <div class="text-xs text-gray-200 font-medium text-center flex-1">
-                    <span class="text-gray-300">Review tag transfers below, then advance to proceed.</span>
+                    <!-- Soft Artist Tag Mismatch Warning (Non-blocking, Dismissible) -->
+                    <template x-if="!hasRatingConflict && hasArtistMismatch && !isArtistWarningDismissed">
+                        <div class="flex items-center justify-between gap-2 text-amber-300 font-medium bg-amber-950/50 border border-amber-800/60 rounded px-3 py-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm">🎨</span>
+                                <span>
+                                    Artist tags between posts in this duplicate cluster do not match. Please try to verify the true artist, and file a 
+                                    <a href="https://e621.net/tag_alias_request/new" target="_blank" rel="noopener noreferrer" class="text-amber-200 underline hover:text-white font-bold">tag alias request</a> 
+                                    if appropriate.
+                                </span>
+                            </div>
+                            <button @click="dismissArtistWarning()" 
+                                    class="text-xs font-bold text-amber-300 hover:text-amber-100 bg-amber-900/70 hover:bg-amber-800 border border-amber-700/60 px-2.5 py-0.5 rounded transition shrink-0">
+                                Dismiss
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- Default Instruction Text -->
+                    <template x-if="!hasRatingConflict && (!hasArtistMismatch || isArtistWarningDismissed)">
+                        <div class="text-gray-300 text-center md:text-left">
+                            <span>Review tag transfers below, then advance to proceed.</span>
+                        </div>
+                    </template>
+
                 </div>
 
                 <!-- Navigation Action Button -->
-                <div class="flex items-center justify-end w-full md:w-1/4">
+                <div class="flex items-center justify-end shrink-0">
                     <button @click="advance($data)"
-                            class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2">
+                            :disabled="hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)"
+                            class="text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2"
+                            :class="(hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)) 
+                                ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60' 
+                                : 'bg-blue-600 hover:bg-blue-500 text-white'">
                         <span x-text="nextButtonLabel"></span>
                         <span>→</span>
                     </button>
@@ -206,9 +235,7 @@
                                         class="text-xs px-2 py-0.5 rounded font-bold uppercase transition"
                                         :class="activeRating === r 
                                             ? ($store.tags.getRatingBadgeClass(r)) 
-                                            : (activeRating === null && lhsPost.rating === r
-                                                ? (r === 's' ? 'text-green-500 hover:bg-gray-800 border border-transparent' : (r === 'q' ? 'text-amber-500 hover:bg-gray-800 border border-transparent' : 'text-red-500 hover:bg-gray-800 border border-transparent'))
-                                                : 'text-white hover:bg-gray-800 border border-transparent')">
+                                            : 'text-gray-400 hover:text-white hover:bg-gray-800 border border-transparent'">
                                     <span x-text="r"></span>
                                 </button>
                             </template>
