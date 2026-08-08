@@ -6,6 +6,7 @@ import { showToast } from './toasts.js';
 import { tagManager } from './tags.js';
 import { ResolutionPost } from './resolution.js';
 import { alpineHelpers } from './alpine_helpers.js';
+import { openImageModal } from './image_modal.js';
 
 /**
  * @typedef {Object} RootData
@@ -223,6 +224,21 @@ export function ReconciliationManager(manager) {
 
         dismissArtistWarning() {
             this.isArtistWarningDismissed = true;
+        },
+
+        /**
+         * Opens current post in full single-image expanded modal.
+         * @param {ClusterPost | null} [post=null]
+         */
+        openModal(post = null) {
+            if (!post || !post.fileUrl) return;
+
+            openImageModal({
+                src: post.fileUrl,
+                mode: 'single',
+                title: `Post #${post.post_id}`,
+                dimensions: this.getPostDimensions(post)
+            });
         },
 
         /**

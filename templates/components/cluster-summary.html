@@ -51,21 +51,21 @@
                                         <!-- Rating (Single letter, formatted via tags) -->
                                         <div class="flex items-center gap-1 font-mono text-[10px]">
                                             <!-- Unchanged Rating -->
-                                            <template x-if="post.rating === post.original?.rating">
+                                            <template x-if="post.getEffectiveRating() === post.original.rating">
                                                 <span class="px-1.5 py-0.5 rounded font-bold uppercase text-gray-400 bg-gray-800"
-                                                      x-text="`${$store.tags?.getRatingLabel(post.rating)}`">
+                                                      x-text="`${$store.tags?.getRatingLabel(post.getEffectiveRating())}`">
                                                 </span>
                                             </template>
 
                                             <!-- Changed Rating: {Original} -> {New} -->
-                                            <template x-if="post.rating !== post.original?.rating">
-                                                <div class="flex items-center gap-0.5" :title="`Rating changed from ${post.original?.rating}`">
+                                            <template x-if="post.getEffectiveRating() !== post.original.rating">
+                                                <div class="flex items-center gap-0.5" :title="`Rating changed from ${post.original.rating}`">
                                                     <span class="text-gray-500 font-bold uppercase" 
-                                                          x-text="$store.tags?.getRatingLabel(post.original?.rating)"></span>
+                                                          x-text="$store.tags?.getRatingLabel(post.original.rating)"></span>
                                                     <span class="text-gray-500">→</span>
                                                     <span class="px-1 py-0.5 rounded font-bold uppercase"
-                                                          :class="$store.tags?.getRatingBadgeClass(post.rating)"
-                                                          x-text="$store.tags?.getRatingLabel(post.rating)"></span>
+                                                          :class="$store.tags?.getRatingBadgeClass(post.getEffectiveRating())"
+                                                          x-text="$store.tags?.getRatingLabel(post.getEffectiveRating())"></span>
                                                 </div>
                                             </template>
                                         </div>

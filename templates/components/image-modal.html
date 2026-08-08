@@ -64,11 +64,12 @@
 
     <!-- Main Viewport -->
     <div class="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden cursor-crosshair"
-         @wheel="handleWheel($event)"
-         @mousedown="startDrag($event)"
-         @mousemove="onDrag($event)"
-         @mouseup="stopDrag()"
-         @mouseleave="stopDrag()">
+        @click.self="close()"
+        @wheel="handleWheel($event)"
+        @mousedown="startDrag($event)"
+        @mousemove="onDrag($event)"
+        @mouseup="stopDrag()"
+        @mouseleave="stopDrag()">
 
         <div class="relative max-h-[85vh] max-w-[90vw] flex items-center justify-center pointer-events-auto select-none"
              :style="transformStyle">

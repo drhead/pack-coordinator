@@ -25,12 +25,12 @@
         </template>
     </div>
 
-    <!-- 2. STRIPPED-DOWN IMAGES ROW -->
+    <!-- 2. IMAGE PREVIEW GRID -->
     <template x-if="currentGraph">
         <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative items-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative items-start">
                 <template x-for="pId in orderedPostIds" :key="pId">
-                    <div class="space-y-2 relative flex flex-col justify-between transition">
+                    <div class="space-y-2 relative flex flex-col transition">
                         
                         <!-- ID Badge Header -->
                         <div class="flex items-center justify-between">
@@ -55,10 +55,54 @@
                             </a>
                         </div>
 
-                        <!-- Borderless Clean Image Frame -->
-                        <div class="w-full h-72 bg-black/60 rounded-md border border-gray-800/60 flex items-center justify-center overflow-hidden">
-                            <img :src="getLocalClusterPost(pId)?.fileUrl" class="max-h-full max-w-full object-contain rounded">
+                        <!-- Fixed-height image viewport frame -->
+                        <div class="relative w-full h-72 bg-black/60 rounded-md border border-gray-800/60 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
+                            @click="openModal(getLocalClusterPost(pId))">
+                            
+                            <!-- Shrink-wrapped wrapper bound directly to rendered image dimensions -->
+                            <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
+                                <img :src="getLocalClusterPost(pId)?.fileUrl" class="max-h-72 max-w-full object-contain rounded">
+                                
+                                <!-- Expand Button (Positioned absolutely relative to the image wrapper) -->
+                                <load src="/templates/components/expand-image-button.html" />
+                            </div>
+
                         </div>
+
+                        <!-- Collapsible Metadata: Description & Sources -->
+                        <template x-if="getLocalClusterPost(pId)">
+                            <div class="space-y-1.5 pt-1">
+                                <!-- Description Collapsible -->
+                                <template x-if="getLocalClusterPost(pId)?.description && getLocalClusterPost(pId)?.description.trim().length > 0">
+                                    <details class="bg-gray-900/80 border border-gray-800/80 rounded-md text-[11px] group">
+                                        <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                            <span>Description</span>
+                                            <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                        </summary>
+                                        <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap break-words max-h-36 overflow-y-auto"
+                                             x-text="getLocalClusterPost(pId).description"></div>
+                                    </details>
+                                </template>
+
+                                <!-- Sources Collapsible -->
+                                <template x-if="getLocalClusterPost(pId)?.sources && getLocalClusterPost(pId)?.sources.length > 0">
+                                    <details class="bg-gray-900/80 border border-gray-800/80 rounded-md text-[11px] group">
+                                        <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                            <span x-text="`Sources (${getLocalClusterPost(pId).sources.length})`"></span>
+                                            <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                        </summary>
+                                        <div class="px-2.5 py-2 border-t border-gray-800/80 space-y-1 max-h-32 overflow-y-auto">
+                                            <template x-for="(src, sIdx) in getLocalClusterPost(pId).sources" :key="sIdx">
+                                                <a :href="src" target="_blank" rel="noopener noreferrer" 
+                                                   class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]" 
+                                                   x-text="src"></a>
+                                            </template>
+                                        </div>
+                                    </details>
+                                </template>
+                            </div>
+                        </template>
+
                     </div>
                 </template>
             </div>

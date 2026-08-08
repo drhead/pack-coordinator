@@ -55,6 +55,15 @@ export class ResolutionPost {
         /** @type {string} */
         this.flag_note = "";
     }
+    /**
+     * Gets the effective rating, falling back to original if no override is set.
+     * Use this for UI displays, badges, or tag logic that requires a concrete rating.
+     * 
+     * @returns {PostRating}
+     */
+    getEffectiveRating() {
+        return this.rating ?? this.original.rating;
+    }
 }
 
 document.addEventListener('alpine:init', () => {

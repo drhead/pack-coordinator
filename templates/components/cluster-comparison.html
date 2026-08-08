@@ -102,6 +102,36 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Collapsible Post Description & Sources (Side-by-Side View) -->
+                        <div class="w-full space-y-1.5 pt-2">
+                            <template x-if="item.description && item.description.trim().length > 0">
+                                <details class="w-full bg-gray-950/60 border border-gray-800/80 rounded-md text-[11px] group">
+                                    <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                        <span>Description</span>
+                                        <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                    </summary>
+                                    <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap break-words max-h-36 overflow-y-auto" 
+                                         x-text="item.description"></div>
+                                </details>
+                            </template>
+
+                            <template x-if="item.sources && item.sources.length > 0">
+                                <details class="w-full bg-gray-950/60 border border-gray-800/80 rounded-md text-[11px] group">
+                                    <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                        <span x-text="`Sources (${item.sources.length})`"></span>
+                                        <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                    </summary>
+                                    <div class="px-2.5 py-2 border-t border-gray-800/80 space-y-1 max-h-32 overflow-y-auto">
+                                        <template x-for="(src, sIdx) in item.sources" :key="sIdx">
+                                            <a :href="src" target="_blank" rel="noopener noreferrer" 
+                                               class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]" 
+                                               x-text="src"></a>
+                                        </template>
+                                    </div>
+                                </details>
+                            </template>
+                        </div>
                     </div>
                 </template>
             </div>
