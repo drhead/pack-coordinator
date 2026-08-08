@@ -2,6 +2,7 @@
 
 import Alpine from 'alpinejs';
 import { showToast } from './toasts.js';
+import { fetchCurrentUserProfile } from './e621_api.js';
 import { getE621User } from './auth.js';
 
 const DEFAULT_BLACKLIST = `# Violence
@@ -335,8 +336,7 @@ export class BlacklistManager {
      * @param {Batch[]} [batches] Optional array of batches to re-evaluate after import
      */
     async importBlacklist(batches = []) {
-        const user = getE621User();
-        if (!user) {
+        if (!getE621User()) {
             showToast('You must be logged in to import your e621 blacklist.', 'warning');
             return;
         }
@@ -344,21 +344,7 @@ export class BlacklistManager {
         this.isImportingBlacklist = true;
 
         try {
-            const authString = btoa(`${user.username}:${user.apiKey}`);
-            const appAuthor = import.meta.env.VITE_E621_APP_AUTHOR || 'anonymous';
-
-            const res = await fetch(`https://e621.net/users/me.json`, {
-                headers: {
-                    'Authorization': `Basic ${authString}`,
-                    'User-Agent': `E621CleanupCoordinator/1.0 (by ${appAuthor})`
-                }
-            });
-
-            if (!res.ok) {
-                throw new Error(`e621 returned status ${res.status}`);
-            }
-
-            const userData = await res.json();
+            const userData = await fetchCurrentUserProfile();
 
             if (userData.blacklisted_tags !== undefined) {
                 this.blacklistText = userData.blacklisted_tags;

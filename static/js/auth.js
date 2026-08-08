@@ -1,6 +1,7 @@
 // @ts-check
 import Alpine from 'alpinejs';
 import { showToast } from './toasts.js';
+import { fetchCurrentUserProfile } from './e621_api.js';
 
 /**
  * @typedef {Object} E621User
@@ -47,24 +48,8 @@ export class AuthManager {
         this.loginError = null;
 
         try {
-            const authString = btoa(`${username}:${apiKey}`);
-            const appAuthor = import.meta.env.VITE_E621_APP_AUTHOR || 'Unknown';
-
-            const res = await fetch(`https://e621.net/users/me.json`, {
-                headers: {
-                    'Authorization': `Basic ${authString}`,
-                    'User-Agent': `E621CleanupCoordinator/1.0 (by ${appAuthor})`
-                }
-            });
-
-            if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                    throw new Error('Invalid username or API key.');
-                }
-                throw new Error(`e621 returned status ${res.status}`);
-            }
-
-            const userData = await res.json();
+            // Pass credentials explicitly to verify them before storing
+            const userData = await fetchCurrentUserProfile({ username, apiKey });
 
             /** @type {E621User} */
             const credentials = {
