@@ -183,7 +183,7 @@
                     <!-- Post Header Line -->
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <span class="px-1.5 py-0.5 rounded text-[11px] font-bold font-mono transition-colors"
+                            <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
                                   :class="$store.tags.getRatingBadgeClass(getEffectiveLhsRating())"
                                   x-text="$store.tags.getRatingLabel(getEffectiveLhsRating())"></span>
 
@@ -233,7 +233,7 @@
                     <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
                         <div class="flex flex-wrap gap-x-1 gap-y-1">
                             <template x-for="tag in getSortedTags(lhsTags)" :key="tag.category + ':' + tag.name">
-                                <span class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                                <span class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
                                     :class="tagpill.getTagClasses(tag, lhsPost, 'lhs', { hoveredImplicationData, newTags })"
                                     :style="tagpill.getTagStyle(tag, lhsPost, hoveredImplicationData)"
                                     :title="tagpill.getTagTitle(tag.name, lhsPost)"
@@ -267,7 +267,7 @@
                                 <div class="flex flex-wrap gap-x-1 gap-y-1">
                                     <template x-for="tag in getSortedTags(removedLhsTags)" :key="tag.category + ':' + tag.name">
                                         <span @click="addTagWithImplications(tag.name)"
-                                            class="font-mono text-[11px] leading-tight inline-flex items-center px-1.5 py-0.5 rounded bg-gray-950 text-gray-600 line-through border border-gray-800 cursor-pointer hover:text-gray-300 hover:no-underline"
+                                            class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1.5 py-0.5 rounded bg-gray-950 text-gray-600 line-through border border-gray-800 cursor-pointer hover:text-gray-300 hover:no-underline"
                                             title="Click to restore">
                                             <span x-text="tag.name"></span>
                                         </span>
@@ -285,7 +285,7 @@
                         <div class="flex bg-gray-900 border border-gray-800 rounded p-0.5 gap-1">
                             <template x-for="r in ['s', 'q', 'e']" :key="r">
                                 <button @click="activeRating = r"
-                                        class="text-xs px-2 py-0.5 rounded font-bold uppercase transition"
+                                        class="text-xs w-5 h-5 rounded font-bold uppercase transition cursor-pointer"
                                         :class="activeRating === r 
                                             ? ($store.tags.getRatingBadgeClass(r)) 
                                             : 'text-gray-400 hover:text-white hover:bg-gray-800 border border-transparent'">
@@ -316,7 +316,7 @@
                             
                             <button type="button" 
                                     @click="commitTag()"
-                                    class="text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition shrink-0">
+                                    class="cursor-pointer text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition shrink-0">
                                 Add
                             </button>
                         </div>
@@ -361,84 +361,84 @@
             </div>
 
             <!-- RHS: Single Active Comparison Post Card -->
-            <div class="space-y-4">
-                <template x-for="post in rhsPosts" :key="post.post_id">
-                    <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm">
-                        
-                        <!-- Post Header Line -->
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <template x-if="post.rating">
-                                    <span class="px-1.5 py-0.5 rounded text-[11px] font-bold font-mono"
-                                          :class="$store.tags.getRatingBadgeClass(post.rating)"
-                                          x-text="$store.tags.getRatingLabel(post.rating)"></span>
-                                </template>
+        
+            <template x-for="post in rhsPosts" :key="post.post_id">
+                <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm">
+                    
+                    <!-- Post Header Line -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <template x-if="post.rating">
+                                <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
+                                        :class="$store.tags.getRatingBadgeClass(post.rating)"
+                                        x-text="$store.tags.getRatingLabel(post.rating)"></span>
+                            </template>
 
-                                <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
-                                   class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
-                                    <span x-text="`#${post.post_id}`"></span>
-                                    <span class="text-gray-600 text-xs">&nearr;</span>
+                            <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
+                                class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
+                                <span x-text="`#${post.post_id}`"></span>
+                                <span class="text-gray-600 text-xs">&nearr;</span>
+                            </a>
+
+                            <template x-if="post.parent_id">
+                                <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
+                                    class="font-mono text-[11px] text-gray-400 hover:text-blue-300 hover:underline">
+                                    (Parent: #<span x-text="post.parent_id"></span>)
                                 </a>
-
-                                <template x-if="post.parent_id">
-                                    <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
-                                       class="font-mono text-[11px] text-gray-400 hover:text-blue-300 hover:underline">
-                                        (Parent: #<span x-text="post.parent_id"></span>)
-                                    </a>
-                                </template>
-                            </div>
-
-                            <div class="flex items-center space-x-2">
-                                <span class="font-mono text-[11px]"
-                                    :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
-                                    x-text="image.formatSpecs(post)">
-                                </span>
-
-                                <template x-if="post.is_deleted">
-                                    <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
-                                </template>
-                                <template x-if="!post.is_deleted && post.is_flagged">
-                                    <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
-                                </template>
-                            </div>
+                            </template>
                         </div>
 
-                        <!-- Post Pools List -->
-                        <template x-if="post.pool_ids && post.pool_ids.length > 0">
-                            <div class="flex flex-wrap items-center gap-1.5 pt-1">
-                                <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider">Pools:</span>
-                                <template x-for="poolId in post.pool_ids" :key="poolId">
-                                    <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
-                                       class="bg-gray-900 hover:bg-gray-800 text-blue-300 border border-gray-800 text-[10px] px-1.5 py-0.5 rounded font-mono transition">
-                                        Pool #<span x-text="poolId"></span>
-                                    </a>
-                                </template>
-                            </div>
-                        </template>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-mono text-[11px]"
+                                :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
+                                x-text="image.formatSpecs(post)">
+                            </span>
 
-                        <!-- RHS Tag Cloud -->
-                        <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
-                            <div class="flex flex-wrap gap-x-1 gap-y-1">
-                                <template x-for="tag in getSortedTags(post)" :key="tag.category + ':' + tag.name">
-                                    <span class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
-                                        :class="tagpill.getTagClasses(tag, post, 'rhs', { hoveredImplicationData, isLhs: isTagOnLhs(tag.name) })"
-                                        :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
-                                        :title="tagpill.getTagTitle(tag.name)"
-                                        @click="if (!isTagOnLhs(tag.name)) addTagWithImplications(tag.name)"
-                                        @mouseenter="hoveredImplicationData = getImplicationChain(post.post_id, tag.name, post)"
-                                        @mouseleave="hoveredImplicationData = null">
-                                        <span x-text="tag.name"></span>
-                                        <span x-show="isImpliedTag(tag.name, post)" class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none" title="Implied tag">i</span>
-                                        <template x-if="!isTagOnLhs(tag.name)">
-                                            <span class="ml-1 text-[9px] text-blue-400 font-bold">+</span>
-                                        </template>
-                                    </span>
-                                </template>
-                            </div>
+                            <template x-if="post.is_deleted">
+                                <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
+                            </template>
+                            <template x-if="!post.is_deleted && post.is_flagged">
+                                <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
+                            </template>
                         </div>
                     </div>
-                </template>
-            </div>
+
+                    <!-- Post Pools List -->
+                    <template x-if="post.pool_ids && post.pool_ids.length > 0">
+                        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                            <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider">Pools:</span>
+                            <template x-for="poolId in post.pool_ids" :key="poolId">
+                                <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
+                                    class="bg-gray-900 hover:bg-gray-800 text-blue-300 border border-gray-800 text-[10px] px-1.5 py-0.5 rounded font-mono transition">
+                                    Pool #<span x-text="poolId"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- RHS Tag Cloud -->
+                    <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
+                        <div class="flex flex-wrap gap-x-1 gap-y-1">
+                            <template x-for="tag in getSortedTags(post)" :key="tag.category + ':' + tag.name">
+                                <span class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                                    :class="tagpill.getTagClasses(tag, post, 'rhs', { hoveredImplicationData, isLhs: isTagOnLhs(tag.name) })"
+                                    :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
+                                    :title="tagpill.getTagTitle(tag.name)"
+                                    @click="if (!isTagOnLhs(tag.name)) addTagWithImplications(tag.name)"
+                                    @mouseenter="hoveredImplicationData = getImplicationChain(post.post_id, tag.name, post)"
+                                    @mouseleave="hoveredImplicationData = null">
+                                    <span x-text="tag.name"></span>
+                                    <span x-show="isImpliedTag(tag.name, post)" class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none" title="Implied tag">i</span>
+                                    <template x-if="!isTagOnLhs(tag.name)">
+                                        <span class="ml-1 text-[9px] text-blue-400 font-bold">+</span>
+                                    </template>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
 
         </div>
     </template>
