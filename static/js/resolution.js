@@ -43,11 +43,11 @@ export class ResolutionPost {
         /** @type {number[]} */
         this.pool_ids = Array.isArray(original.pool_ids) ? [...original.pool_ids] : [];
 
-        /** @type {string[]} */
-        this.sources = Array.isArray(original.sources) ? [...original.sources] : [];
+        /** @type {string[]|null} */
+        this._sources = null;
 
-        /** @type {string} */
-        this.description = original.description ?? "";
+        /** @type {string|null} */
+        this._description = null;
 
         /** @type {boolean} */
         this.flag = false;
@@ -55,6 +55,41 @@ export class ResolutionPost {
         /** @type {string} */
         this.flag_note = "";
     }
+
+    /**
+     * @returns {string[]}
+     */
+    get sources() {
+        if (this._sources !== null) {
+            return this._sources;
+        }
+        return Array.isArray(this.original.sources) ? [...this.original.sources] : [];
+    }
+
+    /**
+     * @param {string[]|null} val
+     */
+    set sources(val) {
+        this._sources = Array.isArray(val) ? [...val] : null;
+    }
+
+    /**
+     * @returns {string}
+     */
+    get description() {
+        if (this._description !== null) {
+            return this._description;
+        }
+        return this.original.description ?? "";
+    }
+
+    /**
+     * @param {string|null} val
+     */
+    set description(val) {
+        this._description = val;
+    }
+
     /**
      * Gets the effective rating, falling back to original if no override is set.
      * Use this for UI displays, badges, or tag logic that requires a concrete rating.
@@ -87,16 +122,21 @@ document.addEventListener('alpine:init', () => {
         /** @type {Map<number, ResolutionPost>} */
         posts: new Map(),
 
-        async initializePosts() {
+        initializePosts() {
             if (!this.cluster || !Array.isArray(this.cluster.posts)) {
                 return;
             }
 
-            await ensureClusterPostsInfo(this.cluster.posts);
-
             for (const post of this.cluster.posts) {
-                this.posts.set(post.post_id, new ResolutionPost(post));
+                if (!this.posts.has(post.post_id)) {
+                    this.posts.set(post.post_id, new ResolutionPost(post));
+                }
             }
+
+            // Asynchronously fetch missing e621 metadata in background
+            ensureClusterPostsInfo(this.cluster.posts).catch(err => {
+                console.warn('[ResolutionManager] Background metadata fetch warning:', err);
+            });
         },
 
         /**
@@ -412,6 +452,24 @@ document.addEventListener('alpine:init', () => {
         clearGraphs() {
             this.graphs = [];
             this.relations.clear();
+        },
+
+        /**
+         * Clears working graph state and resets all post instances back to original values.
+         * @returns {void}
+         */
+        resetClusterWork() {
+            this.clearGraphs();
+            for (const [, resPost] of this.posts.entries()) {
+                resPost.tags = Array.isArray(resPost.original.tags) ? [...resPost.original.tags] : [];
+                resPost.rating = null;
+                resPost.parent_id = resPost.original.parent_id ?? null;
+                resPost.pool_ids = Array.isArray(resPost.original.pool_ids) ? [...resPost.original.pool_ids] : [];
+                resPost._sources = null;
+                resPost._description = null;
+                resPost.flag = false;
+                resPost.flag_note = "";
+            }
         }
     }));
 });

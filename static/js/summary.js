@@ -6,8 +6,12 @@ document.addEventListener('alpine:init', () => {
      * @typedef {import('./resolution.js').ResolutionPost} ResolutionPost
      */
 
-    window.Alpine.data('summaryManager', (resMgr) => ({
-        resMgr: /** @type {ResolutionManagerComponent} */ (resMgr),
+    window.Alpine.data('summaryManager', (resMgr) => {
+        /** @type {any} */
+        const arg = resMgr;
+        const manager = (arg && Array.isArray(arg.graphs)) ? arg : (arg && arg.resMgr) ? arg.resMgr : arg;
+        return {
+            resMgr: /** @type {ResolutionManagerComponent} */ (manager),
 
         /**
          * Checks if a post is the canonical/head post for the graph
@@ -39,7 +43,7 @@ document.addEventListener('alpine:init', () => {
         resetHeadDescription(graph) {
             const headPost = this.resMgr.getPost(graph.head);
             if (headPost) {
-                headPost.description = headPost.original.description || '';
+                headPost.description = null;
             }
         },
 
@@ -52,12 +56,9 @@ document.addEventListener('alpine:init', () => {
             const headPost = this.resMgr.getPost(graph.head);
             if (!headPost) return;
 
-            if (!Array.isArray(headPost.sources)) {
-                headPost.sources = [];
-            }
-
-            if (!headPost.sources.includes(sourceUrl)) {
-                headPost.sources.push(sourceUrl);
+            const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
+            if (!currentSources.includes(sourceUrl)) {
+                headPost.sources = [...currentSources, sourceUrl];
             }
         },
 
@@ -68,12 +69,10 @@ document.addEventListener('alpine:init', () => {
          */
         removeSourceFromHead(graph, sourceUrl) {
             const headPost = this.resMgr.getPost(graph.head);
-            if (!headPost || !Array.isArray(headPost.sources)) return;
+            if (!headPost) return;
 
-            const index = headPost.sources.indexOf(sourceUrl);
-            if (index > -1) {
-                headPost.sources.splice(index, 1);
-            }
+            const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
+            headPost.sources = currentSources.filter(s => s !== sourceUrl);
         },
 
         /**
@@ -137,5 +136,6 @@ document.addEventListener('alpine:init', () => {
             post.flag = true;
             console.log('Flagging post:', postId, post.flag_note);
         }
-    }));
+        };
+    });
 });

@@ -1,7 +1,12 @@
 <div class="border rounded-lg transition shadow-md overflow-hidden" x-data="{ 
          activeView: 'none', 
          hoveredImplicationData: null, 
-         hoveredMergedData: null 
+         hoveredMergedData: null,
+         resMgr: resolutionManager(cluster),
+         discardAndExit() {
+             this.resMgr.resetClusterWork();
+             this.activeView = 'none';
+         }
      }" :class="cluster.is_resolved ? 'bg-gray-900/60 border-gray-800/80 opacity-80' : 'bg-gray-900 border-gray-800'">
 
     <!-- Cluster Header Line (Collapsible Trigger) -->
@@ -64,6 +69,18 @@
                     </template>
                 </div>
             </template>
+
+            <!-- Discard & Exit Button: Only visible on header when expanded & activeView !== 'none' -->
+            <template x-if="!cluster.collapsed && activeView !== 'none'">
+                <div class="flex items-center h-7" @click.stop>
+                    <button @click.stop="discardAndExit()"
+                        class="h-7 bg-red-950/60 hover:bg-red-900/80 text-red-300 hover:text-red-200 border border-red-800/60 text-xs px-3 rounded-md font-semibold transition flex items-center gap-1.5 cursor-pointer leading-none shadow-sm"
+                        title="Exit workflow and discard all uncommitted changes for this cluster">
+                        <span style="font-variant-emoji: text;">✕</span>
+                        <span>Discard & Exit</span>
+                    </button>
+                </div>
+            </template>
         </div>
     </div>
 
@@ -71,11 +88,11 @@
     <template x-if="!cluster.collapsed">
         <div class="p-4 pt-3 space-y-4">
             <!-- Cluster Workflow Container -->
-            <div x-data="resolutionManager(cluster)" x-ref="resMgr" class="space-y-3">
+            <div x-ref="resMgr" class="space-y-3">
 
                 <!-- Screen 1: Comparison View Scope -->
                 <template x-if="activeView === 'compare'">
-                    <div x-data="ComparisonManager($data)" x-init="startComparison()">
+                    <div x-data="ComparisonManager(resMgr)" x-init="startComparison($data)">
                         <template x-if="isActive">
                             <div class="space-y-3">
                                 <load src="/templates/components/cluster-comparison.html" />
@@ -86,8 +103,16 @@
 
                 <!-- Screen 2: Tag Reconciliation View Scope -->
                 <template x-if="activeView === 'reconcile'">
-                    <div x-data="ReconciliationManager($data)" x-init="startReconciliation()">
-                        <template x-if="isActive">
+                    <div x-data="ReconciliationManager(resMgr)" x-init="startReconciliation()">
+                        <!-- Loading Spinner while ReconciliationManager initializes -->
+                        <template x-if="isLoading || !isActive">
+                            <div class="flex flex-col items-center justify-center min-h-[360px] p-8 space-y-3 bg-gray-950/60 border border-gray-800/80 rounded-lg shadow-inner">
+                                <div class="w-8 h-8 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                                <p class="text-xs text-gray-400 font-medium animate-pulse">Loading tag reconciliation...</p>
+                            </div>
+                        </template>
+
+                        <template x-if="!isLoading && isActive">
                             <div class="space-y-3">
                                 <load src="/templates/components/cluster-reconciliation.html" />
                             </div>
@@ -97,7 +122,7 @@
 
                 <!-- Screen 3: Summary View Scope -->
                 <template x-if="activeView === 'summary'">
-                    <div class="space-y-3">
+                    <div x-data="summaryManager(resMgr)" class="space-y-3">
                         <load src="/templates/components/cluster-summary.html" />
                     </div>
                 </template>

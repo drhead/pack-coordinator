@@ -149,8 +149,10 @@ export async function fetchCurrentUserProfile(credentials) {
 export function ensureClusterPostsInfo(clusterPosts) {
     if (!clusterPosts || clusterPosts.length === 0) return Promise.resolve();
 
-    // 1. Filter out posts that already have fileUrl populated
-    const missingPosts = clusterPosts.filter(post => !post.fileUrl && post.post_id);
+    // 1. Filter out posts that already have fileUrl, description, and sources populated
+    const missingPosts = clusterPosts.filter(post =>
+        (!post.fileUrl || post.description === undefined || post.sources === undefined) && post.post_id
+    );
     if (missingPosts.length === 0) return Promise.resolve();
 
     // 2. Map missing posts by ID for O(1) in-place mutation upon response

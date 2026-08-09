@@ -54,6 +54,7 @@ export function ComparisonManager(resMgr) {
          * @param {'side-by-side' | 'swipe' | 'diff' | 'blink'} newMode
          */
         setMode(newMode) {
+            this.isHovering = false;
             this.mode = newMode;
             if (newMode === 'blink') {
                 this.startBlink();
@@ -81,6 +82,7 @@ export function ComparisonManager(resMgr) {
             this.stopBlink();
             this.isActive = false;
             this.isLoading = false;
+            this.isHovering = false;
 
             if (globalActiveComparison === this) {
                 globalActiveComparison = null;
@@ -113,9 +115,13 @@ export function ComparisonManager(resMgr) {
             const x = (e.clientX - rect.left) / rect.width;
             const y = (e.clientY - rect.top) / rect.height;
 
-            this.relX = Math.max(0, Math.min(1, x));
-            this.relY = Math.max(0, Math.min(1, y));
-            this.isHovering = true;
+            if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                this.relX = x;
+                this.relY = y;
+                this.isHovering = true;
+            } else {
+                this.isHovering = false;
+            }
         },
 
         handleMouseLeave() {
@@ -234,6 +240,7 @@ export function ComparisonManager(resMgr) {
          * @param {number} idB
          */
         setPairFromIds(idA, idB) {
+            this.isHovering = false;
             const resPostA = this.resolutionManager.getPost(idA);
             const resPostB = this.resolutionManager.getPost(idB);
 
@@ -248,41 +255,44 @@ export function ComparisonManager(resMgr) {
         },
 
         /**
-         * Initiates comparison session.
+         * Initiates comparison session instantly.
          * @param {RootData | null} [rootData]
          */
-        async startComparison(rootData) {
-            await this.resolutionManager.initializePosts()
-            if (!this.resolutionManager.cluster || !Array.isArray(this.resolutionManager.cluster.posts) || this.resolutionManager.cluster.posts.length < 2) {
-                showToast('Cluster must have at least 2 posts to compare.', 'error');
-                return;
-            }
-
-            if (globalActiveComparison && globalActiveComparison !== this) {
-                globalActiveComparison.closeComparison();
-            }
-            globalActiveComparison = this;
-
-            this.isLoading = true;
+        startComparison(rootData) {
+            this.isLoading = false;
+            this.isHovering = false;
 
             try {
-                // 1. Mark all posts missing a fileUrl as 'unknown' in graph state
+                this.resolutionManager.initializePosts();
+
+                if (!this.resolutionManager.cluster || !Array.isArray(this.resolutionManager.cluster.posts) || this.resolutionManager.cluster.posts.length < 2) {
+                    showToast('Cluster must have at least 2 posts to compare.', 'error');
+                    if (rootData && rootData.activeView) rootData.activeView = 'none';
+                    return;
+                }
+
+                if (globalActiveComparison && globalActiveComparison !== this) {
+                    globalActiveComparison.closeComparison();
+                }
+                globalActiveComparison = this;
+
+                // 1. Filter valid posts with IDs
                 const validPosts = [];
-                for (const post of resMgr.cluster.posts) {
-                    if (!post.fileUrl) {
+                for (const post of this.resolutionManager.cluster.posts) {
+                    if (!post.post_id) {
                         this.resolutionManager.markUnknown(post.post_id);
                     } else {
                         validPosts.push(post);
                     }
                 }
 
-                // 2. Validate posts with images
+                // 2. Validate posts
                 if (validPosts.length === 0) {
-                    throw new Error('No posts in this cluster have valid image URLs.');
+                    throw new Error('No valid posts available in this cluster.');
                 }
 
                 if (validPosts.length === 1) {
-                    showToast('Only one post with image available. Skipping comparison step.', 'info');
+                    showToast('Only one valid post available. Skipping comparison step.', 'info');
                     this.proceedToReconciliation(rootData);
                     return;
                 }
@@ -303,8 +313,7 @@ export function ComparisonManager(resMgr) {
                 const message = err instanceof Error ? err.message : 'Unknown error';
                 showToast(`Comparison error: ${message}`, 'error');
                 this.closeComparison();
-            } finally {
-                this.isLoading = false;
+                if (rootData && rootData.activeView) rootData.activeView = 'none';
             }
         },
 
