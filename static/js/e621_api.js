@@ -120,7 +120,7 @@ function getApiHeaders(overrideAuth) {
  */
 export async function fetchCurrentUserProfile(credentials) {
     const headers = getApiHeaders(credentials);
-    
+
     // Check if auth header was set
     if (!headers['Authorization']) {
         throw new Error('You must provide credentials to fetch user profile data.');
@@ -373,7 +373,6 @@ export async function substitutePoolPosts(poolId, substitutions) {
     // 1. Fetch current pool state to get exact post_ids array
     const pool = await _getPool(poolId);
     /** @type {Array<number>} */
-    // @ts-expect-error
     const currentPostIds = pool.post_ids || [];
 
     // 2. Map substitutions for O(1) lookup

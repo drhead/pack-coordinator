@@ -58,14 +58,14 @@ let globalModalInstance = null;
  * Opens the global image modal programmatically.
  * @param {ModalOpenOptions} options
  */
-export function openImageModal({ 
-    src, 
-    srcB = '', 
-    mode = 'single', 
-    title = '', 
-    titleB = '', 
+export function openImageModal({
+    src,
+    srcB = '',
+    mode = 'single',
+    title = '',
+    titleB = '',
     dimensions = '',
-    blinkSpeed = 350 
+    blinkSpeed = 350
 }) {
     if (globalModalInstance) {
         globalModalInstance.open({ src, srcB, mode, title, titleB, dimensions, blinkSpeed });
@@ -110,7 +110,7 @@ export function ImageModalComponent() {
 
         init() {
             globalModalInstance = this;
-            
+
             window.addEventListener('keydown', (e) => {
                 if (!this.isOpen) return;
                 if (e.key === 'Escape') this.close();
@@ -131,7 +131,7 @@ export function ImageModalComponent() {
             this.titleB = titleB;
             this.dimensions = dimensions;
             this.blinkSpeed = blinkSpeed;
-            
+
             this.resetZoom();
             this.isOpen = true;
 

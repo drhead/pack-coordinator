@@ -81,7 +81,7 @@ async function getCachedTagMap() {
         return new Promise((resolve) => {
             const tx = db.transaction('cache', 'readonly');
             const store = tx.objectStore('cache');
-            
+
             const metaReq = store.get('cache_timestamp');
             const dataReq = store.get('tagInfoMap');
 
@@ -113,7 +113,7 @@ async function setCachedTagMap(parsedMap) {
         return new Promise((resolve, reject) => {
             const tx = db.transaction('cache', 'readwrite');
             const store = tx.objectStore('cache');
-            
+
             store.put(Date.now(), 'cache_timestamp');
             store.put(parsedMap, 'tagInfoMap');
 
@@ -235,7 +235,6 @@ export class TagManager {
             this.isLoaded = true;
         } catch (err) {
             console.error('[TagManager] Failed to load tag data:', err);
-            // @ts-expect-error
             this.error = err.message || 'Failed to load tag data';
             showToast('Failed to load tag metadata.', 'error');
             throw err;

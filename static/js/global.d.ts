@@ -25,18 +25,18 @@ declare global {
     total_clusters?: number;
   }
 
-  type TagCategory = 
-    | 'ARTIST' 
-    | 'CONTRIBUTOR' 
-    | 'COPYRIGHT' 
-    | 'CHARACTER' 
-    | 'SPECIES' 
-    | 'GENERAL' 
-    | 'META' 
-    | 'LORE' 
+  type TagCategory =
+    | 'ARTIST'
+    | 'CONTRIBUTOR'
+    | 'COPYRIGHT'
+    | 'CHARACTER'
+    | 'SPECIES'
+    | 'GENERAL'
+    | 'META'
+    | 'LORE'
     | 'INVALID';
 
-  type PostRating = 
+  type PostRating =
     | 's'
     | 'q'
     | 'e';
@@ -164,4 +164,4 @@ declare global {
   }
 }
 
-export {};
+export { };

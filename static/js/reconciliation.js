@@ -448,7 +448,7 @@ export function ReconciliationManager(manager) {
                 chain.indirectImplicators?.forEach(t => toRemove.add(t));
             }
 
-            const hasLockedImplication = Array.from(toRemove).some(t => 
+            const hasLockedImplication = Array.from(toRemove).some(t =>
                 alpineHelpers.tagpill.isTagLocked(t, resPost.original)
             );
 
@@ -557,7 +557,7 @@ document.addEventListener('alpine:init', () => {
          */
         navigate(direction) {
             if (!this.isOpen || this.results.length === 0) return;
-            
+
             this.selectedIndex += direction;
             if (this.selectedIndex < 0) {
                 this.selectedIndex = this.results.length - 1;
@@ -586,7 +586,7 @@ document.addEventListener('alpine:init', () => {
             this.tagInput = tagObj.name;
             this.isOpen = false;
             this.results = [];
-            
+
             this.commitTag();
         },
 

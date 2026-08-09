@@ -24,6 +24,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('app', () => ({
         isLoading: true,
         currentScreen: 'projects',
+        /** @type {Project[]} */
         projects: [],
         loadingText: 'Initializing...',
         loadingPercent: 0,
@@ -76,7 +77,7 @@ document.addEventListener('alpine:init', () => {
                 // 2. Init Tag Manager (15% - 85%)
                 // Maps TagManager's 0-100% internally to 15-85% on the global loading bar
                 await tagManager.init((status, percent) => {
-                    const scaledPercent = Math.round(15 + (percent * 0.7)); 
+                    const scaledPercent = Math.round(15 + (percent * 0.7));
                     this.updateLoading(status, scaledPercent);
                 });
 

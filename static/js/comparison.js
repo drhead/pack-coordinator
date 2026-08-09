@@ -20,7 +20,7 @@ export function ComparisonManager(resMgr) {
         isActive: false,
         isLoading: false,
         activePairIndex: 0,
-        
+
         /** @type {ResolutionManagerComponent} */
         resolutionManager: resMgr,
 
@@ -131,7 +131,7 @@ export function ComparisonManager(resMgr) {
             if (!this.enableLoupe || !post || !post.fileUrl) return { display: 'none' };
 
             const nativeW = post.image_width || 1000;
-            const nativeH = post.image_height || 1000; 
+            const nativeH = post.image_height || 1000;
             const dpr = window.devicePixelRatio || 1;
 
             const bgW = nativeW * this.zoomLevel * dpr;

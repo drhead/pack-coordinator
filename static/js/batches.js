@@ -259,7 +259,7 @@ export class BatchManager {
             } else {
                 for (const newBatch of incomingBatches) {
                     let existingBatch = this.batches.find(b => b.batch_id === newBatch.batch_id);
-                    
+
                     if (!existingBatch) {
                         syncBatchLeaseState(newBatch);
                         if (newBatch.clusters) {
@@ -278,7 +278,7 @@ export class BatchManager {
                     existingBatch.status = newBatch.status;
                     existingBatch.resolved_count = newBatch.resolved_count;
                     existingBatch.total_clusters = newBatch.total_clusters;
-                    
+
                     // Sync dynamic lease state from /leases
                     syncBatchLeaseState(existingBatch);
 
@@ -390,7 +390,7 @@ export class BatchManager {
                 });
                 if (!res.ok) return;
                 const buf = await res.arrayBuffer();
-                
+
                 const data = /** @type {{ batches: Batch[] }} */ (decode(buf));
                 this.batches = data.batches;
                 const found = this.batches.find(b => b.batch_id === lease.batch_id);

@@ -16,7 +16,7 @@ export class AuthManager {
         this.isLoggingIn = false;
         /** @type {string|null} */
         this.loginError = null;
-        
+
         this.loginForm = {
             username: '',
             apiKey: ''
