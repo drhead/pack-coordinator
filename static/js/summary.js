@@ -1,4 +1,6 @@
 import { WarningsManager } from './warnings.js';
+// NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
+import { applyResolutionPostEdits, flagResolutionPostInferior, substitutePoolPosts } from './e621_api.js';
 
 document.addEventListener('alpine:init', () => {
     if (!window.Alpine) return;
@@ -87,15 +89,15 @@ document.addEventListener('alpine:init', () => {
                     details.push('Sources');
                 }
 
-                // Pools
-                const headPools = new Set(headPost.original?.pool_ids || []);
-                const hasNewPools = otherPosts.some(p => (p.original?.pool_ids || []).some(id => !headPools.has(id)));
+                // Pools (Check against current headPost.pool_ids)
+                const headPools = new Set(headPost.pool_ids || []);
+                const hasNewPools = otherPosts.some(p => (p.original?.pool_ids || p.pool_ids || []).some(id => !headPools.has(id)));
                 if (hasNewPools) {
                     details.push('Pools');
                 }
 
-                // Parent
-                const hasParent = otherPosts.some(p => p.original?.parent_id && !headPost.original?.parent_id);
+                // Parent (Check against current headPost.parent_id)
+                const hasParent = otherPosts.some(p => (p.parent_id || p.original?.parent_id) && !headPost.parent_id);
                 if (hasParent) {
                     details.push('Parent Post');
                 }
@@ -178,11 +180,17 @@ document.addEventListener('alpine:init', () => {
                 
                 headPost.sources = currentSources.filter(s => this.normalizeUrl(s) !== targetNorm);
 
-                if (!Array.isArray(headPost._removedSources)) {
-                    headPost._removedSources = [];
-                }
-                if (!headPost._removedSources.some(s => this.normalizeUrl(s) === targetNorm)) {
-                    headPost._removedSources.push(sourceUrl);
+                // Only track in _removedSources if it was an ORIGINAL source on headPost
+                const origSources = Array.isArray(headPost.original?.sources) ? headPost.original.sources : [];
+                const wasOriginalSource = origSources.some(s => this.normalizeUrl(s) === targetNorm);
+
+                if (wasOriginalSource) {
+                    if (!Array.isArray(headPost._removedSources)) {
+                        headPost._removedSources = [];
+                    }
+                    if (!headPost._removedSources.some(s => this.normalizeUrl(s) === targetNorm)) {
+                        headPost._removedSources.push(sourceUrl);
+                    }
                 }
             },
 
@@ -208,56 +216,197 @@ document.addEventListener('alpine:init', () => {
                 return headPost.sources.some(s => this.normalizeUrl(s) === targetNorm);
             },
 
-        /**
-         * Computes added tags against original post
-         * @param {ResolutionPost} post
-         * @returns {string[]}
-         */
-        getAddedTags(post) {
-            if (!post) return [];
-            return post.tags.filter(t => !post.original.tags?.includes(t));
-        },
+            // --- Parent Post Controls ---
+            copyParentToHead(graph, parentId) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (headPost && parentId) {
+                    headPost.parent_id = Number(parentId);
+                }
+            },
 
-        /**
-         * Computes removed tags against original post
-         * @param {ResolutionPost} post
-         * @returns {string[]}
-         */
-        getRemovedTags(post) {
-            if (!post || !Array.isArray(post.original.tags)) return [];
-            return post.original.tags.filter(t => !post.tags.includes(t));
-        },
+            resetHeadParent(graph) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (headPost) {
+                    headPost.parent_id = headPost.original.parent_id ?? null;
+                }
+            },
 
-        /**
-         * Checks if description was edited
-         * @param {ResolutionPost} post
-         * @returns {boolean}
-         */
-        isDescriptionEdited(post) {
-            if (!post) return false;
-            return (post.description || '') !== (post.original.description || '');
-        },
+            removeHeadParent(graph) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (headPost) {
+                    headPost.parent_id = null;
+                }
+            },
 
-        /**
-         * Applies changes for a post
-         * @param {number} postId
-         */
-        async applyChanges(postId) {
-            const post = this.resMgr.getPost(postId);
-            if (!post) return;
-            console.log('Applying resolution updates for post:', postId, post);
-        },
+            headHasParent(graph, parentId) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost) return false;
+                return Number(headPost.parent_id) === Number(parentId);
+            },
 
-        /**
-         * Flags a duplicate post
-         * @param {number} postId
-         */
-        async submitFlag(postId) {
-            const post = this.resMgr.getPost(postId);
-            if (!post) return;
-            post.flag = true;
-            console.log('Flagging post:', postId, post.flag_note);
-        }
+            isParentEdited(post) {
+                if (!post) return false;
+                const current = post.parent_id ?? null;
+                const original = post.original.parent_id ?? null;
+                return current !== original;
+            },
+
+            // --- Pools Controls ---
+            copyPoolToHead(graph, poolId) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost || !poolId) return;
+
+                const pId = Number(poolId);
+                const currentPools = Array.isArray(headPost.pool_ids) ? headPost.pool_ids : [];
+                if (!currentPools.includes(pId)) {
+                    headPost.pool_ids = [...currentPools, pId];
+                }
+
+                if (Array.isArray(headPost._removedPools)) {
+                    headPost._removedPools = headPost._removedPools.filter(id => id !== pId);
+                }
+            },
+
+            removePoolFromHead(graph, poolId) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost || !poolId) return;
+
+                const pId = Number(poolId);
+                const currentPools = Array.isArray(headPost.pool_ids) ? headPost.pool_ids : [];
+                headPost.pool_ids = currentPools.filter(id => id !== pId);
+
+                // Only track in _removedPools if it was an ORIGINAL pool on headPost
+                const wasOriginalHeadPool = Array.isArray(headPost.original?.pool_ids) && headPost.original.pool_ids.includes(pId);
+                if (wasOriginalHeadPool) {
+                    if (!Array.isArray(headPost._removedPools)) {
+                        headPost._removedPools = [];
+                    }
+                    if (!headPost._removedPools.includes(pId)) {
+                        headPost._removedPools.push(pId);
+                    }
+                }
+            },
+
+            getAvailableInferiorPools(graph, post) {
+                if (!post || !graph || !graph.head) return [];
+                const origPools = Array.isArray(post.original?.pool_ids) ? post.original.pool_ids : (post.pool_ids || []);
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost) return origPools;
+                const headPools = new Set(headPost.pool_ids || []);
+                return origPools.filter(id => !headPools.has(Number(id)));
+            },
+
+            restorePoolToHead(graph, poolId) {
+                this.copyPoolToHead(graph, poolId);
+            },
+
+            resetHeadPools(graph) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (headPost) {
+                    headPost.pool_ids = [...(headPost.original.pool_ids || [])];
+                    headPost._removedPools = [];
+                }
+            },
+
+            headHasPool(graph, poolId) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost || !Array.isArray(headPost.pool_ids)) return false;
+                return headPost.pool_ids.includes(Number(poolId));
+            },
+
+            isPoolsEdited(post) {
+                if (!post) return false;
+                const current = (post.pool_ids || []).sort().join(',');
+                const original = (post.original.pool_ids || []).sort().join(',');
+                const removedCount = (post._removedPools || []).length;
+                return current !== original || removedCount > 0;
+            },
+
+            /**
+             * Computes added tags against original post
+             * @param {ResolutionPost} post
+             * @returns {string[]}
+             */
+            getAddedTags(post) {
+                if (!post) return [];
+                return post.tags.filter(t => !post.original.tags?.includes(t));
+            },
+
+            /**
+             * Computes removed tags against original post
+             * @param {ResolutionPost} post
+             * @returns {string[]}
+             */
+            getRemovedTags(post) {
+                if (!post || !Array.isArray(post.original.tags)) return [];
+                return post.original.tags.filter(t => !post.tags.includes(t));
+            },
+
+            /**
+             * Checks if description was edited
+             * @param {ResolutionPost} post
+             * @returns {boolean}
+             */
+            isDescriptionEdited(post) {
+                if (!post) return false;
+                return (post.description || '') !== (post.original.description || '');
+            },
+
+            /**
+             * Applies changes for a post
+             * @param {number} postId
+             */
+            async applyChanges(postId) {
+                const post = this.resMgr.getPost(postId);
+                if (!post) return;
+                console.log('Applying resolution updates for post:', postId, post);
+
+                /*
+                // =========================================================================
+                // NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
+                // DO NOT UNCOMMENT UNTIL PRODUCTION ROLLOUT IS READY.
+                // =========================================================================
+                try {
+                    const response = await applyResolutionPostEdits(post, 'Cluster cleanup resolution');
+                    console.log('Successfully applied post updates to e621:', response);
+                    
+                    // If pool substitutions were queued:
+                    // if (Array.isArray(post._poolSubstitutions) && post._poolSubstitutions.length > 0) {
+                    //     for (const sub of post._poolSubstitutions) {
+                    //         await substitutePoolPosts(sub.poolId, [{ originalPostId: sub.origId, replacementPostId: sub.newId }]);
+                    //     }
+                    // }
+                } catch (err) {
+                    console.error('Failed to apply post edits to e621:', err);
+                }
+                */
+            },
+
+            /**
+             * Flags a duplicate post
+             * @param {number} postId
+             * @param {number} [superiorPostId]
+             */
+            async submitFlag(postId, superiorPostId) {
+                const post = this.resMgr.getPost(postId);
+                if (!post) return;
+                post.flag = true;
+                console.log('Flagging post as inferior:', postId, 'Superior:', superiorPostId, 'Note:', post.flag_note);
+
+                /*
+                // =========================================================================
+                // NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
+                // DO NOT UNCOMMENT UNTIL PRODUCTION ROLLOUT IS READY.
+                // =========================================================================
+                try {
+                    const headId = superiorPostId || Number(postId);
+                    const response = await flagResolutionPostInferior(post, headId);
+                    console.log('Successfully submitted inferior flag to e621:', response);
+                } catch (err) {
+                    console.error('Failed to submit inferior flag to e621:', err);
+                }
+                */
+            }
         };
     });
 });

@@ -125,10 +125,160 @@
                                         </div>
                                     </template>
 
-                                </div>
-
-                                <!-- Middle Section: Diff UI (Tags, Description, Sources) -->
+                                </div>                                <!-- Middle Section: Diff UI (Parent/Pools, Tags, Description, Sources) -->
                                 <div class="flex-1 w-full flex flex-col gap-3 text-xs">
+
+                                    <!-- Parent Post & Pools Line (Positioned ABOVE Tags section, no enclosing box container) -->
+                                    <div class="flex flex-wrap items-center gap-4 text-xs font-mono">
+                                        <!-- Left: Parent Column (Fixed w-56 width to accommodate 8-digit post IDs & action buttons without shift) -->
+                                        <div class="w-56 shrink-0 flex items-center gap-1.5 min-h-[24px]">
+                                            <span class="text-gray-400 font-semibold font-sans">Parent:</span>
+
+                                            <!-- Kept Post Parent Controls -->
+                                            <template x-if="isCanonical(graph, postId)">
+                                                <div class="flex items-center gap-1.5">
+                                                    <!-- Active Parent (Original or Modified) -->
+                                                    <template x-if="post.parent_id">
+                                                        <div class="flex items-center gap-1 h-6">
+                                                            <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
+                                                                :class="post.parent_id === post.original?.parent_id ? 'bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border-gray-700' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
+                                                                class="border px-1.5 py-0.5 rounded text-[11px] font-mono transition">
+                                                                <span x-text="post.parent_id === post.original?.parent_id ? '' : '+ '"></span>#<span x-text="post.parent_id"></span>
+                                                            </a>
+
+                                                            <button @click="removeHeadParent(graph)"
+                                                                title="Remove parent from kept post"
+                                                                class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
+                                                                ✕
+                                                            </button>
+
+                                                            <!-- Reset button if replacing an existing original parent -->
+                                                            <template x-if="post.original?.parent_id && post.parent_id !== post.original.parent_id">
+                                                                <button @click="resetHeadParent(graph)"
+                                                                    title="Reset to original parent"
+                                                                    class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                                    ↺ Reset
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Removed Original Parent (Red Strikethrough & Reset outside the box) -->
+                                                    <template x-if="!post.parent_id && post.original?.parent_id">
+                                                        <div class="flex items-center gap-1.5 h-6">
+                                                            <span class="line-through text-red-300 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 text-[11px] font-mono">#<span x-text="post.original.parent_id"></span></span>
+                                                            <button @click="resetHeadParent(graph)"
+                                                                title="Restore original parent"
+                                                                class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                                ↺ Reset
+                                                            </button>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- No Parent Fallback (when original was null and none added) -->
+                                                    <template x-if="!post.parent_id && !post.original?.parent_id">
+                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- Inferior Post Parent Display -->
+                                            <template x-if="!isCanonical(graph, postId) && graph.head">
+                                                <div class="flex items-center gap-1.5">
+                                                    <template x-if="!post.parent_id">
+                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                    </template>
+                                                    <template x-if="post.parent_id">
+                                                        <div class="h-6 flex items-center">
+                                                            <!-- Already in kept post: plain text, no controls -->
+                                                            <template x-if="headHasParent(graph, post.parent_id)">
+                                                                <span class="text-gray-400 font-mono text-[11px]">#<span x-text="post.parent_id"></span></span>
+                                                            </template>
+                                                            <!-- Not in kept post: + #<id> button -->
+                                                            <template x-if="!headHasParent(graph, post.parent_id)">
+                                                                <button @click="copyParentToHead(graph, post.parent_id)"
+                                                                    title="Click to copy parent to kept post"
+                                                                    class="bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 text-[11px] px-1.5 py-0.5 rounded transition font-mono cursor-pointer">
+                                                                    + #<span x-text="post.parent_id"></span>
+                                                                </button>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <!-- Right: Pools Column (Fixed distance from Parent, height locked for 0 micro-shifts) -->
+                                        <div class="flex items-center gap-1.5 min-w-0 min-h-[24px]">
+                                            <span class="text-gray-400 font-semibold font-sans">Pools:</span>
+
+                                            <!-- Kept Post Pools Display -->
+                                            <template x-if="isCanonical(graph, postId)">
+                                                <div class="flex items-center gap-1">
+                                                    <!-- No pools fallback -->
+                                                    <template x-if="(!post.pool_ids || post.pool_ids.length === 0) && (!post._removedPools || post._removedPools.length === 0)">
+                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                    </template>
+
+                                                    <!-- Active Pools on Kept Post -->
+                                                    <template x-if="post.pool_ids && post.pool_ids.length > 0">
+                                                        <div class="flex flex-wrap items-center gap-1">
+                                                            <template x-for="poolId in post.pool_ids" :key="poolId">
+                                                                <div class="flex items-center gap-1 h-6">
+                                                                    <!-- Original pool (standard blue badge) vs Moved-over pool (green badge) -->
+                                                                    <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
+                                                                        :class="post.original?.pool_ids?.includes(poolId) ? 'bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border-gray-800' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
+                                                                        class="border text-[11px] px-1.5 py-0.5 rounded transition">
+                                                                        <span x-text="post.original?.pool_ids?.includes(poolId) ? '' : '+ '"></span>Pool #<span x-text="poolId"></span>
+                                                                    </a>
+
+                                                                    <button @click="removePoolFromHead(graph, poolId)"
+                                                                        title="Remove pool from kept post"
+                                                                        class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+
+                                                    <!-- Removed Original Pools on Kept Post (Red Strikethrough & Restore +) -->
+                                                    <template x-if="post._removedPools && post._removedPools.length > 0">
+                                                        <div class="flex flex-wrap items-center gap-1">
+                                                            <template x-for="poolId in post._removedPools" :key="'removed_pool:' + poolId">
+                                                                <div class="flex items-center gap-1 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 h-6">
+                                                                    <span class="line-through text-red-300 text-[11px]">Pool #<span x-text="poolId"></span></span>
+                                                                    <button @click="restorePoolToHead(graph, poolId)"
+                                                                        title="Restore pool to kept post"
+                                                                        class="text-emerald-400 hover:text-emerald-300 font-bold px-1 text-[10px]">
+                                                                        +
+                                                                    </button>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- Inferior Post Pools Display (Disappears without a trace when moved) -->
+                                            <template x-if="!isCanonical(graph, postId) && graph.head">
+                                                <div class="flex flex-wrap items-center gap-1">
+                                                    <template x-if="getAvailableInferiorPools(graph, post).length === 0">
+                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                    </template>
+                                                    <template x-for="poolId in getAvailableInferiorPools(graph, post)" :key="poolId">
+                                                        <div class="h-6 flex items-center">
+                                                            <button @click="copyPoolToHead(graph, poolId)"
+                                                                title="Click to move pool to kept post"
+                                                                class="bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 text-[11px] px-1.5 py-0.5 rounded transition font-mono whitespace-nowrap cursor-pointer">
+                                                                ↑ Pool #<span x-text="poolId"></span>
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
 
                                     <!-- Keep / Parent / Edit Diff View -->
                                     <template
@@ -144,27 +294,16 @@
                                                         <span
                                                             class="px-1.5 py-0.5 rounded text-[11px] transition-colors"
                                                             :style="$store.tags?.getTagStyle(tag.category)" :class="{
-                                                                  'bg-green-950/80 border border-green-700/60': getAddedTags(post).includes(tag.name),
-                                                                  'bg-red-950/60 line-through border border-red-900/60 opacity-70': getRemovedTags(post).includes(tag.name),
-                                                                  'bg-gray-800/90': !getAddedTags(post).includes(tag.name) && !getRemovedTags(post).includes(tag.name)
-                                                              }">
+                                                                   'bg-green-950/80 border border-green-700/60': getAddedTags(post).includes(tag.name),
+                                                                   'bg-red-950/60 line-through border border-red-900/60 opacity-70': getRemovedTags(post).includes(tag.name),
+                                                                   'bg-gray-800/90': !getAddedTags(post).includes(tag.name) && !getRemovedTags(post).includes(tag.name)
+                                                               }">
                                                             <span
                                                                 x-text="getAddedTags(post).includes(tag.name) ? `+ ${tag.name}` : tag.name"></span>
                                                         </span>
                                                     </template>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </template>
-
-                                    <!-- Flag Input View (Duplicate Non-Canonical Posts) -->
-                                    <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
-                                        <div class="space-y-2">
-                                            <label class="text-xs text-gray-400 font-semibold block">Flag Note
-                                                (optional):</label>
-                                            <textarea x-model="post.flag_note"
-                                                placeholder="Reason for flagging duplicate..." rows="2"
-                                                class="w-full bg-gray-950 border border-amber-900/60 rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500"></textarea>
                                         </div>
                                     </template>
 
@@ -193,7 +332,7 @@
                                         </div>
 
                                         <div class="p-2 rounded border text-xs max-h-20 overflow-y-auto"
-                                            :class="isDescriptionEdited(post) ? 'bg-amber-950/30 border-amber-800/60 text-amber-200' : 'bg-gray-950 border-gray-800 text-gray-400'">
+                                            :class="isDescriptionEdited(post) ? 'bg-green-950/40 border-green-800/60 text-green-200' : 'bg-gray-950 border-gray-800 text-gray-400'">
                                             <p x-text="post.description || '(No description)'"
                                                 class="whitespace-pre-wrap break-words"></p>
                                         </div>
@@ -231,15 +370,9 @@
                                                         </button>
                                                     </template>
 
-                                                    <!-- Flagged Post: Copy Source Button or Status (Fixed Width Container prevents layout shift) -->
+                                                    <!-- Flagged Post: Copy Source Button or Plain (No button/badge if already in kept post) -->
                                                     <template x-if="!isCanonical(graph, postId) && graph.head">
                                                         <div class="w-24 shrink-0 flex items-center justify-end">
-                                                            <template x-if="headHasSource(graph, src)">
-                                                                <span
-                                                                    class="text-[10px] text-emerald-400/90 font-mono px-1.5 py-0.5 rounded border border-emerald-900/40 bg-emerald-950/30 whitespace-nowrap block text-center w-full select-none">
-                                                                    (In kept post)
-                                                                </span>
-                                                            </template>
                                                             <template x-if="!headHasSource(graph, src)">
                                                                 <button @click="addSourceToHead(graph, src)"
                                                                     class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 rounded px-1.5 py-0.5 transition font-mono whitespace-nowrap block text-center w-full">
