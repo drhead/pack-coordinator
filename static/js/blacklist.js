@@ -41,7 +41,7 @@ const RATING_ORDER = { s: 1, q: 2, e: 3 };
 export function normalizeRating(r) {
     if (!r) return 's';
     const clean = String(r).toLowerCase().trim();
-    return RATING_MAP[clean] || clean;
+    return RATING_MAP[clean];
 }
 
 export class TermMatcher {
@@ -310,19 +310,22 @@ export class BlacklistManager {
      * @param {Batch[]} [batches] Array of batches to re-evaluate
      * @param {boolean} [silent=false]
      */
-    async saveBlacklist(batches = [], silent = false) {
+    async saveBlacklist(batches = null, silent = false) {
         localStorage.setItem('e621_blacklist', this.blacklistText || '');
         this.showBlacklistModal = false;
 
         const evaluator = this.getEvaluator();
 
-        if (Array.isArray(batches)) {
-            for (const batch of batches) {
-                if (!batch.clusters) continue;
-                for (const cluster of batch.clusters) {
-                    applyBlacklistToCluster(cluster, evaluator);
-                    cluster.collapsed = cluster.is_resolved || cluster.is_blacklisted;
-                }
+        /** @type {Batch[]} */
+        const targetBatches = (Array.isArray(batches) && batches.length > 0)
+            ? batches
+            : (/** @type {import('./batches.js').BatchManager|undefined} */ (Alpine.store('batches'))?.batches || []);
+
+        for (const batch of targetBatches) {
+            if (!batch.clusters) continue;
+            for (const cluster of batch.clusters) {
+                applyBlacklistToCluster(cluster, evaluator);
+                cluster.collapsed = cluster.is_resolved || cluster.is_blacklisted;
             }
         }
 
@@ -335,7 +338,7 @@ export class BlacklistManager {
      * Imports blacklisted tags from the logged-in user's e621 account profile.
      * @param {Batch[]} [batches] Optional array of batches to re-evaluate after import
      */
-    async importBlacklist(batches = []) {
+    async importBlacklist(batches = null) {
         if (!getE621User()) {
             showToast('You must be logged in to import your e621 blacklist.', 'warning');
             return;
