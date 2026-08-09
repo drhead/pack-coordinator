@@ -1,0 +1,83 @@
+<style>
+@keyframes warningResolveCollapseSoftware {
+    0% {
+        max-height: 120px;
+        margin-bottom: 0.5rem;
+    }
+    75% {
+        max-height: 120px;
+        margin-bottom: 0.5rem;
+    }
+    100% {
+        max-height: 0px;
+        margin-bottom: 0rem;
+    }
+}
+.animate-warning-resolve {
+    animation: warningResolveCollapseSoftware 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    overflow: hidden;
+}
+</style>
+
+<!-- Reusable Warning Stack Component -->
+<template x-if="warnings && scopeId !== undefined && scopeId !== null && warnings.hasActiveWarnings(scopeId, $data)">
+    <div class="w-full">
+        <template x-for="w in warnings.getActiveWarnings(scopeId, $data)" :key="w.id">
+            <div class="transition-all overflow-hidden"
+                 :class="w.isResolved ? 'animate-warning-resolve' : 'max-h-36 mb-2'">
+                <div>
+                    <div class="rounded-md px-3.5 py-2.5 text-xs flex items-center justify-between gap-3 shadow-sm border transition-colors duration-150"
+                         :class="{
+                             'bg-emerald-950/80 border-emerald-800/80 text-emerald-200 ring-1 ring-emerald-500/50 shadow-md': w.isResolved,
+                             'bg-red-950/70 border-red-800/80 text-red-200': !w.isResolved && !w.isDismissed && w.type === 'hard',
+                             'bg-amber-950/70 border-amber-800/80 text-amber-200': !w.isResolved && !w.isDismissed && w.type === 'soft',
+                             'bg-blue-950/40 border-blue-900/60 text-blue-200/90': !w.isResolved && !w.isDismissed && w.type === 'info',
+                             'bg-gray-900/60 border-gray-800/80 text-gray-400/80': !w.isResolved && w.isDismissed
+                         }">
+                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span class="text-base shrink-0" x-text="w.isResolved ? '✓' : w.icon"></span>
+                            <div class="space-y-0.5 min-w-0">
+                                <div class="font-bold flex items-center gap-2">
+                                    <span x-text="w.title"></span>
+                                    
+                                    <!-- Badges -->
+                                    <template x-if="w.isResolved">
+                                        <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-900 text-emerald-200">RESOLVED</span>
+                                    </template>
+
+                                    <template x-if="!w.isResolved && !w.isDismissed && w.type === 'hard'">
+                                        <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-red-900 text-red-200">ACTION REQUIRED</span>
+                                    </template>
+
+                                    <template x-if="!w.isResolved && w.isDismissed">
+                                        <span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-gray-800 text-gray-400">DISMISSED</span>
+                                    </template>
+                                </div>
+                                <div class="text-[11px] leading-snug break-words" x-html="typeof w.message === 'function' ? w.message($data) : w.message"></div>
+                            </div>
+                        </div>
+
+                        <!-- Action Controls -->
+                        <div class="flex items-center gap-2 shrink-0">
+                            <!-- Optional Auto-Fix Button (supported by framework) -->
+                            <template x-if="!w.isResolved && !w.isDismissed && w.actionLabel && w.actionHandler">
+                                <button @click="w.actionHandler($data)"
+                                        class="px-2.5 py-1 rounded text-xs font-semibold bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-700/80 transition cursor-pointer">
+                                    <span x-text="w.actionLabel"></span>
+                                </button>
+                            </template>
+
+                            <!-- Manual Dismiss Button for Soft Warnings -->
+                            <template x-if="!w.isResolved && w.type === 'soft' && !w.isDismissed">
+                                <button @click="warnings.dismiss(scopeId, w.id)"
+                                        class="px-2.5 py-1 rounded text-xs font-semibold bg-amber-900/80 hover:bg-amber-800 text-amber-200 border border-amber-700/80 transition cursor-pointer">
+                                    Dismiss
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

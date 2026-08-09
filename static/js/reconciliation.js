@@ -7,6 +7,7 @@ import { tagManager } from './tags.js';
 import { ResolutionPost } from './resolution.js';
 import { alpineHelpers } from './alpine_helpers.js';
 import { openImageModal } from './image_modal.js';
+import { WarningsManager } from './warnings.js';
 
 /**
  * @typedef {Object} RootData
@@ -29,6 +30,29 @@ export function ReconciliationManager(manager) {
 
         /** @type {ResolutionManagerComponent} */
         resolutionManager: manager,
+
+        warnings: new WarningsManager(),
+
+        initWarnings() {
+            this.warnings.registerRules([
+                {
+                    id: 'rating-mismatch',
+                    type: 'hard',
+                    icon: '⚠️',
+                    title: 'Rating Conflict Detected',
+                    message: 'Rating conflict detected between posts in this duplicate graph. Please select an appropriate rating for the post using the selector below to advance.',
+                    check: (ctx) => ctx.hasRatingConflict
+                },
+                {
+                    id: 'artist-mismatch',
+                    type: 'soft',
+                    icon: '🎨',
+                    title: 'Artist Tag Mismatch',
+                    message: 'Artist tags between posts in this duplicate cluster do not match. Please verify the true artist, and file a <a href="https://e621.net/tag_alias_request/new" target="_blank" rel="noopener noreferrer" class="text-amber-200 underline hover:text-white font-bold">tag alias request</a> if appropriate.',
+                    check: (ctx) => ctx.hasArtistMismatch
+                }
+            ]);
+        },
 
         activeGraphIndex: 0,
         activeRhsIndex: 0,
@@ -352,6 +376,7 @@ export function ReconciliationManager(manager) {
             globalActiveReconciliation = this;
             this.isLoading = true;
             this.isSummary = false;
+            this.initWarnings();
 
             try {
                 if (this.duplicateGraphs.length === 0) {
@@ -473,7 +498,7 @@ export function ReconciliationManager(manager) {
          * @param {RootData} rootData
          */
         advance(rootData) {
-            if (this.hasRatingConflict) return;
+            if (this.warnings.isBlocked(this.activeGraphIndex, this)) return;
 
             if (this.activeRhsIndex < this.rhsPostIds.length - 1) {
                 this.activeRhsIndex++;

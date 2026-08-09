@@ -125,63 +125,28 @@
             <div
                 class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
 
-                <!-- Warnings / Instructions Center View -->
-                <div class="text-xs font-medium flex-1 w-full">
-
-                    <!-- Blocking Rating Conflict Warning -->
-                    <template x-if="hasRatingConflict">
-                        <div
-                            class="flex items-center gap-2 text-red-400 font-semibold bg-red-950/50 border border-red-800/60 rounded px-3 py-1.5">
-                            <span class="text-sm">⚠️</span>
-                            <span>Rating conflict detected between posts in this duplicate graph. Please select an
-                                appropriate rating for the post using the selector below to advance.</span>
-                        </div>
-                    </template>
-
-                    <!-- Soft Artist Tag Mismatch Warning (Non-blocking, Dismissible) -->
-                    <template x-if="!hasRatingConflict && hasArtistMismatch && !isArtistWarningDismissed">
-                        <div
-                            class="flex items-center justify-between gap-2 text-amber-300 font-medium bg-amber-950/50 border border-amber-800/60 rounded px-3 py-1.5">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm">🎨</span>
-                                <span>
-                                    Artist tags between posts in this duplicate cluster do not match. Please try to
-                                    verify the true artist, and file a
-                                    <a href="https://e621.net/tag_alias_request/new" target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="text-amber-200 underline hover:text-white font-bold">tag alias
-                                        request</a>
-                                    if appropriate.
-                                </span>
-                            </div>
-                            <button @click="dismissArtistWarning()"
-                                class="text-xs font-bold text-amber-300 hover:text-amber-100 bg-amber-900/70 hover:bg-amber-800 border border-amber-700/60 px-2.5 py-0.5 rounded transition shrink-0">
-                                Dismiss
-                            </button>
-                        </div>
-                    </template>
-
-                    <!-- Default Instruction Text -->
-                    <template x-if="!hasRatingConflict && (!hasArtistMismatch || isArtistWarningDismissed)">
-                        <div class="text-gray-300 text-center md:text-left">
-                            <span>Review tag transfers below, then advance to proceed.</span>
-                        </div>
-                    </template>
-
+                <!-- Instructions Center View -->
+                <div class="text-gray-300 text-center md:text-left text-xs font-medium flex-1 w-full">
+                    <span>Review tag transfers below, then advance to proceed.</span>
                 </div>
 
                 <!-- Navigation Action Button -->
                 <div class="flex items-center justify-end shrink-0">
                     <button @click="advance($data)"
-                        :disabled="hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)"
+                        :disabled="warnings && warnings.isBlocked(activeGraphIndex, $data)"
                         class="text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2"
-                        :class="(hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)) 
+                        :class="(warnings && warnings.isBlocked(activeGraphIndex, $data)) 
                                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60' 
                                 : 'bg-blue-600 hover:bg-blue-500 text-white'">
                         <span x-text="nextButtonLabel"></span>
                         <span>→</span>
                     </button>
                 </div>
+            </div>
+
+            <!-- Warnings Stack Container (Positioned below top nav bar) -->
+            <div x-data="{ scopeId: activeGraphIndex }" class="w-full">
+                <load src="/templates/components/warning-banner.html" />
             </div>
         </div>
     </template>

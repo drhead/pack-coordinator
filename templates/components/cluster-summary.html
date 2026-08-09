@@ -19,14 +19,9 @@
                 <span class="text-xs text-gray-500" x-text="`${graph.posts.size} post(s)`"></span>
             </div>
 
-            <!-- User Action Instructions Banner -->
-            <div
-                class="bg-blue-950/30 border border-blue-900/40 rounded-md p-2.5 text-xs text-blue-200/90 flex items-center gap-2">
-                <span class="text-blue-400 text-sm shrink-0">💡</span>
-                <div>
-                    Review proposed changes below, copy over descriptions or sources to the kept post if needed, then
-                    click the action buttons to finalize.
-                </div>
+            <!-- Soft/Hard/Info Warning Stack for Graph Scope -->
+            <div x-data="{ scopeId: graphIdx, graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) }">
+                <load src="/templates/components/warning-banner.html" />
             </div>
 
             <!-- Table-like Container for Graph Rows -->
@@ -262,7 +257,11 @@
                                     <template
                                         x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
                                         <button @click="applyChanges(postId)"
-                                            class="w-full md:w-28 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
+                                            :disabled="warnings && warnings.isBlocked(graphIdx, { graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) })"
+                                            class="w-full md:w-28 font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1"
+                                            :class="(warnings && warnings.isBlocked(graphIdx, { graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) }))
+                                                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60'
+                                                    : 'bg-blue-600 hover:bg-blue-500 text-white'">
                                             <span style="font-variant-emoji: text;">✓</span>
                                             <span>Apply</span>
                                         </button>

@@ -1,3 +1,5 @@
+import { WarningsManager } from './warnings.js';
+
 document.addEventListener('alpine:init', () => {
     if (!window.Alpine) return;
 
@@ -12,16 +14,87 @@ document.addEventListener('alpine:init', () => {
         const manager = (arg && Array.isArray(arg.graphs)) ? arg : (arg && arg.resMgr) ? arg.resMgr : arg;
         return {
             resMgr: /** @type {ResolutionManagerComponent} */ (manager),
+            warnings: new WarningsManager(),
 
-        /**
-         * Checks if a post is the canonical/head post for the graph
-         * @param {ResolutionGraph} graph
-         * @param {number} postId
-         * @returns {boolean}
-         */
-        isCanonical(graph, postId) {
-            return graph?.head === postId;
-        },
+            init() {
+                this.warnings.registerRules([
+                    {
+                        id: 'review-summary',
+                        type: 'info',
+                        icon: '💡',
+                        title: 'Summary Instructions',
+                        message: 'Review proposed changes below, copy over descriptions or sources to the kept post if needed, then click the action buttons to finalize.',
+                        check: () => true
+                    },
+                    {
+                        id: 'uncopied-metadata',
+                        type: 'soft',
+                        icon: '💡',
+                        title: 'Uncopied Metadata Available',
+                        message: (ctx) => {
+                            const details = ctx.getUncopiedMetadataDetails(ctx.graph);
+                            const headId = ctx.graph?.head;
+                            return `Other posts in this graph contain metadata (${details.join(', ')}) that could be copied over to kept post #${headId}.`;
+                        },
+                        check: (ctx) => ctx.hasUncopiedMetadata(ctx.graph)
+                    }
+                ]);
+            },
+
+            getUncopiedMetadataDetails(graph) {
+                if (!graph || !graph.head) return [];
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost) return [];
+
+                const otherPosts = Array.from(graph.posts)
+                    .filter(id => id !== graph.head)
+                    .map(id => this.resMgr.getPost(id))
+                    .filter(Boolean);
+
+                const details = [];
+
+                // Description
+                const hasDesc = otherPosts.some(p => p.description && p.description.trim().length > 0);
+                if (hasDesc && (!headPost.description || !headPost.description.trim().length)) {
+                    details.push('Description');
+                }
+
+                // Sources
+                const headSources = new Set(headPost.sources || []);
+                const hasNewSources = otherPosts.some(p => (p.sources || []).some(s => !headSources.has(s)));
+                if (hasNewSources) {
+                    details.push('Sources');
+                }
+
+                // Pools
+                const headPools = new Set(headPost.original?.pool_ids || []);
+                const hasNewPools = otherPosts.some(p => (p.original?.pool_ids || []).some(id => !headPools.has(id)));
+                if (hasNewPools) {
+                    details.push('Pools');
+                }
+
+                // Parent
+                const hasParent = otherPosts.some(p => p.original?.parent_id && !headPost.original?.parent_id);
+                if (hasParent) {
+                    details.push('Parent Post');
+                }
+
+                return details;
+            },
+
+            hasUncopiedMetadata(graph) {
+                return this.getUncopiedMetadataDetails(graph).length > 0;
+            },
+
+            /**
+             * Checks if a post is the canonical/head post for the graph
+             * @param {ResolutionGraph} graph
+             * @param {number} postId
+             * @returns {boolean}
+             */
+            isCanonical(graph, postId) {
+                return graph?.head === postId;
+            },
 
         /**
          * Copies description from a source post to the graph's head post
