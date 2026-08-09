@@ -1,89 +1,90 @@
-<div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm">
-    
-    <!-- Post Header Line -->
-    <div class="flex items-center justify-between">
-        
-        <!-- Left Details: Rating, Post ID & Parent ID -->
-        <div class="flex items-center space-x-2">
-            <!-- Rating Badge -->
-            <template x-if="post.rating">
-                <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono"
-                      :class="$store.tags.getRatingBadgeClass(post.rating)"
-                      x-text="$store.tags.getRatingLabel(post.rating)"></span>
-            </template>
+<div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm flex flex-col h-full justify-between">
+    <div class="space-y-3 flex-1 flex flex-col">
+        <!-- Post Header Line -->
+        <div class="flex items-center justify-between">
+            
+            <!-- Left Details: Rating, Post ID & Parent ID -->
+            <div class="flex items-center space-x-2">
+                <!-- Rating Badge -->
+                <template x-if="post.rating">
+                    <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono"
+                          :class="$store.tags.getRatingBadgeClass(post.rating)"
+                          x-text="$store.tags.getRatingLabel(post.rating)"></span>
+                </template>
 
-            <!-- Main Post External Link -->
-            <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
-            class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
-                <span x-text="`#${post.post_id}`"></span>
-                <span class="text-gray-600 text-xs">&nearr;</span>
-            </a>
-
-            <!-- Parent Badge -->
-            <template x-if="post.parent_id">
-                <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
-                class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
-                    Parent #<span x-text="post.parent_id"></span>
+                <!-- Main Post External Link -->
+                <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
+                class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
+                    <span x-text="`#${post.post_id}`"></span>
+                    <span class="text-gray-600 text-xs">&nearr;</span>
                 </a>
-            </template>
 
-            <!-- Pools Badges -->
-            <template x-if="post.pool_ids && post.pool_ids.length > 0">
-                <div class="flex items-center space-x-1 font-mono">
-                    <template x-for="poolId in post.pool_ids" :key="poolId">
-                        <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
-                        class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
-                            Pool #<span x-text="poolId"></span>
-                        </a>
-                    </template>
-                </div>
-            </template>
-        </div>
+                <!-- Parent Badge -->
+                <template x-if="post.parent_id">
+                    <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
+                    class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
+                        Parent #<span x-text="post.parent_id"></span>
+                    </a>
+                </template>
 
-        <!-- Right Details: Dimensions, Quality, Deleted/Flagged Status -->
-        <div class="flex items-center space-x-2">
-            <!-- Flag Status Indicators -->
-            <template x-if="post.is_deleted">
-                <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
-            </template>
-            <template x-if="!post.is_deleted && post.is_flagged">
-                <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
-            </template>
+                <!-- Pools Badges -->
+                <template x-if="post.pool_ids && post.pool_ids.length > 0">
+                    <div class="flex items-center space-x-1 font-mono">
+                        <template x-for="poolId in post.pool_ids" :key="poolId">
+                            <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
+                            class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
+                                Pool #<span x-text="poolId"></span>
+                            </a>
+                        </template>
+                    </div>
+                </template>
+            </div>
 
-            <!-- Dimensions & Format Info Label -->
-            <span class="font-mono text-[11px]"
-                :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
-                x-text="image.formatSpecs(post)">
-            </span>
-        </div>
-    </div>
+            <!-- Right Details: Dimensions, Quality, Deleted/Flagged Status -->
+            <div class="flex items-center space-x-2">
+                <!-- Flag Status Indicators -->
+                <template x-if="post.is_deleted">
+                    <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
+                </template>
+                <template x-if="!post.is_deleted && post.is_flagged">
+                    <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
+                </template>
 
-    <!-- Post Tags Display Container -->
-    <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
-        <div class="flex items-center space-x-1.5">
-            <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider block">Post Tags</span>
-            <span class="text-gray-600 font-mono text-[10px] font-medium"
-                x-text="`(${(post.tags || []).length})`"></span>
-        </div>
-
-        <!-- Empty Tags Fallback -->
-        <template x-if="$store.tags.getSortedTags(post.tags, post).length === 0">
-            <span class="text-gray-500 italic text-[11px] block">No tags available</span>
-        </template>
-        
-        <!-- Categorized Tag Pills Cloud -->
-        <div class="flex flex-wrap gap-x-1 gap-y-1">
-            <template x-for="tag in $store.tags.getSortedTags(post.tags, post)" :key="tag.category + ':' + tag.name">
-                <span class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
-                    :class="tagpill.getTagClasses(tag, post, 'display', { hoveredImplicationData })"
-                    :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
-                    :title="tagpill.getTagTitle(tag.name)"
-                    @mouseenter="hoveredImplicationData = $store.tags.getImplicationChain(post.post_id, tag.name, post.tags)"
-                    @mouseleave="hoveredImplicationData = null">
-                    <span x-text="tag.name"></span>
-                    <span x-show="$store.tags.isImpliedTag(tag.name, post.tags)" class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none" title="Implied tag">i</span>
+                <!-- Dimensions & Format Info Label -->
+                <span class="font-mono text-[11px]"
+                    :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
+                    x-text="image.formatSpecs(post)">
                 </span>
+            </div>
+        </div>
+
+        <!-- Post Tags Display Container -->
+        <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5 flex-1 flex flex-col">
+            <div class="flex items-center space-x-1.5">
+                <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider block">Post Tags</span>
+                <span class="text-gray-600 font-mono text-[10px] font-medium"
+                    x-text="`(${(post.tags || []).length})`"></span>
+            </div>
+
+            <!-- Empty Tags Fallback -->
+            <template x-if="$store.tags.getSortedTags(post.tags, post).length === 0">
+                <span class="text-gray-500 italic text-[11px] block">No tags available</span>
             </template>
+            
+            <!-- Categorized Tag Pills Cloud -->
+            <div class="flex flex-wrap gap-x-1 gap-y-1 content-start">
+                <template x-for="tag in $store.tags.getSortedTags(post.tags, post)" :key="tag.category + ':' + tag.name">
+                    <span class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                        :class="tagpill.getTagClasses(tag, post, 'display', { hoveredImplicationData })"
+                        :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
+                        :title="tagpill.getTagTitle(tag.name)"
+                        @mouseenter="hoveredImplicationData = $store.tags.getImplicationChain(post.post_id, tag.name, post.tags)"
+                        @mouseleave="hoveredImplicationData = null">
+                        <span x-text="tag.name"></span>
+                        <span x-show="$store.tags.isImpliedTag(tag.name, post.tags)" class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none" title="Implied tag">i</span>
+                    </span>
+                </template>
+            </div>
         </div>
     </div>
 </div>
