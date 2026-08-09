@@ -185,18 +185,26 @@
 
                             <template x-if="lhsPost.parent_id">
                                 <a :href="`https://e621.net/posts/${lhsPost.parent_id}`" target="_blank"
-                                    class="font-mono text-[11px] text-gray-400 hover:text-blue-300 hover:underline">
-                                    (Parent: #<span x-text="lhsPost.parent_id"></span>)
+                                    class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
+                                    Parent #<span x-text="lhsPost.parent_id"></span>
                                 </a>
+                            </template>
+
+                            <!-- Pools Badges -->
+                            <template x-if="lhsPost.pool_ids && lhsPost.pool_ids.length > 0">
+                                <div class="flex items-center space-x-1 font-mono">
+                                    <template x-for="poolId in lhsPost.pool_ids" :key="poolId">
+                                        <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
+                                            class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
+                                            Pool #<span x-text="poolId"></span>
+                                        </a>
+                                    </template>
+                                </div>
                             </template>
                         </div>
 
+                        <!-- Right Details: Flag Status, Dimensions Info -->
                         <div class="flex items-center space-x-2">
-                            <span class="font-mono text-[11px]"
-                                :class="image.isUniform(cluster.posts, lhsPost) ? 'text-gray-600' : 'text-gray-400'"
-                                x-text="image.formatSpecs(lhsPost)">
-                            </span>
-
                             <template x-if="lhsPost.is_deleted">
                                 <span
                                     class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
@@ -205,21 +213,13 @@
                                 <span
                                     class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                             </template>
+
+                            <span class="font-mono text-[11px]"
+                                :class="image.isUniform(cluster.posts, lhsPost) ? 'text-gray-600' : 'text-gray-400'"
+                                x-text="image.formatSpecs(lhsPost)">
+                            </span>
                         </div>
                     </div>
-
-                    <!-- Post Pools List -->
-                    <template x-if="lhsPost.pool_ids && lhsPost.pool_ids.length > 0">
-                        <div class="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider">Pools:</span>
-                            <template x-for="poolId in lhsPost.pool_ids" :key="poolId">
-                                <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
-                                    class="bg-gray-900 hover:bg-gray-800 text-blue-300 border border-gray-800 text-[10px] px-1.5 py-0.5 rounded font-mono transition">
-                                    Pool #<span x-text="poolId"></span>
-                                </a>
-                            </template>
-                        </div>
-                    </template>
 
                     <!-- Interactive LHS Tag Cloud & Controls (Unified Tag Pillbox Container) -->
                     <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-2.5 flex-1 flex flex-col justify-between">
@@ -375,18 +375,26 @@
 
                                 <template x-if="post.parent_id">
                                     <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
-                                        class="font-mono text-[11px] text-gray-400 hover:text-blue-300 hover:underline">
-                                        (Parent: #<span x-text="post.parent_id"></span>)
+                                        class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
+                                        Parent #<span x-text="post.parent_id"></span>
                                     </a>
+                                </template>
+
+                                <!-- Pools Badges -->
+                                <template x-if="post.pool_ids && post.pool_ids.length > 0">
+                                    <div class="flex items-center space-x-1 font-mono">
+                                        <template x-for="poolId in post.pool_ids" :key="poolId">
+                                            <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
+                                                class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
+                                                Pool #<span x-text="poolId"></span>
+                                            </a>
+                                        </template>
+                                    </div>
                                 </template>
                             </div>
 
+                            <!-- Right Details: Flag Status, Dimensions Info -->
                             <div class="flex items-center space-x-2">
-                                <span class="font-mono text-[11px]"
-                                    :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
-                                    x-text="image.formatSpecs(post)">
-                                </span>
-
                                 <template x-if="post.is_deleted">
                                     <span
                                         class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
@@ -395,21 +403,13 @@
                                     <span
                                         class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                                 </template>
+
+                                <span class="font-mono text-[11px]"
+                                    :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
+                                    x-text="image.formatSpecs(post)">
+                                </span>
                             </div>
                         </div>
-
-                        <!-- Post Pools List -->
-                        <template x-if="post.pool_ids && post.pool_ids.length > 0">
-                            <div class="flex flex-wrap items-center gap-1.5 pt-1">
-                                <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider">Pools:</span>
-                                <template x-for="poolId in post.pool_ids" :key="poolId">
-                                    <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
-                                        class="bg-gray-900 hover:bg-gray-800 text-blue-300 border border-gray-800 text-[10px] px-1.5 py-0.5 rounded font-mono transition">
-                                        Pool #<span x-text="poolId"></span>
-                                    </a>
-                                </template>
-                            </div>
-                        </template>
 
                         <!-- RHS Tag Cloud -->
                         <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5 flex-1 flex flex-col">
