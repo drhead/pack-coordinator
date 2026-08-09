@@ -16,77 +16,29 @@
         <div class="text-xs text-gray-300 space-y-4 leading-relaxed overflow-y-auto my-4 pr-1 flex-1">
 
             <!-- P1: What this site is -->
-            <p>Welcome to P.A.C.K. (Pairwise Analysis and Consolidation Kit)! This tool coordinates cleanup projects on
-                e621, specifically targeting duplicate uploads and unmarked post variants.</p>
-
-            <!-- Warning: Boilerplate NSFW warning -->
-            <div class="bg-red-950/50 border border-red-800/80 rounded p-2.5 text-red-200 text-xs">
-                <strong>Warning:</strong> This site links directly to explicit content. If you are under 18, leave now.
-                You are entirely responsible for what you choose to view.
-            </div>
-
-            <!-- P2: What this site is showing you -->
-            <p>Work is organized into <strong>projects</strong> built around specific search criteria. Each project
-                presents groups of related posts as <strong>clusters</strong> that likely need attention.</p>
-
-            <!-- P3: How you're supposed to do things -->
-            <div class="space-y-1.5">
-                <p>To work on a cluster, open the post links and make your edits directly on e621 using your account.
-                    Always defer to specific project guidelines when available, but general rules apply:</p>
-
-                <!-- List: Specific rules and mindset -->
-                <ul class="list-disc list-inside space-y-1 text-gray-400 pl-1">
-                    <!-- Item 1: Duplicates -->
-                    <li>Only the highest-quality version of an exact image should remain on the site. Lower-quality
-                        duplicates should be flagged.</li>
-                    <!-- Item 2: Variants -->
-                    <li>Distinct variants or related posts should be linked as parent/child or grouped into a pool.</li>
-                    <!-- Item 3: Context -->
-                    <li>Check surrounding context carefully. Quality and accuracy matter far more than speed.</li>
-                </ul>
-            </div>
-
-            <!-- P4: Batch claim system -->
-            <div class="space-y-1.5">
-                <h3 class="text-xs font-bold text-gray-200 font-mono">Claiming Batches</h3>
-                <p>Claiming a batch reserves it for one hour (limit one batch per user) so others know you are working
-                    on it. Claimed batches remain viewable by everyone. Batch sizes are kept small so you can
-                    comfortably finish without hitting e621 rate limits. When you finish, click <span
-                        class="text-gray-200 font-semibold">Release</span> so others know that you are done with the
-                    batch.</p>
-            </div>
-
-            <!-- P5: Data refresh and background sync -->
-            <div class="space-y-1.5">
-                <h3 class="text-xs font-bold text-gray-200 font-mono">Syncing Progress</h3>
-                <p>All post data automatically updates via periodic background syncs. If you want your recent edits
-                    (such as tags, ratings, or relationships) reflected immediately, click the <span
-                        class="text-gray-200 font-semibold">Refresh Batch</span> button, or simply release the batch
-                    when finished.</p>
-            </div>
-
-            <!-- P6, P7, & P8: Cluster tools, warnings, and blacklist -->
             <div class="space-y-2">
-                <h3 class="text-xs font-bold text-gray-200 font-mono">Cluster Tools & Blacklist</h3>
+                <p>Welcome to P.A.C.K. (Pairwise Analysis and Cleanup Kit)! This tool groups <strong class="text-gray-200">semantically similar posts</strong> on e621 so you can quickly fix relationships (like parent/child variants or pools), merge tags, and resolve duplicate uploads.</p>
+                <p>Work is organized into <strong class="text-gray-200">projects</strong> built around specific search criteria. Each project presents groups of related posts as <strong class="text-gray-200">clusters</strong> that need attention.</p>
+            </div>
 
-                <!-- P6: Tag cloud and Copy Merged Tags -->
-                <p>Cluster cards show fully expanded tag lists and ratings so you know what you are looking at
-                    beforehand. The <span class="text-gray-200 font-semibold">Copy Merged Tags</span> button will copy
-                    all tags present in the cluster (except different artist tags). You're encouraged to use this to add
-                    more valid tags to posts, but you should make sure they actually are valid before submitting on
-                    e621.</p>
+            <!-- P2: Getting Started & API Login -->
+            <div class="space-y-1.5 border-t border-gray-800/80 pt-3">
+                <h4 class="text-xs font-bold text-gray-200 font-mono">Getting Started & API Login</h4>
+                <p>Click <span class="text-gray-200 font-semibold">Start Comparison</span> on any cluster and P.A.C.K.'s interfaces will guide you step-by-step through reconciling metadata, merging tags, and flagging inferior duplicates.</p>
+                <p>To submit resolution actions and apply your changes to e621, log in with your username and API key using the <span class="text-gray-200 font-semibold">API Login</span> button in the header.</p>
+            </div>
 
-                <!-- P7: Discrepancy highlights (yellow boxes) -->
-                <p>Some discrepancies within a cluster are automatically pointed out, like mismatched artist tags or
-                    conflicting ratings on identical posts. Review these carefully, as resolving them may require
-                    updating tags or filing an alias request. The warning should be automatically cleared once it is
-                    resolved.</p>
+            <!-- P3: Claiming & Reviewing Batches -->
+            <div class="space-y-1.5 border-t border-gray-800/80 pt-3">
+                <h4 class="text-xs font-bold text-gray-200 font-mono">Claiming & Reviewing Batches</h4>
+                <p>Claiming a batch reserves it for 1 hour (limit one batch per user) so others know you're working on it. Claimed batches still remain viewable by everyone.</p>
+                <p>You don't have to finish every cluster in a batch. Skip anything you don't want to review, and click <span class="text-gray-200 font-semibold">Release Batch</span> whenever you're done so the remaining clusters are available for others.</p>
+            </div>
 
-                <!-- P8: Blacklist functionality -->
-                <p>You can manage your blacklist in the header. It defaults to e621's standard syntax and list,
-                    collapsing any clusters containing blacklisted content. Hovering over a <span
-                        class="bg-gray-800 text-gray-200 px-1 py-0.5 rounded font-mono text-[10px]">BLACKLISTED</span>
-                    badge reveals the exact rule that triggered it.</p>
+            <!-- P4: Syncing Progress -->
+            <div class="space-y-1.5 border-t border-gray-800/80 pt-3">
+                <h4 class="text-xs font-bold text-gray-200 font-mono">Syncing Progress</h4>
+                <p>Post data updates automatically in the background. If you want your recent edits (tags, ratings, or relationships) to show up immediately, click <span class="text-gray-200 font-semibold">Refresh Batch</span>, or release the batch when finished.</p>
             </div>
 
         </div>
