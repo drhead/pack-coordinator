@@ -38,6 +38,7 @@ class ClusterPost(msgspec.Struct, kw_only=True):
     post_id: int
     cluster_id: int
     rating: str = "s"
+    parent_id: int | None = None
     pool_ids: list[int] = msgspec.field(default_factory=list[int])
     tags: list[str] = msgspec.field(default_factory=list[str])
     is_flagged: bool = False
@@ -79,6 +80,7 @@ def parse_cluster_post(row: asyncpg.Record) -> ClusterPost:
         post_id=row["post_id"],
         cluster_id=row["cluster_id"],
         rating=row["rating"] or "s",
+        parent_id=row["parent_id"],
         pool_ids=row["pool_ids"] or [],
         tags=row["tags"] or [],
         is_flagged=bool(row["is_flagged"]),
