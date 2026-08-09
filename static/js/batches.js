@@ -11,7 +11,14 @@ import { showToast } from './toasts.js';
  * @returns {string}
  */
 export function getRemainingTimeString(nowTimestamp, isoDateStr) {
-    if (!isoDateStr) return '';
+    if (!isoDateStr) {
+        if (typeof nowTimestamp === 'string') {
+            isoDateStr = nowTimestamp;
+            nowTimestamp = Date.now();
+        } else {
+            return '';
+        }
+    }
     const expiry = new Date(isoDateStr).getTime();
     const diff = Math.max(0, Math.floor((expiry - nowTimestamp) / 1000));
 
@@ -238,8 +245,25 @@ export class BatchManager {
              */
             const syncBatchLeaseState = (batch) => {
                 const lease = activeLeasesMap.get(batch.batch_id);
-                batch.leased_until = lease ? lease.leased_until : null;
-                batch.is_leased_by_you = lease ? Boolean(lease.is_leased_by_you) : false;
+                if (lease) {
+                    batch.leased_until = lease.leased_until;
+                    batch.is_leased_by_you = Boolean(lease.is_leased_by_you);
+                    if (batch.status !== 'COMPLETE') {
+                        batch.status = 'CLAIMED';
+                    }
+                } else if (this.activeLease && this.activeLease.batch_id === batch.batch_id && this.activeLease.is_leased_by_you) {
+                    batch.leased_until = this.activeLease.leased_until;
+                    batch.is_leased_by_you = true;
+                    if (batch.status !== 'COMPLETE') {
+                        batch.status = 'CLAIMED';
+                    }
+                } else {
+                    batch.leased_until = null;
+                    batch.is_leased_by_you = false;
+                    if (batch.status === 'CLAIMED') {
+                        batch.status = 'AVAILABLE';
+                    }
+                }
             };
 
             // 3. Reconcile incoming batches into state
@@ -407,6 +431,7 @@ export class BatchManager {
      */
     canClaimActiveBatch() {
         if (!this.activeBatch) return false;
+        if (this.activeBatch.isClaiming) return false;
         if (this.activeBatch.status !== 'AVAILABLE') return false;
         if (this.activeLease) return false;
         return true;
@@ -418,8 +443,11 @@ export class BatchManager {
     async claimCurrentBatch() {
         if (!this.activeBatch || !this.activeProject) return;
 
+        const batch = this.activeBatch;
+        batch.isClaiming = true;
+
         try {
-            const res = await fetch(`/api/v1/batches/${this.activeBatch.batch_id}/claim`, { method: 'POST' });
+            const res = await fetch(`/api/v1/batches/${batch.batch_id}/claim`, { method: 'POST' });
             const data = await res.json();
 
             if (!res.ok) {
@@ -429,17 +457,23 @@ export class BatchManager {
 
             this.activeLease = {
                 batch_id: data.batch_id,
-                batch_number: this.activeBatch.batch_number,
+                batch_number: batch.batch_number,
                 project_id: this.activeProject.project_id,
                 leased_until: data.leased_until,
                 is_leased_by_you: true
             };
 
+            batch.status = 'CLAIMED';
+            batch.is_leased_by_you = true;
+            batch.leased_until = data.leased_until;
+
             await this.reloadBatches();
-            showToast(`Claimed Batch #${this.activeBatch.batch_number}`, 'success');
+            showToast(`Claimed Batch #${batch.batch_number}`, 'success');
         } catch (err) {
             console.error('[Leases] Error claiming batch:', err);
             showToast('Network error while claiming batch.', 'error');
+        } finally {
+            batch.isClaiming = false;
         }
     }
 
@@ -448,6 +482,9 @@ export class BatchManager {
      * @param {number} batchId
      */
     async revokeLease(batchId) {
+        const batch = this.batches.find(b => b.batch_id === batchId) || this.activeBatch;
+        if (batch) batch.isRevoking = true;
+
         try {
             const res = await fetch(`/api/v1/batches/${batchId}/revoke`, { method: 'POST' });
             const data = await res.json();
@@ -458,11 +495,19 @@ export class BatchManager {
             }
 
             this.activeLease = null;
+            if (batch) {
+                batch.status = 'AVAILABLE';
+                batch.is_leased_by_you = false;
+                batch.leased_until = null;
+            }
+
             await this.reloadBatches();
             showToast('Lease revoked.', 'info');
         } catch (err) {
             console.error('[Leases] Error revoking lease:', err);
             showToast('Network error while revoking lease.', 'error');
+        } finally {
+            if (batch) batch.isRevoking = false;
         }
     }
 

@@ -1,18 +1,21 @@
-<div class="border rounded-lg p-4 transition shadow-md" x-data="{ 
+<div class="border rounded-lg transition shadow-md overflow-hidden" x-data="{ 
          activeView: 'none', 
          hoveredImplicationData: null, 
          hoveredMergedData: null 
      }" :class="cluster.is_resolved ? 'bg-gray-900/60 border-gray-800/80 opacity-80' : 'bg-gray-900 border-gray-800'">
 
     <!-- Cluster Header Line (Collapsible Trigger) -->
-    <div class="flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none"
+    <div class="p-4 flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none hover:bg-gray-800/30 transition"
         @click="cluster.collapsed = !cluster.collapsed"
-        :class="cluster.collapsed ? 'mb-0' : 'mb-3 border-b border-gray-800/60 pb-2'">
+        :class="cluster.collapsed ? '' : 'border-b border-gray-800/60'">
 
         <!-- Left Indicators -->
         <div class="flex flex-wrap items-center gap-2">
-            <span class="text-gray-400 hover:text-white transition font-bold text-xs w-4"
-                x-text="cluster.collapsed ? '►' : '▼'"></span>
+            <svg class="w-4 h-4 text-gray-400 hover:text-white transition-transform duration-150 shrink-0"
+                :class="cluster.collapsed ? '' : 'rotate-90'"
+                viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
 
             <span class="font-mono text-xs text-gray-400 font-bold" x-text="`Cluster #${cluster.cluster_index}`"></span>
 
@@ -41,58 +44,61 @@
         </template>
     </div>
 
-    <!-- Cluster Workflow Container -->
+    <!-- Expanded Body Content -->
     <template x-if="!cluster.collapsed">
-        <div x-data="resolutionManager(cluster)" x-ref="resMgr" class="my-3 space-y-3">
+        <div class="p-4 pt-3 space-y-4">
+            <!-- Cluster Workflow Container -->
+            <div x-data="resolutionManager(cluster)" x-ref="resMgr" class="space-y-3">
 
-            <!-- Initial Action Triggers -->
-            <template x-if="$store.auth?.e621User && activeView === 'none'">
-                <div class="flex justify-center gap-3 py-2">
-                    <button @click="activeView = 'compare'"
-                        class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-md font-semibold transition flex items-center gap-2 shadow-md">
-                        <span style="font-variant-emoji: text;">🔍</span>
-                        <span>Start Comparison</span>
-                    </button>
-                </div>
-            </template>
+                <!-- Initial Action Triggers -->
+                <template x-if="$store.auth?.e621User && activeView === 'none'">
+                    <div class="flex justify-center gap-3 py-2">
+                        <button @click="activeView = 'compare'"
+                            class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-md font-semibold transition flex items-center gap-2 shadow-md cursor-pointer">
+                            <span style="font-variant-emoji: text;">🔍</span>
+                            <span>Start Comparison</span>
+                        </button>
+                    </div>
+                </template>
 
-            <!-- Screen 1: Comparison View Scope -->
-            <template x-if="activeView === 'compare'">
-                <div x-data="ComparisonManager($data)" x-init="startComparison()">
-                    <template x-if="isActive">
-                        <div class="space-y-3">
-                            <load src="/templates/components/cluster-comparison.html" />
-                        </div>
+                <!-- Screen 1: Comparison View Scope -->
+                <template x-if="activeView === 'compare'">
+                    <div x-data="ComparisonManager($data)" x-init="startComparison()">
+                        <template x-if="isActive">
+                            <div class="space-y-3">
+                                <load src="/templates/components/cluster-comparison.html" />
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Screen 2: Tag Reconciliation View Scope -->
+                <template x-if="activeView === 'reconcile'">
+                    <div x-data="ReconciliationManager($data)" x-init="startReconciliation()">
+                        <template x-if="isActive">
+                            <div class="space-y-3">
+                                <load src="/templates/components/cluster-reconciliation.html" />
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Screen 3: Summary View Scope -->
+                <template x-if="activeView === 'summary'">
+                    <div class="space-y-3">
+                        <load src="/templates/components/cluster-summary.html" />
+                    </div>
+                </template>
+
+            </div>
+
+            <!-- Posts Grid inside Cluster -->
+            <template x-if="activeView === 'none'">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <template x-for="post in cluster.posts" :key="post.post_id">
+                        <load src="/templates/components/post-card.html" />
                     </template>
                 </div>
-            </template>
-
-            <!-- Screen 2: Tag Reconciliation View Scope -->
-            <template x-if="activeView === 'reconcile'">
-                <div x-data="ReconciliationManager($data)" x-init="startReconciliation()">
-                    <template x-if="isActive">
-                        <div class="space-y-3">
-                            <load src="/templates/components/cluster-reconciliation.html" />
-                        </div>
-                    </template>
-                </div>
-            </template>
-
-            <!-- Screen 3: Summary View Scope -->
-            <template x-if="activeView === 'summary'">
-                <div class="space-y-3">
-                    <load src="/templates/components/cluster-summary.html" />
-                </div>
-            </template>
-
-        </div>
-    </template>
-
-    <!-- Posts Grid inside Cluster -->
-    <template x-if="!cluster.collapsed && activeView === 'none'">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-            <template x-for="post in cluster.posts" :key="post.post_id">
-                <load src="/templates/components/post-card.html" />
             </template>
         </div>
     </template>

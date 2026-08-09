@@ -2,42 +2,44 @@
 
     <!-- Detail Header Bar & Action Control Buttons -->
     <div
-        class="bg-gray-900 border border-gray-800 rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <div class="flex flex-wrap items-center gap-2 mb-1">
-                <h2 class="text-2xl font-bold text-gray-100"
-                    x-text="`Batch ${$store.batches.activeBatch?.batch_number}`"></h2>
-                <span class="px-2.5 py-0.5 rounded text-xs font-bold"
-                    :class="getBatchStatusClass($store.batches.activeBatch)"
-                    x-text="getBatchStatusLabel($store.batches.activeBatch)"></span>
-
-                <!-- Batch Lease Expiry Tag -->
-                <template
-                    x-if="$store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.leased_until">
-                    <span
-                        class="text-xs font-mono text-amber-400 font-bold bg-amber-950/80 border border-amber-800/60 px-2 py-0.5 rounded"
-                        x-text="`Expires in: ${$store.batches.getRemainingTime($store.batches.activeBatch.leased_until)}`"></span>
-                </template>
-            </div>
-            <p class="text-xs text-gray-400"
-                x-text="`Progress: ${$store.batches.activeBatch?.resolved_count} of ${$store.batches.activeBatch?.total_clusters} clusters resolved`">
-            </p>
-        </div>
-
-        <!-- Action Button Controls Container -->
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-
-            <!-- Back to Explorer Navigation Button -->
+        class="bg-gray-900 border border-gray-800 rounded-lg px-5 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3.5">
+            <!-- Back to Explorer Navigation Button (Far Left) -->
             <button
-                class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded font-medium border border-gray-700 transition text-center"
+                class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded font-medium border border-gray-700 transition flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0"
                 @click="currentScreen = 'batches'">
                 &larr; Back to Explorer
             </button>
 
-            <!-- Batch Refresh Data Button -->
+            <div>
+                <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                    <h2 class="text-xl font-bold text-gray-100 leading-none"
+                        x-text="`Batch ${$store.batches.activeBatch?.batch_number}`"></h2>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-bold leading-none inline-flex items-center"
+                        :class="getBatchStatusClass($store.batches.activeBatch)"
+                        x-text="getBatchStatusLabel($store.batches.activeBatch)"></span>
+
+                    <!-- Batch Lease Expiry Tag -->
+                    <template
+                        x-if="$store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.leased_until">
+                        <span
+                            class="text-[11px] font-mono text-amber-400 font-bold bg-amber-950/80 border border-amber-800/60 px-2 py-0.5 rounded leading-none inline-flex items-center"
+                            x-text="`Expires in: ${$store.batches.getRemainingTime($store.batches.activeBatch.leased_until)}`"></span>
+                    </template>
+                </div>
+                <p class="text-xs text-gray-400"
+                    x-text="`Progress: ${$store.batches.activeBatch?.resolved_count} of ${$store.batches.activeBatch?.total_clusters} clusters resolved`">
+                </p>
+            </div>
+        </div>
+
+        <!-- Action Button Controls Container -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+
+            <!-- Batch Refresh Data Button (Fixed width & height to prevent resizing) -->
             <button @click="$store.batches.refreshBatch($store.batches.activeBatch)"
                 :disabled="Boolean($store.batches.activeBatch?.isRefreshing)"
-                class="bg-blue-950/40 hover:bg-blue-900/60 text-blue-400 hover:text-blue-300 text-xs px-4 py-2 rounded font-semibold border border-blue-800/60 transition flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                class="min-w-[155px] bg-blue-950/40 hover:bg-blue-900/60 text-blue-400 hover:text-blue-300 text-xs px-4 py-2 rounded font-semibold border border-blue-800/60 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 <template x-if="$store.batches.activeBatch?.isRefreshing">
                     <span class="animate-spin">↻</span>
                 </template>
@@ -45,28 +47,46 @@
                     x-text="$store.batches.activeBatch?.isRefreshing ? 'Refreshing Batch...' : 'Refresh Batch'"></span>
             </button>
 
-            <!-- Claim / Revoke Action State Buttons -->
+            <!-- Claim / Revoke Action State Buttons (Fixed width & height to prevent resizing) -->
+            <template x-if="$store.batches.activeBatch?.isClaiming">
+                <button disabled
+                    class="min-w-[180px] bg-blue-600/80 text-white text-xs px-4 py-2 rounded font-semibold transition flex items-center justify-center gap-1.5 cursor-wait opacity-90">
+                    <span class="animate-spin">↻</span>
+                    <span>Claiming Batch...</span>
+                </button>
+            </template>
+
+            <template x-if="$store.batches.activeBatch?.isRevoking">
+                <button disabled
+                    class="min-w-[180px] bg-amber-600/80 text-white text-xs px-4 py-2 rounded font-semibold transition flex items-center justify-center gap-1.5 cursor-wait opacity-90">
+                    <span class="animate-spin">↻</span>
+                    <span>Releasing Batch...</span>
+                </button>
+            </template>
+
             <template
-                x-if="$store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.is_leased_by_you">
+                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.is_leased_by_you">
                 <button
-                    class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded font-semibold transition text-center"
+                    class="min-w-[180px] bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center cursor-pointer"
                     @click="$store.batches.revokeLease($store.batches.activeBatch.batch_id)">
                     Release Batch
                 </button>
             </template>
 
-            <template x-if="$store.batches.activeBatch?.status === 'AVAILABLE'">
-                <button class="text-xs px-4 py-2 rounded font-semibold transition text-center"
+            <template
+                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'AVAILABLE'">
+                <button
+                    class="min-w-[180px] text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center"
                     :class="$store.batches.canClaimActiveBatch() ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer' : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'"
                     :disabled="!$store.batches.canClaimActiveBatch()" @click="$store.batches.claimCurrentBatch()"
-                    x-text="$store.batches.activeLease ? 'Active Lease Exists Elsewhere' : 'Claim Batch'">
+                    x-text="$store.batches.activeLease ? 'Lease Exists Elsewhere' : 'Claim Batch'">
                 </button>
             </template>
 
             <template
-                x-if="$store.batches.activeBatch?.status === 'CLAIMED' && !$store.batches.activeBatch?.is_leased_by_you">
+                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && !$store.batches.activeBatch?.is_leased_by_you">
                 <button disabled
-                    class="bg-gray-800 text-gray-500 text-xs px-4 py-2 rounded font-semibold border border-gray-700 cursor-not-allowed text-center">
+                    class="min-w-[180px] bg-gray-800 text-gray-500 text-xs px-4 py-2 rounded font-semibold border border-gray-700 cursor-not-allowed text-center flex items-center justify-center">
                     Claimed by Another User
                 </button>
             </template>

@@ -10,7 +10,8 @@ import {
     getBatchStatusClass,
     getProgressPercent,
     getProjectResolvedCount,
-    getProjectTotalCount
+    getProjectTotalCount,
+    getRemainingTimeString
 } from './batches.js';
 import { tagManager } from './tags.js';
 
@@ -38,6 +39,16 @@ document.addEventListener('alpine:init', () => {
         getProgressPercent,
         getProjectResolvedCount,
         getProjectTotalCount,
+        getRemainingTimeString,
+
+        async jumpToLeasedBatch(lease) {
+            await /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).jumpToLeasedBatch(lease);
+            this.currentScreen = 'batch_detail';
+        },
+
+        revokeLease(batchId) {
+            return /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).revokeLease(batchId);
+        },
 
         async init() {
             if (!this.isAgeVerified) {

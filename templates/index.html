@@ -62,14 +62,14 @@
 
                     <!-- Instructions Modal Trigger -->
                     <button @click="showInstructionsModal = true"
-                        class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition">
+                        class="h-7 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition cursor-pointer">
                         <span style="font-variant-emoji: text;">ℹ️</span>
                         <span>Instructions</span>
                     </button>
 
                     <!-- Blacklist Settings Modal Trigger -->
                     <button @click="$store.blacklist.openModal()"
-                        class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition">
+                        class="h-7 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition cursor-pointer">
                         <span style="font-variant-emoji: text;">🚫</span>
                         <span>Blacklist</span>
                     </button>
@@ -78,7 +78,7 @@
                     <div class="flex items-center">
                         <template x-if="!$store.auth.e621User">
                             <button @click="$store.auth.openLoginModal()"
-                                class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition text-xs">
+                                class="h-7 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition text-xs cursor-pointer">
                                 <span style="font-variant-emoji: text;">🔑</span>
                                 <span>Login</span>
                             </button>
@@ -86,28 +86,30 @@
 
                         <template x-if="$store.auth.e621User">
                             <div
-                                class="flex items-center space-x-2 bg-gray-950/60 border border-gray-800 px-3 py-1.5 rounded-md text-xs">
+                                class="h-7 flex items-center space-x-2 bg-gray-950/60 border border-gray-800 px-3 rounded-md text-xs">
                                 <span class="text-gray-400">Logged in as</span>
                                 <span class="text-blue-400 font-semibold" x-text="$store.auth.e621User.username"></span>
                                 <button @click="$store.auth.logout()" title="Logout"
-                                    class="text-gray-500 hover:text-red-400 font-bold ml-1 transition">&times;</button>
+                                    class="text-gray-500 hover:text-red-400 font-bold ml-1 transition cursor-pointer">&times;</button>
                             </div>
                         </template>
                     </div>
 
                     <!-- Active Lease Badge (Claimed State) -->
-                    <template x-if="$store.batches.activeLease">
+                    <template x-if="currentScreen !== 'projects' && $store.batches.activeLease">
                         <div
-                            class="flex items-center space-x-2 bg-amber-950/60 border border-amber-800/60 px-3 py-1.5 rounded-md flex-wrap">
+                            class="h-7 flex items-center space-x-2 bg-amber-950/60 border border-amber-800/60 px-3 rounded-md">
                             <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                             <span class="text-amber-200">Claimed:</span>
-                            <button class="text-amber-300 font-bold hover:underline"
+                            <button class="text-amber-300 font-bold hover:underline cursor-pointer"
                                 @click="jumpToLeasedBatch($store.batches.activeLease)"
                                 x-text="`Batch #${$store.batches.activeLease.batch_number}`"></button>
-                            <span class="text-amber-400 font-semibold"
-                                x-text="`(${getRemainingTimeString($store.batches.activeLease.leased_until)})`"></span>
+                            <template x-if="$store.batches.getRemainingTime($store.batches.activeLease.leased_until)">
+                                <span class="text-amber-400 font-semibold"
+                                    x-text="`(${$store.batches.getRemainingTime($store.batches.activeLease.leased_until)})`"></span>
+                            </template>
                             <button
-                                class="ml-2 bg-amber-900/80 hover:bg-amber-800 text-amber-200 px-2 py-0.5 rounded text-[10px] font-sans font-semibold transition"
+                                class="ml-1 h-5 px-2 bg-amber-900/80 hover:bg-amber-800 text-amber-200 rounded text-[10px] font-sans font-semibold transition cursor-pointer flex items-center justify-center"
                                 @click="revokeLease($store.batches.activeLease.batch_id)">
                                 Release
                             </button>
@@ -115,8 +117,8 @@
                     </template>
 
                     <!-- Active Lease Badge (Unclaimed State) -->
-                    <template x-if="!$store.batches.activeLease">
-                        <div class="text-gray-500 bg-gray-950/60 border border-gray-800 px-3 py-1.5 rounded-md">
+                    <template x-if="currentScreen !== 'projects' && !$store.batches.activeLease">
+                        <div class="h-7 flex items-center text-gray-500 bg-gray-950/60 border border-gray-800 px-3 rounded-md">
                             No batch claimed
                         </div>
                     </template>

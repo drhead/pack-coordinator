@@ -101,6 +101,8 @@ declare global {
     total_clusters: number;
     clusters: Cluster[];
     isRefreshing?: boolean;
+    isClaiming?: boolean;
+    isRevoking?: boolean;
   }
 
   interface E621User {
