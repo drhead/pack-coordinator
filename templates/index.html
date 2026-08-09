@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <!-- Meta Configuration & Page Title -->
     <meta charset="UTF-8">
@@ -12,9 +13,12 @@
 
     <!-- Alpine Cloak Utility -->
     <style>
-        [x-cloak] { display: none !important; }
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
+
 <body class="bg-gray-950 text-gray-100 min-h-screen font-sans" x-data="app" x-cloak>
 
     <!-- 18+ Age Gate Interstitial -->
@@ -25,25 +29,28 @@
     <template x-if="isAgeVerified && !isLoading">
         <div>
             <!-- Top Navigation Header -->
-            <header class="bg-gray-900 border-b border-gray-800 px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
-                
+            <header
+                class="bg-gray-900 border-b border-gray-800 px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
+
                 <!-- Left Side: App Brand Title & Dynamic Breadcrumb Navigation -->
                 <div class="flex items-center space-x-3 flex-wrap gap-y-1">
-                    <h1 class="text-lg font-bold text-blue-400 cursor-pointer hover:text-blue-300 transition" 
+                    <h1 class="text-lg font-bold text-blue-400 cursor-pointer hover:text-blue-300 transition"
                         @click="currentScreen = 'projects'; $store.batches.activeProject = null; $store.batches.activeBatch = null;">
                         P.A.C.K.
                     </h1>
-                    
+
                     <!-- Breadcrumbs Container -->
                     <template x-if="$store.batches.activeProject">
                         <div class="flex items-center space-x-2 text-sm text-gray-400 flex-wrap">
                             <span>/</span>
-                            <button class="hover:text-white transition" @click="currentScreen = 'batches'" x-text="$store.batches.activeProject.title"></button>
-                            
+                            <button class="hover:text-white transition" @click="currentScreen = 'batches'"
+                                x-text="$store.batches.activeProject.title"></button>
+
                             <template x-if="$store.batches.activeBatch">
                                 <div class="flex items-center space-x-2">
                                     <span>/</span>
-                                    <span class="text-gray-200 font-mono" x-text="`Batch ${$store.batches.activeBatch.batch_number}`"></span>
+                                    <span class="text-gray-200 font-mono"
+                                        x-text="`Batch ${$store.batches.activeBatch.batch_number}`"></span>
                                 </div>
                             </template>
                         </div>
@@ -52,17 +59,17 @@
 
                 <!-- Right Side: Modal Triggers & Active Lease Indicator -->
                 <div class="flex items-center space-x-2 sm:space-x-3 text-xs font-mono flex-wrap gap-y-2">
-                    
+
                     <!-- Instructions Modal Trigger -->
-                    <button @click="showInstructionsModal = true" 
-                            class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition">
+                    <button @click="showInstructionsModal = true"
+                        class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition">
                         <span style="font-variant-emoji: text;">ℹ️</span>
                         <span>Instructions</span>
                     </button>
 
                     <!-- Blacklist Settings Modal Trigger -->
-                    <button @click="$store.blacklist.openModal()" 
-                            class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition">
+                    <button @click="$store.blacklist.openModal()"
+                        class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition">
                         <span style="font-variant-emoji: text;">🚫</span>
                         <span>Blacklist</span>
                     </button>
@@ -71,39 +78,42 @@
                     <div class="flex items-center">
                         <template x-if="!$store.auth.e621User">
                             <button @click="$store.auth.openLoginModal()"
-                                    class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition text-xs">
+                                class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition text-xs">
                                 <span style="font-variant-emoji: text;">🔑</span>
                                 <span>Login</span>
                             </button>
                         </template>
 
                         <template x-if="$store.auth.e621User">
-                            <div class="flex items-center space-x-2 bg-gray-950/60 border border-gray-800 px-3 py-1.5 rounded-md text-xs">
+                            <div
+                                class="flex items-center space-x-2 bg-gray-950/60 border border-gray-800 px-3 py-1.5 rounded-md text-xs">
                                 <span class="text-gray-400">Logged in as</span>
                                 <span class="text-blue-400 font-semibold" x-text="$store.auth.e621User.username"></span>
-                                <button @click="$store.auth.logout()" 
-                                        title="Logout"
-                                        class="text-gray-500 hover:text-red-400 font-bold ml-1 transition">&times;</button>
+                                <button @click="$store.auth.logout()" title="Logout"
+                                    class="text-gray-500 hover:text-red-400 font-bold ml-1 transition">&times;</button>
                             </div>
                         </template>
                     </div>
 
                     <!-- Active Lease Badge (Claimed State) -->
                     <template x-if="$store.batches.activeLease">
-                        <div class="flex items-center space-x-2 bg-amber-950/60 border border-amber-800/60 px-3 py-1.5 rounded-md flex-wrap">
+                        <div
+                            class="flex items-center space-x-2 bg-amber-950/60 border border-amber-800/60 px-3 py-1.5 rounded-md flex-wrap">
                             <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                             <span class="text-amber-200">Claimed:</span>
                             <button class="text-amber-300 font-bold hover:underline"
-                                    @click="jumpToLeasedBatch($store.batches.activeLease)"
-                                    x-text="`Batch #${$store.batches.activeLease.batch_number}`"></button>
-                            <span class="text-amber-400 font-semibold" x-text="`(${getRemainingTimeString($store.batches.activeLease.leased_until)})`"></span>
-                            <button class="ml-2 bg-amber-900/80 hover:bg-amber-800 text-amber-200 px-2 py-0.5 rounded text-[10px] font-sans font-semibold transition"
-                                    @click="revokeLease($store.batches.activeLease.batch_id)">
+                                @click="jumpToLeasedBatch($store.batches.activeLease)"
+                                x-text="`Batch #${$store.batches.activeLease.batch_number}`"></button>
+                            <span class="text-amber-400 font-semibold"
+                                x-text="`(${getRemainingTimeString($store.batches.activeLease.leased_until)})`"></span>
+                            <button
+                                class="ml-2 bg-amber-900/80 hover:bg-amber-800 text-amber-200 px-2 py-0.5 rounded text-[10px] font-sans font-semibold transition"
+                                @click="revokeLease($store.batches.activeLease.batch_id)">
                                 Release
                             </button>
                         </div>
                     </template>
-                    
+
                     <!-- Active Lease Badge (Unclaimed State) -->
                     <template x-if="!$store.batches.activeLease">
                         <div class="text-gray-500 bg-gray-950/60 border border-gray-800 px-3 py-1.5 rounded-md">
@@ -144,4 +154,5 @@
         </div>
     </template>
 </body>
+
 </html>

@@ -8,10 +8,12 @@
                 'bg-blue-950/90 border-blue-800 text-blue-200': toast.type === 'info'
             }">
             <div class="flex items-start space-x-2">
-                <span class="font-bold text-sm" x-text="toast.type === 'error' ? '❌' : toast.type === 'success' ? '✓' : '⚠️'"></span>
+                <span class="font-bold text-sm"
+                    x-text="toast.type === 'error' ? '❌' : toast.type === 'success' ? '✓' : '⚠️'"></span>
                 <span x-text="toast.message" class="leading-relaxed"></span>
             </div>
-            <button @click="$store.toasts.remove(toast.id)" class="text-gray-400 hover:text-white font-bold text-sm leading-none">&times;</button>
+            <button @click="$store.toasts.remove(toast.id)"
+                class="text-gray-400 hover:text-white font-bold text-sm leading-none">&times;</button>
         </div>
     </template>
 </div>

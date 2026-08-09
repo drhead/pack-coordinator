@@ -1,14 +1,15 @@
 <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-4 space-y-4 text-xs">
-    
+
     <!-- Header Controls -->
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/80 pb-3">
-        
+
         <!-- Active Pair Indicator -->
         <div class="flex items-center gap-2">
             <span class="text-xs font-semibold text-gray-400">Comparing:</span>
             <template x-if="currentPair">
-                <span class="text-xs font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/60 px-2.5 py-1 rounded-md shadow-sm"
-                      x-text="`#${currentPair.a.post_id} × #${currentPair.b.post_id}`">
+                <span
+                    class="text-xs font-mono font-bold text-blue-400 bg-blue-950/60 border border-blue-800/60 px-2.5 py-1 rounded-md shadow-sm"
+                    x-text="`#${currentPair.a.post_id} × #${currentPair.b.post_id}`">
                 </span>
             </template>
         </div>
@@ -16,15 +17,15 @@
         <!-- Loupe Master Controls -->
         <div class="flex items-center gap-3 border-l border-r border-gray-800/80 px-3 py-0.5">
             <label class="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer select-none">
-                <input type="checkbox" x-model="enableLoupe" class="rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-0">
+                <input type="checkbox" x-model="enableLoupe"
+                    class="rounded bg-gray-900 border-gray-700 text-blue-600 focus:ring-0">
                 <span>Enable Loupe</span>
             </label>
 
             <div x-show="enableLoupe" class="flex items-center gap-2 text-xs text-gray-400">
                 <span>Zoom:</span>
-                <input type="range" min="1" max="4" step="0.5" 
-                       x-model.number="zoomLevel" 
-                       class="w-16 accent-blue-500 cursor-pointer">
+                <input type="range" min="1" max="4" step="0.5" x-model.number="zoomLevel"
+                    class="w-16 accent-blue-500 cursor-pointer">
                 <span class="font-mono w-5 text-right" x-text="`${zoomLevel}x`"></span>
             </div>
         </div>
@@ -32,30 +33,26 @@
         <!-- Mode Selector & Exit -->
         <div class="flex items-center gap-2">
             <div class="flex bg-gray-900 border border-gray-800 rounded-md p-0.5">
-                <button @click="setMode('side-by-side')"
-                        class="text-xs px-2.5 py-1 rounded font-medium transition"
-                        :class="mode === 'side-by-side' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                <button @click="setMode('side-by-side')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                    :class="mode === 'side-by-side' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Side-by-Side
                 </button>
-                <button @click="setMode('swipe')"
-                        class="text-xs px-2.5 py-1 rounded font-medium transition"
-                        :class="mode === 'swipe' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                <button @click="setMode('swipe')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                    :class="mode === 'swipe' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Swipe
                 </button>
-                <button @click="setMode('diff')"
-                        class="text-xs px-2.5 py-1 rounded font-medium transition"
-                        :class="mode === 'diff' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                <button @click="setMode('diff')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                    :class="mode === 'diff' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Diff
                 </button>
-                <button @click="setMode('blink')"
-                        class="text-xs px-2.5 py-1 rounded font-medium transition"
-                        :class="mode === 'blink' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                <button @click="setMode('blink')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                    :class="mode === 'blink' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Blink
                 </button>
             </div>
 
-            <button @click="closeComparison()" 
-                    class="text-gray-400 hover:text-white text-xs px-2.5 py-1 rounded-md border border-gray-800 hover:bg-gray-800 font-semibold transition">
+            <button @click="closeComparison()"
+                class="text-gray-400 hover:text-white text-xs px-2.5 py-1 rounded-md border border-gray-800 hover:bg-gray-800 font-semibold transition">
                 Exit
             </button>
         </div>
@@ -64,37 +61,35 @@
     <!-- Main Image Display View Area -->
     <template x-if="currentPair">
         <div class="space-y-4">
-            
+
             <!-- 1. SIDE-BY-SIDE MODE -->
             <div x-show="mode === 'side-by-side'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <template x-for="item in [currentPair.a, currentPair.b]" :key="item.post_id">
                     <div class="flex flex-col items-center bg-gray-900 border border-gray-800/80 rounded-lg p-3">
                         <div class="w-full flex items-center justify-between mb-2">
                             <a :href="`https://e621.net/posts/${item.post_id}`" target="_blank"
-                               class="text-xs font-mono font-bold text-blue-400 hover:underline"
-                               x-text="`Post #${item.post_id}`"></a>
+                                class="text-xs font-mono font-bold text-blue-400 hover:underline"
+                                x-text="`Post #${item.post_id}`"></a>
                             <span class="font-mono text-[11px]"
-                                    :class="image.isUniform([currentPair.a, currentPair.b], item) ? 'text-gray-600' : 'text-gray-400'"
-                                    x-text="image.formatSpecs(item)">
+                                :class="image.isUniform([currentPair.a, currentPair.b], item) ? 'text-gray-600' : 'text-gray-400'"
+                                x-text="image.formatSpecs(item)">
                             </span>
                         </div>
 
                         <!-- Clickable Image Container -->
                         <div class="relative w-full h-[60vh] flex items-center justify-center bg-black/60 rounded-md overflow-hidden select-none cursor-pointer group border border-gray-800/60"
-                             @click="openModal(item)">
+                            @click="openModal(item)">
 
                             <div class="relative max-w-full flex items-center justify-center">
-                                <img :src="item.fileUrl" 
-                                     class="max-h-[60vh] max-w-full object-contain block"
-                                     @mousemove="handleMouseMove($event, $el)"
-                                     @mouseenter="isHovering = true"
-                                     @mouseleave="handleMouseLeave()">
+                                <img :src="item.fileUrl" class="max-h-[60vh] max-w-full object-contain block"
+                                    @mousemove="handleMouseMove($event, $el)" @mouseenter="isHovering = true"
+                                    @mouseleave="handleMouseLeave()">
 
                                 <load src="/templates/components/expand-image-button.html" />
 
-                                <div x-show="enableLoupe && isHovering" 
-                                     class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 bg-no-repeat"
-                                     :style="{
+                                <div x-show="enableLoupe && isHovering"
+                                    class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 bg-no-repeat"
+                                    :style="{
                                          ...getLoupeStyle(item),
                                          left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
                                          top: `calc(${relY * 100}% - ${loupeSize / 2}px)`
@@ -106,27 +101,34 @@
                         <!-- Collapsible Post Description & Sources (Side-by-Side View) -->
                         <div class="w-full space-y-1.5 pt-2">
                             <template x-if="item.description && item.description.trim().length > 0">
-                                <details class="w-full bg-gray-950/60 border border-gray-800/80 rounded-md text-[11px] group">
-                                    <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                <details
+                                    class="w-full bg-gray-950/60 border border-gray-800/80 rounded-md text-[11px] group">
+                                    <summary
+                                        class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                         <span>Description</span>
-                                        <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                        <span
+                                            class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                     </summary>
-                                    <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap break-words max-h-36 overflow-y-auto" 
-                                         x-text="item.description"></div>
+                                    <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap break-words max-h-36 overflow-y-auto"
+                                        x-text="item.description"></div>
                                 </details>
                             </template>
 
                             <template x-if="item.sources && item.sources.length > 0">
-                                <details class="w-full bg-gray-950/60 border border-gray-800/80 rounded-md text-[11px] group">
-                                    <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                <details
+                                    class="w-full bg-gray-950/60 border border-gray-800/80 rounded-md text-[11px] group">
+                                    <summary
+                                        class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                         <span x-text="`Sources (${item.sources.length})`"></span>
-                                        <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                        <span
+                                            class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                     </summary>
-                                    <div class="px-2.5 py-2 border-t border-gray-800/80 space-y-1 max-h-32 overflow-y-auto">
+                                    <div
+                                        class="px-2.5 py-2 border-t border-gray-800/80 space-y-1 max-h-32 overflow-y-auto">
                                         <template x-for="(src, sIdx) in item.sources" :key="sIdx">
-                                            <a :href="src" target="_blank" rel="noopener noreferrer" 
-                                               class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]" 
-                                               x-text="src"></a>
+                                            <a :href="src" target="_blank" rel="noopener noreferrer"
+                                                class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]"
+                                                x-text="src"></a>
                                         </template>
                                     </div>
                                 </details>
@@ -137,83 +139,83 @@
             </div>
 
             <!-- 2. SINGLE BOX MODES (SWIPE, DIFF, BLINK) -->
-            <div x-show="mode !== 'side-by-side'" class="flex flex-col items-center bg-gray-900 border border-gray-800/80 rounded-lg p-3">
+            <div x-show="mode !== 'side-by-side'"
+                class="flex flex-col items-center bg-gray-900 border border-gray-800/80 rounded-lg p-3">
                 <div class="w-full flex items-center justify-between mb-2">
                     <div class="flex items-center gap-3">
                         <span class="text-xs font-mono font-bold text-blue-400"
-                              x-text="`#${currentPair.a.post_id} (${currentPair.a.image_width}×${currentPair.a.image_height})`"></span>
+                            x-text="`#${currentPair.a.post_id} (${currentPair.a.image_width}×${currentPair.a.image_height})`"></span>
                         <span class="text-xs text-gray-500 font-bold">vs</span>
                         <span class="text-xs font-mono font-bold text-blue-400"
-                              x-text="`#${currentPair.b.post_id} (${currentPair.b.image_width}×${currentPair.b.image_height})`"></span>
-                              
+                            x-text="`#${currentPair.b.post_id} (${currentPair.b.image_width}×${currentPair.b.image_height})`"></span>
+
                     </div>
-                    
+
                     <!-- Live Status Badges -->
                     <div class="text-[11px] font-mono">
                         <span x-show="mode === 'swipe'" class="text-gray-400">Move cursor across image to swipe</span>
                         <span x-show="mode === 'diff'" class="text-purple-400 font-bold">Difference Overlay</span>
-                        
-                        <span x-show="mode === 'blink'" 
-                              class="px-2 py-0.5 text-amber-300 font-bold flex items-center gap-1.5">
-                            <span x-text="`Showing Post #${blinkShowB ? currentPair.b.post_id : currentPair.a.post_id}`"></span>
+
+                        <span x-show="mode === 'blink'"
+                            class="px-2 py-0.5 text-amber-300 font-bold flex items-center gap-1.5">
+                            <span
+                                x-text="`Showing Post #${blinkShowB ? currentPair.b.post_id : currentPair.a.post_id}`"></span>
                         </span>
                     </div>
                 </div>
 
                 <div class="relative w-full h-[60vh] flex items-center justify-center bg-black/60 rounded-md overflow-hidden select-none cursor-pointer group border border-gray-800/60"
-                     @click="openModal()">
+                    @click="openModal()">
 
                     <!-- SWIPE MODE -->
-                    <div x-show="mode === 'swipe'" 
-                         class="relative max-w-full flex items-center justify-center cursor-ew-resize"
-                         @mousemove="handleSwipeMove($event, $el); handleMouseMove($event, $el)"
-                         @mouseenter="isHovering = true"
-                         @mouseleave="handleMouseLeave()">
-                        
-                        <img :src="currentPair.a.fileUrl" class="max-h-[60vh] max-w-full object-contain block pointer-events-none">
+                    <div x-show="mode === 'swipe'"
+                        class="relative max-w-full flex items-center justify-center cursor-ew-resize"
+                        @mousemove="handleSwipeMove($event, $el); handleMouseMove($event, $el)"
+                        @mouseenter="isHovering = true" @mouseleave="handleMouseLeave()">
 
-                        <img :src="currentPair.b.fileUrl" 
-                             class="absolute inset-0 w-full h-full object-contain block pointer-events-none"
-                             :style="`clip-path: inset(0 ${100 - swipePos}% 0 0);`">
+                        <img :src="currentPair.a.fileUrl"
+                            class="max-h-[60vh] max-w-full object-contain block pointer-events-none">
+
+                        <img :src="currentPair.b.fileUrl"
+                            class="absolute inset-0 w-full h-full object-contain block pointer-events-none"
+                            :style="`clip-path: inset(0 ${100 - swipePos}% 0 0);`">
 
                         <div class="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] pointer-events-none"
-                             :style="`left: ${swipePos}%;`">
+                            :style="`left: ${swipePos}%;`">
                         </div>
 
                         <load src="/templates/components/expand-image-button.html" />
 
                         <!-- Swipe Loupe Overlay -->
-                        <div x-show="enableLoupe && isHovering" 
-                             class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 overflow-hidden"
-                             :style="{
+                        <div x-show="enableLoupe && isHovering"
+                            class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 overflow-hidden"
+                            :style="{
                                  width: `${loupeSize}px`,
                                  height: `${loupeSize}px`,
                                  left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
                                  top: `calc(${relY * 100}% - ${loupeSize / 2}px)`
                              }">
                             <div class="absolute inset-0 bg-no-repeat" :style="getLoupeStyle(currentPair.a)"></div>
-                            <div class="absolute inset-0 bg-no-repeat" :style="{ ...getLoupeStyle(currentPair.b), ...getSwipeLoupeClipStyle() }"></div>
+                            <div class="absolute inset-0 bg-no-repeat"
+                                :style="{ ...getLoupeStyle(currentPair.b), ...getSwipeLoupeClipStyle() }"></div>
                         </div>
                     </div>
 
                     <!-- DIFF MODE -->
-                    <div x-show="mode === 'diff'" 
-                         class="relative max-w-full flex items-center justify-center bg-black"
-                         @mousemove="handleMouseMove($event, $el)"
-                         @mouseenter="isHovering = true"
-                         @mouseleave="handleMouseLeave()">
-                        
+                    <div x-show="mode === 'diff'" class="relative max-w-full flex items-center justify-center bg-black"
+                        @mousemove="handleMouseMove($event, $el)" @mouseenter="isHovering = true"
+                        @mouseleave="handleMouseLeave()">
+
                         <img :src="currentPair.a.fileUrl" class="max-h-[60vh] max-w-full object-contain block">
 
-                        <img :src="currentPair.b.fileUrl" 
-                             class="absolute inset-0 w-full h-full object-contain block"
-                             style="mix-blend-mode: difference;">
+                        <img :src="currentPair.b.fileUrl" class="absolute inset-0 w-full h-full object-contain block"
+                            style="mix-blend-mode: difference;">
 
                         <load src="/templates/components/expand-image-button.html" />
 
-                        <div x-show="enableLoupe && isHovering" 
-                             class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 bg-no-repeat"
-                             :style="{
+                        <div x-show="enableLoupe && isHovering"
+                            class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 bg-no-repeat"
+                            :style="{
                                  ...getDiffLoupeStyle(currentPair.a, currentPair.b),
                                  left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
                                  top: `calc(${relY * 100}% - ${loupeSize / 2}px)`
@@ -222,20 +224,18 @@
                     </div>
 
                     <!-- BLINK MODE -->
-                    <div x-show="mode === 'blink'" 
-                         class="relative max-w-full flex items-center justify-center"
-                         @mousemove="handleMouseMove($event, $el)"
-                         @mouseenter="isHovering = true"
-                         @mouseleave="handleMouseLeave()">
-                        
-                        <img :src="(blinkShowB ? currentPair.b : currentPair.a).fileUrl" 
-                             class="max-h-[60vh] max-w-full object-contain block">
+                    <div x-show="mode === 'blink'" class="relative max-w-full flex items-center justify-center"
+                        @mousemove="handleMouseMove($event, $el)" @mouseenter="isHovering = true"
+                        @mouseleave="handleMouseLeave()">
+
+                        <img :src="(blinkShowB ? currentPair.b : currentPair.a).fileUrl"
+                            class="max-h-[60vh] max-w-full object-contain block">
 
                         <load src="/templates/components/expand-image-button.html" />
 
-                        <div x-show="enableLoupe && isHovering" 
-                             class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 bg-no-repeat"
-                             :style="{
+                        <div x-show="enableLoupe && isHovering"
+                            class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-20 bg-no-repeat"
+                            :style="{
                                  ...getLoupeStyle(blinkShowB ? currentPair.b : currentPair.a),
                                  left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
                                  top: `calc(${relY * 100}% - ${loupeSize / 2}px)`
@@ -247,22 +247,21 @@
             </div>
 
             <!-- UNIFIED ACTION & NAVIGATION BAR -->
-            <div x-data="{ showSuperiorPrompt: false }" 
+            <div x-data="{ showSuperiorPrompt: false }"
                 class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 shadow-sm relative min-h-[52px] flex items-center">
-                
+
                 <!-- STAGE 1: Default Classification View -->
-                <div x-show="!showSuperiorPrompt" 
-                    class="grid grid-cols-3 items-center w-full">
-                    
+                <div x-show="!showSuperiorPrompt" class="grid grid-cols-3 items-center w-full">
+
                     <!-- Left Column: Empty placeholder to keep center text centered -->
                     <div></div>
 
                     <!-- Center Column: Instruction Text -->
                     <div class="text-sm text-gray-200 font-medium text-center whitespace-nowrap">
                         <span>
-                            Classify relation between 
-                            <span class="font-mono font-bold text-blue-400" x-text="`#${currentPair.a.post_id}`"></span> 
-                            and 
+                            Classify relation between
+                            <span class="font-mono font-bold text-blue-400" x-text="`#${currentPair.a.post_id}`"></span>
+                            and
                             <span class="font-mono font-bold text-blue-400" x-text="`#${currentPair.b.post_id}`"></span>
                         </span>
                     </div>
@@ -270,27 +269,25 @@
                     <!-- Right Column: Action Buttons -->
                     <div class="flex items-center justify-end gap-2">
                         <button @click="showSuperiorPrompt = true"
-                                class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/80 active:scale-95 shadow-sm whitespace-nowrap">
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/80 active:scale-95 shadow-sm whitespace-nowrap">
                             Duplicate / Inferior
                         </button>
 
                         <button @click="setRelationship('variant', $data)"
-                                class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/80 active:scale-95 shadow-sm whitespace-nowrap">
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/80 active:scale-95 shadow-sm whitespace-nowrap">
                             Variants
                         </button>
 
                         <button @click="setRelationship('unrelated', $data)"
-                                class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 active:scale-95 shadow-sm whitespace-nowrap">
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 active:scale-95 shadow-sm whitespace-nowrap">
                             Unrelated
                         </button>
                     </div>
                 </div>
 
                 <!-- STAGE 2: Superiority Selection View -->
-                <div x-show="showSuperiorPrompt" 
-                    x-cloak
-                    class="grid grid-cols-2 items-center w-full relative">
-                    
+                <div x-show="showSuperiorPrompt" x-cloak class="grid grid-cols-2 items-center w-full relative">
+
                     <!-- Center Text: Absolutely centered on top of everything -->
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <span class="text-sm text-amber-400 font-semibold">Select the superior post</span>
@@ -298,24 +295,25 @@
 
                     <!-- Left Half: Button centered under Left Image (25%) -->
                     <div class="flex justify-center">
-                        <button @click="setRelationship('duplicate', $data, currentPair.a.post_id); showSuperiorPrompt = false"
-                                class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate">
+                        <button
+                            @click="setRelationship('duplicate', $data, currentPair.a.post_id); showSuperiorPrompt = false"
+                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate">
                             <span x-text="`#${currentPair.a.post_id}`"></span>
                         </button>
                     </div>
 
                     <!-- Right Half: Button centered under Right Image (75%) -->
                     <div class="flex justify-center">
-                        <button @click="setRelationship('duplicate', $data, currentPair.b.post_id); showSuperiorPrompt = false"
-                                class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate">
+                        <button
+                            @click="setRelationship('duplicate', $data, currentPair.b.post_id); showSuperiorPrompt = false"
+                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate">
                             <span x-text="`#${currentPair.b.post_id}`"></span>
                         </button>
                     </div>
 
                     <!-- Absolute Cancel Button on Far Right (Does not steal width from grid!) -->
-                    <button @click="showSuperiorPrompt = false" 
-                            title="Cancel selection"
-                            class="absolute right-0 text-xs px-2.5 py-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition">
+                    <button @click="showSuperiorPrompt = false" title="Cancel selection"
+                        class="absolute right-0 text-xs px-2.5 py-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition">
                         ✕
                     </button>
                 </div>

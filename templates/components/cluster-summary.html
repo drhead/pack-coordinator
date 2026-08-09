@@ -1,30 +1,31 @@
 <div x-data="summaryManager($data)" class="space-y-6 text-sm">
-    
+
     <!-- Iterates through each ResolutionGraph in resolutionManager -->
     <template x-for="(graph, graphIdx) in resMgr.graphs" :key="graphIdx">
         <div class="border border-gray-800 rounded-lg bg-gray-900/80 p-4 space-y-4 shadow-lg">
-            
+
             <!-- Graph Header Info -->
             <div class="flex items-center justify-between border-b border-gray-800 pb-2">
                 <div class="flex items-center gap-2">
-                    <span class="font-mono text-xs uppercase font-bold text-gray-400" x-text="`Graph #${graphIdx + 1}`"></span>
-                    <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider"
-                          :class="{
+                    <span class="font-mono text-xs uppercase font-bold text-gray-400"
+                        x-text="`Graph #${graphIdx + 1}`"></span>
+                    <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider" :class="{
                               'bg-blue-950 text-blue-400 border border-blue-800/60': graph.type === 'duplicate',
                               'bg-emerald-950 text-emerald-400 border border-emerald-800/60': graph.type === 'variant',
                               'bg-gray-800 text-gray-400 border border-gray-700': graph.type === 'unrelated',
                               'bg-amber-950 text-amber-400 border border-amber-800/60': graph.type === 'unknown'
-                          }"
-                          x-text="graph.type"></span>
+                          }" x-text="graph.type"></span>
                 </div>
                 <span class="text-xs text-gray-500" x-text="`${graph.posts.size} post(s)`"></span>
             </div>
 
             <!-- User Action Instructions Banner -->
-            <div class="bg-blue-950/30 border border-blue-900/40 rounded-md p-2.5 text-xs text-blue-200/90 flex items-center gap-2">
+            <div
+                class="bg-blue-950/30 border border-blue-900/40 rounded-md p-2.5 text-xs text-blue-200/90 flex items-center gap-2">
                 <span class="text-blue-400 text-sm shrink-0">💡</span>
                 <div>
-                    Review proposed changes below, copy over descriptions or sources to the kept post if needed, then click the action buttons to finalize.
+                    Review proposed changes below, copy over descriptions or sources to the kept post if needed, then
+                    click the action buttons to finalize.
                 </div>
             </div>
 
@@ -34,7 +35,7 @@
                     <div x-data="{ post: resMgr.getPost(postId) }">
                         <template x-if="post">
                             <div class="p-4 transition flex flex-col md:flex-row gap-4 items-start justify-between"
-                                 :class="{
+                                :class="{
                                      /* Duplicate Theme */
                                      'bg-blue-950/20': graph.type === 'duplicate' && isCanonical(graph, postId),
                                      'bg-amber-950/20': graph.type === 'duplicate' && !isCanonical(graph, postId),
@@ -46,43 +47,47 @@
                                      /* Unrelated / Unknown Theme */
                                      'bg-gray-950/40': graph.type === 'unrelated' || graph.type === 'unknown'
                                  }">
-                                
+
                                 <!-- Left Section: Single Unified Thumbnail Block -->
-                                <div class="w-full md:w-36 flex-shrink-0 border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
-                                    
+                                <div
+                                    class="w-full md:w-36 flex-shrink-0 border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
+
                                     <!-- 1. Header Bar (ID & Rating with Diff) -->
-                                    <div class="bg-gray-900 px-2 py-1 flex items-center justify-between text-xs border-b border-gray-800">
-                                        <a :href="`https://e621.net/posts/${postId}`" target="_blank" 
-                                           class="font-mono font-bold text-blue-400 hover:underline" 
-                                           x-text="`#${postId}`"></a>
+                                    <div
+                                        class="bg-gray-900 px-2 py-1 flex items-center justify-between text-xs border-b border-gray-800">
+                                        <a :href="`https://e621.net/posts/${postId}`" target="_blank"
+                                            class="font-mono font-bold text-blue-400 hover:underline"
+                                            x-text="`#${postId}`"></a>
 
                                         <!-- Rating -->
                                         <div class="flex items-center gap-1 font-mono text-[10px]">
                                             <template x-if="post.getEffectiveRating() === post.original.rating">
-                                                <span class="px-1.5 py-0.5 rounded font-bold uppercase text-gray-400 bg-gray-800"
-                                                      x-text="`${$store.tags?.getRatingLabel(post.getEffectiveRating())}`">
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded font-bold uppercase text-gray-400 bg-gray-800"
+                                                    x-text="`${$store.tags?.getRatingLabel(post.getEffectiveRating())}`">
                                                 </span>
                                             </template>
 
                                             <template x-if="post.getEffectiveRating() !== post.original.rating">
-                                                <div class="flex items-center gap-0.5" :title="`Rating changed from ${post.original.rating}`">
-                                                    <span class="text-gray-500 font-bold uppercase" 
-                                                          x-text="$store.tags?.getRatingLabel(post.original.rating)"></span>
+                                                <div class="flex items-center gap-0.5"
+                                                    :title="`Rating changed from ${post.original.rating}`">
+                                                    <span class="text-gray-500 font-bold uppercase"
+                                                        x-text="$store.tags?.getRatingLabel(post.original.rating)"></span>
                                                     <span class="text-gray-500">→</span>
                                                     <span class="px-1 py-0.5 rounded font-bold uppercase"
-                                                          :class="$store.tags?.getRatingBadgeClass(post.getEffectiveRating())"
-                                                          x-text="$store.tags?.getRatingLabel(post.getEffectiveRating())"></span>
+                                                        :class="$store.tags?.getRatingBadgeClass(post.getEffectiveRating())"
+                                                        x-text="$store.tags?.getRatingLabel(post.getEffectiveRating())"></span>
                                                 </div>
                                             </template>
                                         </div>
                                     </div>
 
                                     <!-- 2. Image Viewport -->
-                                    <div class="w-full h-40 bg-black flex items-center justify-center p-1 overflow-hidden">
+                                    <div
+                                        class="w-full h-40 bg-black flex items-center justify-center p-1 overflow-hidden">
                                         <template x-if="post.original.fileUrl">
-                                            <img :src="post.original.fileUrl" 
-                                                 :alt="`Post #${postId}`" 
-                                                 class="max-h-full max-w-full object-contain" />
+                                            <img :src="post.original.fileUrl" :alt="`Post #${postId}`"
+                                                class="max-h-full max-w-full object-contain" />
                                         </template>
                                         <template x-if="!post.original.fileUrl">
                                             <span class="text-gray-600 text-xs font-mono text-center">No Image</span>
@@ -90,7 +95,8 @@
                                     </div>
 
                                     <!-- 3. Image Info Bar -->
-                                    <div class="bg-gray-900 border-t border-gray-800 px-2 py-1 text-[10px] text-gray-500 text-center font-mono">
+                                    <div
+                                        class="bg-gray-900 border-t border-gray-800 px-2 py-1 text-[10px] text-gray-500 text-center font-mono">
                                         <span class="font-mono text-[10px]"
                                             :class="image.isUniform(graph.posts, post.original) ? 'text-gray-600' : 'text-gray-400'"
                                             x-text="image.formatSpecs(post.original)">
@@ -100,12 +106,12 @@
                                     <!-- 4. Status Badge -->
                                     <template x-if="graph.type === 'duplicate'">
                                         <div>
-                                            <div x-show="isCanonical(graph, postId)" 
-                                                 class="border-t border-gray-800 bg-blue-950/60 text-blue-300 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
+                                            <div x-show="isCanonical(graph, postId)"
+                                                class="border-t border-gray-800 bg-blue-950/60 text-blue-300 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 KEEP
                                             </div>
-                                            <div x-show="!isCanonical(graph, postId)" 
-                                                 class="border-t border-amber-900/60 bg-amber-950/60 text-amber-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
+                                            <div x-show="!isCanonical(graph, postId)"
+                                                class="border-t border-amber-900/60 bg-amber-950/60 text-amber-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 FLAG
                                             </div>
                                         </div>
@@ -113,12 +119,12 @@
 
                                     <template x-if="graph.type === 'variant'">
                                         <div>
-                                            <div x-show="isCanonical(graph, postId)" 
-                                                 class="border-t border-gray-800 bg-emerald-950/60 text-emerald-300 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
+                                            <div x-show="isCanonical(graph, postId)"
+                                                class="border-t border-gray-800 bg-emerald-950/60 text-emerald-300 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 PARENT
                                             </div>
-                                            <div x-show="!isCanonical(graph, postId)" 
-                                                 class="border-t border-yellow-900/60 bg-yellow-950/60 text-yellow-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
+                                            <div x-show="!isCanonical(graph, postId)"
+                                                class="border-t border-yellow-900/60 bg-yellow-950/60 text-yellow-400 font-bold text-[10px] py-1 text-center uppercase tracking-wider">
                                                 CHILD
                                             </div>
                                         </div>
@@ -128,23 +134,27 @@
 
                                 <!-- Middle Section: Diff UI (Tags, Description, Sources) -->
                                 <div class="flex-1 w-full space-y-3 text-xs">
-                                    
+
                                     <!-- Keep / Parent / Edit Diff View -->
-                                    <template x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
+                                    <template
+                                        x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
                                         <div class="space-y-2">
                                             <!-- Categorized & Sorted Tag Edits -->
                                             <div>
                                                 <span class="text-gray-400 font-semibold block mb-1">Tags:</span>
                                                 <div class="flex flex-wrap gap-1">
-                                                    <template x-for="tag in $store.tags?.getSortedTags([...post.tags, ...getRemovedTags(post)], post)" :key="`${tag.category}:${tag.name}`">
-                                                        <span class="px-1.5 py-0.5 rounded text-[11px] transition-colors"
-                                                              :style="$store.tags?.getTagStyle(tag.category)"
-                                                              :class="{
+                                                    <template
+                                                        x-for="tag in $store.tags?.getSortedTags([...post.tags, ...getRemovedTags(post)], post)"
+                                                        :key="`${tag.category}:${tag.name}`">
+                                                        <span
+                                                            class="px-1.5 py-0.5 rounded text-[11px] transition-colors"
+                                                            :style="$store.tags?.getTagStyle(tag.category)" :class="{
                                                                   'bg-green-950/80 border border-green-700/60': getAddedTags(post).includes(tag.name),
                                                                   'bg-red-950/60 line-through border border-red-900/60 opacity-70': getRemovedTags(post).includes(tag.name),
                                                                   'bg-gray-800/90': !getAddedTags(post).includes(tag.name) && !getRemovedTags(post).includes(tag.name)
                                                               }">
-                                                            <span x-text="getAddedTags(post).includes(tag.name) ? `+ ${tag.name}` : tag.name"></span>
+                                                            <span
+                                                                x-text="getAddedTags(post).includes(tag.name) ? `+ ${tag.name}` : tag.name"></span>
                                                         </span>
                                                     </template>
                                                 </div>
@@ -155,11 +165,11 @@
                                     <!-- Flag Input View (Duplicate Non-Canonical Posts) -->
                                     <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
                                         <div class="space-y-2">
-                                            <label class="text-xs text-gray-400 font-semibold block">Flag Note (optional):</label>
-                                            <textarea x-model="post.flag_note" 
-                                                      placeholder="Reason for flagging duplicate..."
-                                                      rows="2"
-                                                      class="w-full bg-gray-950 border border-amber-900/60 rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500"></textarea>
+                                            <label class="text-xs text-gray-400 font-semibold block">Flag Note
+                                                (optional):</label>
+                                            <textarea x-model="post.flag_note"
+                                                placeholder="Reason for flagging duplicate..." rows="2"
+                                                class="w-full bg-gray-950 border border-amber-900/60 rounded p-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500"></textarea>
                                         </div>
                                     </template>
 
@@ -167,28 +177,30 @@
                                     <div>
                                         <div class="flex items-center justify-between mb-1">
                                             <span class="text-gray-400 font-semibold">Description:</span>
-                                            
+
                                             <!-- Controls for Kept Post (Reset) -->
                                             <template x-if="isCanonical(graph, postId) && isDescriptionEdited(post)">
-                                                <button @click="resetHeadDescription(graph)" 
-                                                        class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                <button @click="resetHeadDescription(graph)"
+                                                    class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
                                                     ↺ Reset to Original
                                                 </button>
                                             </template>
 
                                             <!-- Controls for Flagged Posts (Copy to Kept Post) -->
-                                            <template x-if="!isCanonical(graph, postId) && graph.head && post.description">
+                                            <template
+                                                x-if="!isCanonical(graph, postId) && graph.head && post.description">
                                                 <button @click="copyDescriptionToHead(graph, post.original.post_id)"
-                                                        :disabled="resMgr.getPost(graph.head)?.description === post.description"
-                                                        class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 disabled:opacity-40 disabled:cursor-not-allowed border border-gray-700 rounded px-1.5 py-0.5 transition flex items-center gap-1 font-mono">
+                                                    :disabled="resMgr.getPost(graph.head)?.description === post.description"
+                                                    class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 disabled:opacity-40 disabled:cursor-not-allowed border border-gray-700 rounded px-1.5 py-0.5 transition flex items-center gap-1 font-mono">
                                                     <span>📋 Copy to Kept Post</span>
                                                 </button>
                                             </template>
                                         </div>
-                                        
+
                                         <div class="p-2 rounded border text-xs"
-                                             :class="isDescriptionEdited(post) ? 'bg-amber-950/30 border-amber-800/60 text-amber-200' : 'bg-gray-950 border-gray-800 text-gray-400'">
-                                            <p x-text="post.description || '(No description)'" class="line-clamp-3 whitespace-pre-wrap"></p>
+                                            :class="isDescriptionEdited(post) ? 'bg-amber-950/30 border-amber-800/60 text-amber-200' : 'bg-gray-950 border-gray-800 text-gray-400'">
+                                            <p x-text="post.description || '(No description)'"
+                                                class="line-clamp-3 whitespace-pre-wrap"></p>
                                         </div>
                                     </div>
 
@@ -201,18 +213,22 @@
                                             </template>
 
                                             <template x-for="src in post.sources" :key="src">
-                                                <li class="flex items-center justify-between gap-2 group bg-gray-950/50 p-1 rounded border border-gray-800/60">
+                                                <li
+                                                    class="flex items-center justify-between gap-2 group bg-gray-950/50 p-1 rounded border border-gray-800/60">
                                                     <div class="flex items-center gap-1.5 min-w-0">
-                                                        <span :class="post.original.sources?.includes(src) ? 'text-gray-500' : 'text-green-400 font-medium'"
-                                                              x-text="post.original.sources?.includes(src) ? '•' : '+'"></span>
-                                                        <span class="truncate" :class="post.original.sources?.includes(src) ? 'text-gray-400' : 'text-green-300'" x-text="src"></span>
+                                                        <span
+                                                            :class="post.original.sources?.includes(src) ? 'text-gray-500' : 'text-green-400 font-medium'"
+                                                            x-text="post.original.sources?.includes(src) ? '•' : '+'"></span>
+                                                        <span class="truncate"
+                                                            :class="post.original.sources?.includes(src) ? 'text-gray-400' : 'text-green-300'"
+                                                            x-text="src"></span>
                                                     </div>
 
                                                     <!-- Kept Post: Remove Source Button -->
                                                     <template x-if="isCanonical(graph, postId)">
-                                                        <button @click="removeSourceFromHead(graph, src)" 
-                                                                title="Remove source from kept post"
-                                                                class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
+                                                        <button @click="removeSourceFromHead(graph, src)"
+                                                            title="Remove source from kept post"
+                                                            class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
                                                             ✕
                                                         </button>
                                                     </template>
@@ -221,11 +237,13 @@
                                                     <template x-if="!isCanonical(graph, postId) && graph.head">
                                                         <div>
                                                             <template x-if="headHasSource(graph, src)">
-                                                                <span class="text-[10px] text-emerald-400/80 font-sans px-1">(In kept post)</span>
+                                                                <span
+                                                                    class="text-[10px] text-emerald-400/80 font-sans px-1">(In
+                                                                    kept post)</span>
                                                             </template>
                                                             <template x-if="!headHasSource(graph, src)">
-                                                                <button @click="addSourceToHead(graph, src)" 
-                                                                        class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 rounded px-1.5 py-0.5 transition font-mono whitespace-nowrap">
+                                                                <button @click="addSourceToHead(graph, src)"
+                                                                    class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 rounded px-1.5 py-0.5 transition font-mono whitespace-nowrap">
                                                                     + Copy to Kept
                                                                 </button>
                                                             </template>
@@ -239,18 +257,20 @@
                                 </div>
 
                                 <!-- Right Section: Action Controls -->
-                                <div class="w-full md:w-auto flex md:flex-col justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-800">
-                                    <template x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
-                                        <button @click="applyChanges(postId)" 
-                                                class="w-full md:w-28 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
+                                <div
+                                    class="w-full md:w-auto flex md:flex-col justify-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-gray-800">
+                                    <template
+                                        x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
+                                        <button @click="applyChanges(postId)"
+                                            class="w-full md:w-28 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
                                             <span style="font-variant-emoji: text;">✓</span>
                                             <span>Apply</span>
                                         </button>
                                     </template>
 
                                     <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
-                                        <button @click="submitFlag(postId)" 
-                                                class="w-full md:w-28 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
+                                        <button @click="submitFlag(postId)"
+                                            class="w-full md:w-28 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
                                             <span style="font-variant-emoji: text;">🚩</span>
                                             <span>Flag</span>
                                         </button>

@@ -4,11 +4,11 @@
     <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-gray-800/80">
         <template x-for="(graph, idx) in duplicateGraphs" :key="idx">
             <button @click="selectGraph(idx)"
-                    class="text-xs px-3 py-1.5 rounded-md font-mono font-semibold transition border flex items-center gap-2 shadow-sm shrink-0"
-                    :class="activeGraphIndex === idx 
+                class="text-xs px-3 py-1.5 rounded-md font-mono font-semibold transition border flex items-center gap-2 shadow-sm shrink-0"
+                :class="activeGraphIndex === idx 
                         ? 'bg-amber-900/90 text-amber-200 border-amber-400 ring-1 ring-amber-400/50 shadow-md' 
                         : 'bg-amber-950/40 text-amber-400/80 border-amber-900/60 hover:bg-amber-900/50 hover:text-amber-300'">
-                
+
                 <!-- Graph Number Label -->
                 <span x-text="`#${idx + 1}`"></span>
 
@@ -30,25 +30,28 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative items-start">
                 <template x-for="pId in orderedPostIds" :key="pId">
                     <div class="space-y-2 relative flex flex-col transition">
-                        
+
                         <!-- ID Badge Header -->
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <div class="text-xs font-mono font-bold px-2.5 py-1 rounded transition flex items-center gap-1.5"
-                                     :class="selectedSuperiorId === pId ? 'bg-blue-600 text-white shadow' : 'bg-gray-800/80 text-gray-400'">
+                                    :class="selectedSuperiorId === pId ? 'bg-blue-600 text-white shadow' : 'bg-gray-800/80 text-gray-400'">
                                     <span x-text="`Post #${pId}`"></span>
-                                    
+
                                     <template x-if="selectedSuperiorId === pId">
-                                        <span class="text-[9px] uppercase font-black bg-blue-800 px-1 py-0.5 rounded text-blue-200">Kept (Superior)</span>
+                                        <span
+                                            class="text-[9px] uppercase font-black bg-blue-800 px-1 py-0.5 rounded text-blue-200">Kept
+                                            (Superior)</span>
                                     </template>
                                     <template x-if="selectedSuperiorId !== pId">
-                                        <span class="text-[9px] uppercase font-black bg-gray-900 px-1 py-0.5 rounded text-gray-500">Inferior</span>
+                                        <span
+                                            class="text-[9px] uppercase font-black bg-gray-900 px-1 py-0.5 rounded text-gray-500">Inferior</span>
                                     </template>
                                 </div>
                             </div>
 
                             <a :href="`https://e621.net/posts/${pId}`" target="_blank" rel="noopener noreferrer"
-                               class="text-[11px] font-semibold text-gray-400 hover:text-gray-200 hover:underline flex items-center gap-0.5">
+                                class="text-[11px] font-semibold text-gray-400 hover:text-gray-200 hover:underline flex items-center gap-0.5">
                                 <span>e621</span>
                                 <span class="text-[9px]">&nearr;</span>
                             </a>
@@ -57,11 +60,12 @@
                         <!-- Fixed-height image viewport frame -->
                         <div class="relative w-full h-72 bg-black/60 rounded-md border border-gray-800/60 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
                             @click="openModal(getLocalClusterPost(pId))">
-                            
+
                             <!-- Shrink-wrapped wrapper bound directly to rendered image dimensions -->
                             <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
-                                <img :src="getLocalClusterPost(pId)?.fileUrl" class="max-h-72 max-w-full object-contain rounded">
-                                
+                                <img :src="getLocalClusterPost(pId)?.fileUrl"
+                                    class="max-h-72 max-w-full object-contain rounded">
+
                                 <!-- Expand Button (Positioned absolutely relative to the image wrapper) -->
                                 <load src="/templates/components/expand-image-button.html" />
                             </div>
@@ -72,29 +76,40 @@
                         <template x-if="getLocalClusterPost(pId)">
                             <div class="space-y-1.5 pt-1">
                                 <!-- Description Collapsible -->
-                                <template x-if="getLocalClusterPost(pId)?.description && getLocalClusterPost(pId)?.description.trim().length > 0">
-                                    <details class="bg-gray-900/80 border border-gray-800/80 rounded-md text-[11px] group">
-                                        <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                <template
+                                    x-if="getLocalClusterPost(pId)?.description && getLocalClusterPost(pId)?.description.trim().length > 0">
+                                    <details
+                                        class="bg-gray-900/80 border border-gray-800/80 rounded-md text-[11px] group">
+                                        <summary
+                                            class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                             <span>Description</span>
-                                            <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                            <span
+                                                class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                         </summary>
                                         <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap break-words max-h-36 overflow-y-auto"
-                                             x-text="getLocalClusterPost(pId).description"></div>
+                                            x-text="getLocalClusterPost(pId).description"></div>
                                     </details>
                                 </template>
 
                                 <!-- Sources Collapsible -->
-                                <template x-if="getLocalClusterPost(pId)?.sources && getLocalClusterPost(pId)?.sources.length > 0">
-                                    <details class="bg-gray-900/80 border border-gray-800/80 rounded-md text-[11px] group">
-                                        <summary class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
-                                            <span x-text="`Sources (${getLocalClusterPost(pId).sources.length})`"></span>
-                                            <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                <template
+                                    x-if="getLocalClusterPost(pId)?.sources && getLocalClusterPost(pId)?.sources.length > 0">
+                                    <details
+                                        class="bg-gray-900/80 border border-gray-800/80 rounded-md text-[11px] group">
+                                        <summary
+                                            class="px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                            <span
+                                                x-text="`Sources (${getLocalClusterPost(pId).sources.length})`"></span>
+                                            <span
+                                                class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                         </summary>
-                                        <div class="px-2.5 py-2 border-t border-gray-800/80 space-y-1 max-h-32 overflow-y-auto">
-                                            <template x-for="(src, sIdx) in getLocalClusterPost(pId).sources" :key="sIdx">
-                                                <a :href="src" target="_blank" rel="noopener noreferrer" 
-                                                   class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]" 
-                                                   x-text="src"></a>
+                                        <div
+                                            class="px-2.5 py-2 border-t border-gray-800/80 space-y-1 max-h-32 overflow-y-auto">
+                                            <template x-for="(src, sIdx) in getLocalClusterPost(pId).sources"
+                                                :key="sIdx">
+                                                <a :href="src" target="_blank" rel="noopener noreferrer"
+                                                    class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]"
+                                                    x-text="src"></a>
                                             </template>
                                         </div>
                                     </details>
@@ -107,32 +122,40 @@
             </div>
 
             <!-- UNIFIED ACTION & NAVIGATION BAR -->
-            <div class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
-                
+            <div
+                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
+
                 <!-- Warnings / Instructions Center View -->
                 <div class="text-xs font-medium flex-1 w-full">
-                    
+
                     <!-- Blocking Rating Conflict Warning -->
                     <template x-if="hasRatingConflict">
-                        <div class="flex items-center gap-2 text-red-400 font-semibold bg-red-950/50 border border-red-800/60 rounded px-3 py-1.5">
+                        <div
+                            class="flex items-center gap-2 text-red-400 font-semibold bg-red-950/50 border border-red-800/60 rounded px-3 py-1.5">
                             <span class="text-sm">⚠️</span>
-                            <span>Rating conflict detected between posts in this duplicate graph. Please select an appropriate rating for the post using the selector below to advance.</span>
+                            <span>Rating conflict detected between posts in this duplicate graph. Please select an
+                                appropriate rating for the post using the selector below to advance.</span>
                         </div>
                     </template>
 
                     <!-- Soft Artist Tag Mismatch Warning (Non-blocking, Dismissible) -->
                     <template x-if="!hasRatingConflict && hasArtistMismatch && !isArtistWarningDismissed">
-                        <div class="flex items-center justify-between gap-2 text-amber-300 font-medium bg-amber-950/50 border border-amber-800/60 rounded px-3 py-1.5">
+                        <div
+                            class="flex items-center justify-between gap-2 text-amber-300 font-medium bg-amber-950/50 border border-amber-800/60 rounded px-3 py-1.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-sm">🎨</span>
                                 <span>
-                                    Artist tags between posts in this duplicate cluster do not match. Please try to verify the true artist, and file a 
-                                    <a href="https://e621.net/tag_alias_request/new" target="_blank" rel="noopener noreferrer" class="text-amber-200 underline hover:text-white font-bold">tag alias request</a> 
+                                    Artist tags between posts in this duplicate cluster do not match. Please try to
+                                    verify the true artist, and file a
+                                    <a href="https://e621.net/tag_alias_request/new" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-amber-200 underline hover:text-white font-bold">tag alias
+                                        request</a>
                                     if appropriate.
                                 </span>
                             </div>
-                            <button @click="dismissArtistWarning()" 
-                                    class="text-xs font-bold text-amber-300 hover:text-amber-100 bg-amber-900/70 hover:bg-amber-800 border border-amber-700/60 px-2.5 py-0.5 rounded transition shrink-0">
+                            <button @click="dismissArtistWarning()"
+                                class="text-xs font-bold text-amber-300 hover:text-amber-100 bg-amber-900/70 hover:bg-amber-800 border border-amber-700/60 px-2.5 py-0.5 rounded transition shrink-0">
                                 Dismiss
                             </button>
                         </div>
@@ -150,9 +173,9 @@
                 <!-- Navigation Action Button -->
                 <div class="flex items-center justify-end shrink-0">
                     <button @click="advance($data)"
-                            :disabled="hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)"
-                            class="text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2"
-                            :class="(hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)) 
+                        :disabled="hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)"
+                        class="text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2"
+                        :class="(hasRatingConflict || (hasArtistMismatch && !isArtistWarningDismissed)) 
                                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60' 
                                 : 'bg-blue-600 hover:bg-blue-500 text-white'">
                         <span x-text="nextButtonLabel"></span>
@@ -166,36 +189,38 @@
     <!-- 3. TAG CARDS (Retagging Interface) -->
     <template x-if="lhsPost">
         <div class="relative grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            
+
             <!-- Static Block Arrow Indicator -->
-            <div class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
+            <div
+                class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none items-center justify-center">
                 <svg class="w-12 h-12 text-blue-500/90 fill-current drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
-                    viewBox="0 0 24 24" 
-                    xmlns="http://www.w3.org/2000/svg">
+                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <!-- Solid, balanced block arrow path -->
                     <path d="M20 10H11V6L4 12L11 18V14H20V10Z" />
                 </svg>
             </div>
 
             <!-- LHS: Kept Post Tag Card -->
-            <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 flex flex-col justify-between shadow-sm">
+            <div
+                class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 flex flex-col justify-between shadow-sm">
                 <div class="space-y-3">
                     <!-- Post Header Line -->
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
-                                  :class="$store.tags.getRatingBadgeClass(getEffectiveLhsRating())"
-                                  x-text="$store.tags.getRatingLabel(getEffectiveLhsRating())"></span>
+                            <span
+                                class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
+                                :class="$store.tags.getRatingBadgeClass(getEffectiveLhsRating())"
+                                x-text="$store.tags.getRatingLabel(getEffectiveLhsRating())"></span>
 
                             <a :href="`https://e621.net/posts/${lhsPost.post_id}`" target="_blank"
-                               class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
+                                class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
                                 <span x-text="`#${lhsPost.post_id}`"></span>
                                 <span class="text-gray-600 text-xs">&nearr;</span>
                             </a>
 
                             <template x-if="lhsPost.parent_id">
                                 <a :href="`https://e621.net/posts/${lhsPost.parent_id}`" target="_blank"
-                                   class="font-mono text-[11px] text-gray-400 hover:text-blue-300 hover:underline">
+                                    class="font-mono text-[11px] text-gray-400 hover:text-blue-300 hover:underline">
                                     (Parent: #<span x-text="lhsPost.parent_id"></span>)
                                 </a>
                             </template>
@@ -208,10 +233,12 @@
                             </span>
 
                             <template x-if="lhsPost.is_deleted">
-                                <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
+                                <span
+                                    class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
                             </template>
                             <template x-if="!lhsPost.is_deleted && lhsPost.is_flagged">
-                                <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
+                                <span
+                                    class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                             </template>
                         </div>
                     </div>
@@ -222,7 +249,7 @@
                             <span class="text-gray-500 font-semibold text-[10px] uppercase tracking-wider">Pools:</span>
                             <template x-for="poolId in lhsPost.pool_ids" :key="poolId">
                                 <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
-                                   class="bg-gray-900 hover:bg-gray-800 text-blue-300 border border-gray-800 text-[10px] px-1.5 py-0.5 rounded font-mono transition">
+                                    class="bg-gray-900 hover:bg-gray-800 text-blue-300 border border-gray-800 text-[10px] px-1.5 py-0.5 rounded font-mono transition">
                                     Pool #<span x-text="poolId"></span>
                                 </a>
                             </template>
@@ -233,29 +260,34 @@
                     <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
                         <div class="flex flex-wrap gap-x-1 gap-y-1">
                             <template x-for="tag in getSortedTags(lhsTags)" :key="tag.category + ':' + tag.name">
-                                <span class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                                <span
+                                    class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
                                     :class="tagpill.getTagClasses(tag, lhsPost, 'lhs', { hoveredImplicationData, newTags })"
                                     :style="tagpill.getTagStyle(tag, lhsPost, hoveredImplicationData)"
                                     :title="tagpill.getTagTitle(tag.name, lhsPost)"
                                     @click="if (!tagpill.isTagLocked(tag.name, lhsPost)) removeTagWithImplicators(tag)"
                                     @mouseenter="if (!tagpill.isTagLocked(tag.name, lhsPost)) hoveredImplicationData = getImplicationChain(lhsPost.post_id, tag.name, lhsTags)"
                                     @mouseleave="hoveredImplicationData = null">
-                                    
+
                                     <span x-text="tag.name"></span>
 
                                     <!-- Implied Tag Marker -->
-                                    <span x-show="isImpliedTag(tag.name, lhsTags)" 
-                                        class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none" 
+                                    <span x-show="isImpliedTag(tag.name, lhsTags)"
+                                        class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none"
                                         title="Implied tag">i</span>
 
                                     <!-- Locked Tag Indicator vs. Remove Icon -->
                                     <template x-if="tagpill.isTagLocked(tag.name, lhsPost)">
-                                        <svg class="w-2.5 h-2.5 ml-1 text-gray-400/80 inline" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                        <svg class="w-2.5 h-2.5 ml-1 text-gray-400/80 inline" fill="currentColor"
+                                            viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                                clip-rule="evenodd" />
                                         </svg>
                                     </template>
                                     <template x-if="!tagpill.isTagLocked(tag.name, lhsPost)">
-                                        <span class="text-[9px] text-gray-400 hover:text-red-400 ml-1 cursor-pointer">×</span>
+                                        <span
+                                            class="text-[9px] text-gray-400 hover:text-red-400 ml-1 cursor-pointer">×</span>
                                     </template>
                                 </span>
                             </template>
@@ -265,7 +297,8 @@
                         <template x-if="removedLhsTags.length > 0">
                             <div class="space-y-1 pt-1.5 border-t border-gray-800/60">
                                 <div class="flex flex-wrap gap-x-1 gap-y-1">
-                                    <template x-for="tag in getSortedTags(removedLhsTags)" :key="tag.category + ':' + tag.name">
+                                    <template x-for="tag in getSortedTags(removedLhsTags)"
+                                        :key="tag.category + ':' + tag.name">
                                         <span @click="addTagWithImplications(tag.name)"
                                             class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1.5 py-0.5 rounded bg-gray-950 text-gray-600 line-through border border-gray-800 cursor-pointer hover:text-gray-300 hover:no-underline"
                                             title="Click to restore">
@@ -279,14 +312,15 @@
                 </div>
 
                 <!-- Rating Selector & Custom Tag Input Controls -->
-                <div class="bg-gray-900/90 border border-gray-800/80 rounded-md p-2.5 flex items-center justify-between gap-3 mt-3">
+                <div
+                    class="bg-gray-900/90 border border-gray-800/80 rounded-md p-2.5 flex items-center justify-between gap-3 mt-3">
                     <div class="flex items-center gap-2">
                         <span class="text-[11px] font-semibold text-gray-400">Rating:</span>
                         <div class="flex bg-gray-900 border border-gray-800 rounded p-0.5 gap-1">
                             <template x-for="r in ['s', 'q', 'e']" :key="r">
                                 <button @click="activeRating = r"
-                                        class="text-xs w-5 h-5 rounded font-bold uppercase transition cursor-pointer"
-                                        :class="activeRating === r 
+                                    class="text-xs w-5 h-5 rounded font-bold uppercase transition cursor-pointer"
+                                    :class="activeRating === r 
                                             ? ($store.tags.getRatingBadgeClass(r)) 
                                             : 'text-gray-400 hover:text-white hover:bg-gray-800 border border-transparent'">
                                     <span x-text="r"></span>
@@ -294,58 +328,49 @@
                             </template>
                         </div>
                         <template x-if="hasRatingConflict">
-                            <span class="text-[10px] font-bold text-red-400 uppercase tracking-wide" title="Conflict Detected">⚠️ Rating Mismatch</span>
+                            <span class="text-[10px] font-bold text-red-400 uppercase tracking-wide"
+                                title="Conflict Detected">⚠️ Rating Mismatch</span>
                         </template>
                     </div>
 
-                    <div class="relative flex-1 min-w-[280px] max-w-xs"
-                        x-data="tagAutocomplete()"
-                        @add-tag="addCustomTag()"
-                        @click.outside="isOpen = false">
-                        
+                    <div class="relative flex-1 min-w-[280px] max-w-xs" x-data="tagAutocomplete()"
+                        @add-tag="addCustomTag()" @click.outside="isOpen = false">
+
                         <div class="flex items-center gap-1.5 w-full">
-                            <input type="text" 
-                                x-model="tagInput" 
-                                @input="onInput"
-                                @keydown.enter.prevent="selectCurrentOrAdd()"
-                                @keydown.arrow-down.prevent="navigate(1)"
-                                @keydown.arrow-up.prevent="navigate(-1)"
-                                @keydown.escape.prevent="isOpen = false"
+                            <input type="text" x-model="tagInput" @input="onInput"
+                                @keydown.enter.prevent="selectCurrentOrAdd()" @keydown.arrow-down.prevent="navigate(1)"
+                                @keydown.arrow-up.prevent="navigate(-1)" @keydown.escape.prevent="isOpen = false"
                                 placeholder="Add tag..."
                                 class="flex-1 text-xs bg-gray-950 border border-gray-800 rounded px-2 py-1 text-gray-200 focus:outline-none focus:border-blue-500 min-w-0">
-                            
-                            <button type="button" 
-                                    @click="commitTag()"
-                                    class="cursor-pointer text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition shrink-0">
+
+                            <button type="button" @click="commitTag()"
+                                class="cursor-pointer text-xs px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition shrink-0">
                                 Add
                             </button>
                         </div>
 
-                        <div x-show="isOpen && results.length > 0"
-                            x-transition
+                        <div x-show="isOpen && results.length > 0" x-transition
                             class="absolute bottom-full mb-1 left-0 right-0 min-w-[340px] z-50 bg-gray-950 border border-gray-800 rounded shadow-2xl max-h-72 overflow-y-auto divide-y divide-gray-900"
                             style="display: none;">
-                            
-                            <template x-for="(item, index) in results" :key="item.aliasedFrom ? item.aliasedFrom + '->' + item.name : item.name">
-                                <div @click="selectResult(item)"
-                                    @mouseenter="selectedIndex = index"
+
+                            <template x-for="(item, index) in results"
+                                :key="item.aliasedFrom ? item.aliasedFrom + '->' + item.name : item.name">
+                                <div @click="selectResult(item)" @mouseenter="selectedIndex = index"
                                     :class="{ 'bg-gray-800': selectedIndex === index }"
                                     class="flex items-center justify-between px-2.5 py-1.5 text-xs cursor-pointer hover:bg-gray-800 transition-colors gap-3">
-                                    
-                                    <div class="truncate flex items-center gap-1 min-w-0" 
+
+                                    <div class="truncate flex items-center gap-1 min-w-0"
                                         :title="item.aliasedFrom ? `${item.aliasedFrom} → ${item.name}` : item.name">
-                                        
+
                                         <template x-if="item.aliasedFrom">
                                             <span class="flex items-center gap-1 truncate shrink-0 max-w-[45%]">
-                                                <span :style="$store.tags.getTagStyle('INVALID')" 
-                                                    class="truncate" 
+                                                <span :style="$store.tags.getTagStyle('INVALID')" class="truncate"
                                                     x-text="item.aliasedFrom"></span>
                                                 <span class="text-gray-500 select-none">→</span>
                                             </span>
                                         </template>
-                                        
-                                        <span :style="$store.tags.getTagStyle(item.category)" 
-                                            class="truncate min-w-0" 
+
+                                        <span :style="$store.tags.getTagStyle(item.category)" class="truncate min-w-0"
                                             x-text="item.name"></span>
                                     </div>
 
@@ -361,17 +386,18 @@
             </div>
 
             <!-- RHS: Single Active Comparison Post Card -->
-        
+
             <template x-for="post in rhsPosts" :key="post.post_id">
                 <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm">
-                    
+
                     <!-- Post Header Line -->
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <template x-if="post.rating">
-                                <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
-                                        :class="$store.tags.getRatingBadgeClass(post.rating)"
-                                        x-text="$store.tags.getRatingLabel(post.rating)"></span>
+                                <span
+                                    class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
+                                    :class="$store.tags.getRatingBadgeClass(post.rating)"
+                                    x-text="$store.tags.getRatingLabel(post.rating)"></span>
                             </template>
 
                             <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
@@ -395,10 +421,12 @@
                             </span>
 
                             <template x-if="post.is_deleted">
-                                <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
+                                <span
+                                    class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
                             </template>
                             <template x-if="!post.is_deleted && post.is_flagged">
-                                <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
+                                <span
+                                    class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                             </template>
                         </div>
                     </div>
@@ -420,7 +448,8 @@
                     <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5">
                         <div class="flex flex-wrap gap-x-1 gap-y-1">
                             <template x-for="tag in getSortedTags(post)" :key="tag.category + ':' + tag.name">
-                                <span class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                                <span
+                                    class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
                                     :class="tagpill.getTagClasses(tag, post, 'rhs', { hoveredImplicationData, isLhs: isTagOnLhs(tag.name) })"
                                     :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
                                     :title="tagpill.getTagTitle(tag.name)"
@@ -428,7 +457,9 @@
                                     @mouseenter="hoveredImplicationData = getImplicationChain(post.post_id, tag.name, post)"
                                     @mouseleave="hoveredImplicationData = null">
                                     <span x-text="tag.name"></span>
-                                    <span x-show="isImpliedTag(tag.name, post)" class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none" title="Implied tag">i</span>
+                                    <span x-show="isImpliedTag(tag.name, post)"
+                                        class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none"
+                                        title="Implied tag">i</span>
                                     <template x-if="!isTagOnLhs(tag.name)">
                                         <span class="ml-1 text-[9px] text-blue-400 font-bold">+</span>
                                     </template>
@@ -438,7 +469,7 @@
                     </div>
                 </div>
             </template>
-            
+
 
         </div>
     </template>
