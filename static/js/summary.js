@@ -41,6 +41,25 @@ document.addEventListener('alpine:init', () => {
                 ]);
             },
 
+            /**
+             * Normalizes a URL for comparison (trims whitespace, strips trailing slashes, lowercases host/scheme)
+             * @param {string} url
+             * @returns {string}
+             */
+            normalizeUrl(url) {
+                if (!url || typeof url !== 'string') return '';
+                let cleaned = url.trim();
+                if (!cleaned) return '';
+                cleaned = cleaned.replace(/\/+$/, '');
+                try {
+                    const u = new URL(cleaned);
+                    let path = u.pathname.replace(/\/+$/, '');
+                    return `${u.protocol}//${u.hostname.toLowerCase()}${path}${u.search}${u.hash}`.toLowerCase();
+                } catch (e) {
+                    return cleaned.toLowerCase();
+                }
+            },
+
             getUncopiedMetadataDetails(graph) {
                 if (!graph || !graph.head) return [];
                 const headPost = this.resMgr.getPost(graph.head);
@@ -59,9 +78,11 @@ document.addEventListener('alpine:init', () => {
                     details.push('Description');
                 }
 
-                // Sources
-                const headSources = new Set(headPost.sources || []);
-                const hasNewSources = otherPosts.some(p => (p.sources || []).some(s => !headSources.has(s)));
+                // Sources (Normalized URL comparison)
+                const headSourcesNorm = new Set((headPost.sources || []).map(s => this.normalizeUrl(s)));
+                const hasNewSources = otherPosts.some(p =>
+                    (p.sources || []).some(s => s && !headSourcesNorm.has(this.normalizeUrl(s)))
+                );
                 if (hasNewSources) {
                     details.push('Sources');
                 }
@@ -96,68 +117,96 @@ document.addEventListener('alpine:init', () => {
                 return graph?.head === postId;
             },
 
-        /**
-         * Copies description from a source post to the graph's head post
-         * @param {ResolutionGraph} graph
-         * @param {number} sourcePostId
-         */
-        copyDescriptionToHead(graph, sourcePostId) {
-            const headPost = this.resMgr.getPost(graph.head);
-            const sourcePost = this.resMgr.getPost(Number(sourcePostId));
-            if (headPost && sourcePost) {
-                headPost.description = sourcePost.description || '';
-            }
-        },
+            /**
+             * Copies description from a source post to the graph's head post
+             * @param {ResolutionGraph} graph
+             * @param {number} sourcePostId
+             */
+            copyDescriptionToHead(graph, sourcePostId) {
+                const headPost = this.resMgr.getPost(graph.head);
+                const sourcePost = this.resMgr.getPost(Number(sourcePostId));
+                if (headPost && sourcePost) {
+                    headPost.description = sourcePost.description || '';
+                }
+            },
 
-        /**
-         * Resets the head post description back to its original value
-         * @param {ResolutionGraph} graph
-         */
-        resetHeadDescription(graph) {
-            const headPost = this.resMgr.getPost(graph.head);
-            if (headPost) {
-                headPost.description = null;
-            }
-        },
+            /**
+             * Resets the head post description back to its original value
+             * @param {ResolutionGraph} graph
+             */
+            resetHeadDescription(graph) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (headPost) {
+                    headPost.description = null;
+                }
+            },
 
-        /**
-         * Adds a source URL to the graph's head post if not already present
-         * @param {ResolutionGraph} graph
-         * @param {string} sourceUrl
-         */
-        addSourceToHead(graph, sourceUrl) {
-            const headPost = this.resMgr.getPost(graph.head);
-            if (!headPost) return;
+            /**
+             * Adds a source URL to the graph's head post if not already present
+             * @param {ResolutionGraph} graph
+             * @param {string} sourceUrl
+             */
+            addSourceToHead(graph, sourceUrl) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost) return;
 
-            const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
-            if (!currentSources.includes(sourceUrl)) {
-                headPost.sources = [...currentSources, sourceUrl];
-            }
-        },
+                if (!Array.isArray(headPost._removedSources)) {
+                    headPost._removedSources = [];
+                }
 
-        /**
-         * Removes a source URL from the graph's head post
-         * @param {ResolutionGraph} graph
-         * @param {string} sourceUrl
-         */
-        removeSourceFromHead(graph, sourceUrl) {
-            const headPost = this.resMgr.getPost(graph.head);
-            if (!headPost) return;
+                const targetNorm = this.normalizeUrl(sourceUrl);
+                headPost._removedSources = headPost._removedSources.filter(s => this.normalizeUrl(s) !== targetNorm);
 
-            const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
-            headPost.sources = currentSources.filter(s => s !== sourceUrl);
-        },
+                const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
+                const alreadyHas = currentSources.some(s => this.normalizeUrl(s) === targetNorm);
+                if (!alreadyHas) {
+                    headPost.sources = [...currentSources, sourceUrl];
+                }
+            },
 
-        /**
-         * Checks if the head post currently contains a specific source
-         * @param {ResolutionGraph} graph
-         * @param {string} sourceUrl
-         * @returns {boolean}
-         */
-        headHasSource(graph, sourceUrl) {
-            const headPost = this.resMgr.getPost(graph.head);
-            return headPost?.sources?.includes(sourceUrl) ?? false;
-        },
+            /**
+             * Removes a source URL from the graph's head post and tracks it in _removedSources
+             * @param {ResolutionGraph} graph
+             * @param {string} sourceUrl
+             */
+            removeSourceFromHead(graph, sourceUrl) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost) return;
+
+                const targetNorm = this.normalizeUrl(sourceUrl);
+                const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
+                
+                headPost.sources = currentSources.filter(s => this.normalizeUrl(s) !== targetNorm);
+
+                if (!Array.isArray(headPost._removedSources)) {
+                    headPost._removedSources = [];
+                }
+                if (!headPost._removedSources.some(s => this.normalizeUrl(s) === targetNorm)) {
+                    headPost._removedSources.push(sourceUrl);
+                }
+            },
+
+            /**
+             * Restores a previously removed source URL back to the graph's head post
+             * @param {ResolutionGraph} graph
+             * @param {string} sourceUrl
+             */
+            restoreSourceToHead(graph, sourceUrl) {
+                this.addSourceToHead(graph, sourceUrl);
+            },
+
+            /**
+             * Checks if the head post currently contains a specific source (using normalized URL matching)
+             * @param {ResolutionGraph} graph
+             * @param {string} sourceUrl
+             * @returns {boolean}
+             */
+            headHasSource(graph, sourceUrl) {
+                const headPost = this.resMgr.getPost(graph.head);
+                if (!headPost || !Array.isArray(headPost.sources)) return false;
+                const targetNorm = this.normalizeUrl(sourceUrl);
+                return headPost.sources.some(s => this.normalizeUrl(s) === targetNorm);
+            },
 
         /**
          * Computes added tags against original post
