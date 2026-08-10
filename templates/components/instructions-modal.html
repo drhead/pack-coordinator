@@ -17,7 +17,7 @@
 
             <!-- P1: What this site is -->
             <div class="space-y-2">
-                <p>Welcome to P.A.C.K. (Pairwise Analysis and Cleanup Kit)! This tool groups <strong class="text-gray-200">semantically similar posts</strong> on e621 so you can quickly fix relationships (like parent/child variants or pools), merge tags, and resolve duplicate uploads.</p>
+                <p>Welcome to P.A.C.K. (Pairwise Analysis and Cleanup Kit)! This tool groups <button @click="showInstructionsModal = false; currentScreen = 'about'" class="text-blue-400 hover:underline font-semibold cursor-pointer">semantically similar posts</button> on e621 so you can quickly fix relationships (like parent/child variants or pools), merge tags, and resolve duplicate uploads.</p>
                 <p>Work is organized into <strong class="text-gray-200">projects</strong> built around specific search criteria. Each project presents groups of related posts as <strong class="text-gray-200">clusters</strong> that need attention.</p>
             </div>
 

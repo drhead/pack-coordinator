@@ -1,0 +1,217 @@
+<div x-show="currentScreen === 'about'" x-cloak class="space-y-6 max-w-4xl mx-auto py-4">
+
+    <!-- Top Action: Return to Projects List -->
+    <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+        <button
+            @click="currentScreen = 'projects'; $store.batches.activeProject = null; $store.batches.activeBatch = null;"
+            class="bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center space-x-2 transition cursor-pointer shadow">
+            <span>←</span>
+            <span>Return to Projects list</span>
+        </button>
+    </div>
+
+    <!-- Main About Content Card -->
+    <div
+        class="bg-gray-900 border border-gray-800 rounded-lg p-6 sm:p-8 space-y-6 shadow-xl leading-relaxed text-sm text-gray-300">
+
+        <!-- Header -->
+        <div class="space-y-2">
+            <h2 class="text-2xl font-bold text-gray-100 flex items-center space-x-2">
+                <span class="text-blue-400 inline-flex items-baseline"><span
+                        class="mr-[0.00em]">P</span><span>.A.C.K.</span></span>
+                <span class="text-gray-500 text-lg font-normal">|</span>
+                <span class="text-lg font-normal text-gray-400">Pairwise Analysis and Cleanup Kit</span>
+            </h2>
+            <p class="text-xs text-gray-400 font-mono">Coordinating e621 post relationship cleanup and metadata
+                reconciliation.</p>
+        </div>
+
+        <!-- Section 1: Overview -->
+        <div class="space-y-3 border-t border-gray-800 pt-5">
+            <h3 class="text-base font-semibold text-gray-200">What is P.A.C.K.?</h3>
+            <p>
+                P.A.C.K. is a tool created to help coordinate cleanup projects on e621. By grouping <strong>semantically
+                    similar posts</strong> together into manageable <strong>clusters</strong>, contributors can quickly
+                review matches, merge tag differences, link parent/child variants, organize pool sequences, and flag
+                exact duplicate uploads.
+            </p>
+            <p>
+                Since I thought it would be pretty unproductive and rude to just drop a huge file full of unsorted and
+                unhandled potential duplicate posts that I had found on people, I created P.A.C.K., which <em>not only
+                </em>provides you a huge
+                pile of unsorted potential duplicates to sift through, but also a work
+                reservation system, visual comparison tools, a tag and metadata transfer system, and integrated e621 API
+                actions to make reviewing
+                and updating posts smooth and reliable.
+            </p>
+        </div>
+
+        <!-- Section 2: How did you find these? -->
+        <div class="space-y-3 border-t border-gray-800 pt-5">
+            <h3 class="text-base font-semibold text-gray-200">How did you find these?</h3>
+            <p>
+                The core process behind identifying similar posts is graph-based clustering on nearest neighbors found
+                from vector searches on image embeddings. If all of those words make sense to you, you probably know how
+                the next part's going to go.
+            </p>
+
+            <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-3">
+                <h4 class="font-bold text-gray-200 font-mono text-xs">1. Feature Extraction</h4>
+                <p>
+                    Image embeddings were generated for millions of posts using a ViT model (<a
+                        href="https://huggingface.co/google/siglip2-so400m-patch16-naflex" target="_blank"
+                        class="text-blue-400 hover:underline">SigLIP 2 Naflex</a>) fine-tuned as a multi-label
+                    classifier (tagger model) on e621 (<a href="https://huggingface.co/RedRocket/Hydra" target="_blank"
+                        class="text-blue-400 hover:underline">Hydra 3.5</a>). Hydra 3.5 relies on thousands of
+                    manual tag correction rules and is architecturally optimized for global and local feature
+                    classification. Extracting features with Hydra 3.5 aligns the embedding space with meaningful
+                    concepts described by e621 tags. It took about 40 hours to compute the embeddings for everything on
+                    a single RTX
+                    3090 (fortunately I only have to do this once, then only on new images). If that sounds absolutely
+                    fascinating to
+                    you (and it should be! Making UMAP projections of e621 is extremely fun!), you can find the
+                    pre-computed embeddings as a HuggingFace
+                    dataset (<a href="https://huggingface.co/datasets/RedRocket/Hydra-Embeddings" target="_blank"
+                        class="text-blue-400 hover:underline">RedRocket/Hydra-Embeddings</a>).
+                </p>
+            </div>
+
+            <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-3">
+                <h4 class="font-bold text-gray-200 font-mono text-xs">2. kNN Indexing</h4>
+                <p>
+                    All image embeddings were centered, normalized, and indexed into a FAISS flat L2 index to search
+                    for the 64 nearest neighbors. What this part gives me is the top 64 most cosine-similar images for
+                    every post on e621 along with the cosine distances. This part I do have to repeat in full every
+                    time, but it only takes 2.5 hours, and the resulting kNN distances are enough to do almost all of
+                    the fun things you can do with the embeddings in under a minute. (I also have the precomputed kNN
+                    distances available
+                    in the above dataset.)
+                </p>
+            </div>
+
+            <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-3">
+                <h4 class="font-bold text-gray-200 font-mono text-xs">3. Distance Thresholding</h4>
+                <p>
+                    From the kNN dataset, candidate posts below specific similarity thresholds (depending on what I'm
+                    looking for) are clustered into
+                    groups. This produces high-quality results that focus on the semantic content of images rather
+                    than raw pixel values. And it's very important to have semantic similarity through a neural network
+                    for this sort of thing, since all of the fixed function methods tend to just throw you results that
+                    are completely out of left field on occasion. Ironically, the neural network is the more stable and
+                    predictable one here. There's a good reason why this has been the prevailing standard in image
+                    processing for about a decade.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 3: You keep using that word, "graph"... -->
+        <div class="space-y-3 border-t border-gray-800 pt-5">
+            <h3 class="text-base font-semibold text-gray-200">You keep using that word, "graph", what does that have to
+                do with anything?</h3>
+
+            <p>
+                At a fundamental level, any pair of posts on e621 can only have one of three possible relationship
+                states:
+            </p>
+
+            <ul class="list-disc list-inside space-y-2 text-gray-300 pl-2 text-xs">
+                <li>
+                    <strong class="text-gray-100">Duplicates:</strong> Identical or near-identical uploads where one
+                    post is strictly inferior and needs to be flagged for deletion.
+                </li>
+                <li>
+                    <strong class="text-gray-100">Related (Variants):</strong> Distinct variations or related artworks
+                    that should either be grouped into a pool or linked via parent/child relationships. <em>(Fun fact:
+                        e621 rules technically mandate that parent/child hierarchies must be single-level, meaning all
+                        children point directly to one root parent and no grandchildren are allowed. Almost nobody
+                        follows this rule, leaving tens or hundreds of thousands of posts needing corrections, which I
+                        don't plan to do. But P.A.C.K. is designed to at least not make the problem worse.)</em>
+                </li>
+                <li>
+                    <strong class="text-gray-100">Unrelated:</strong> Entirely distinct artworks that were caught in the
+                    same vector similarity net. Since our search is based on semantic similarity, these often aren't
+                    entirely useless, and are actually very likely to have similar content, which can make them still
+                    useful for tag transfer.
+                </li>
+            </ul>
+
+            <p>
+                Here's the catch: vector clustering frequently produces groups with more than two posts. If we naively
+                forced multi-post clusters into isolated pairwise checks, you'd be trapped doing an <span
+                    class="font-mono text-gray-200">O(N²)</span> explosion of redundant comparisons. And worse, you'd
+                spend time re-tagging or editing posts that end up getting deleted as duplicates five seconds later.
+            </p>
+
+            <p>
+                To avoid that nightmare, we have to look at how post relationships behave across whole groups at once.
+                As if breaking out linear algebra wasn't enough, this is where we have to break out graph theory to
+                solve the problem of correctly organizing furry artwork.
+            </p>
+
+            <p>
+                Inside any cluster, a single group of posts can contain multiple independent, separate <strong>duplicate
+                    subgraphs</strong> and <strong>variant subgraphs</strong> running side-by-side. P.A.C.K. models
+                these as graphs to exploit how these relationship classes propagate, and more importantly, where they
+                <em>don't</em>:
+            </p>
+
+            <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-2">
+                <h4 class="font-bold text-gray-200 font-mono text-xs">1. Full Subgraph Connectivity & Transitive
+                    Propagation</h4>
+                <p class="text-xs text-gray-300">
+                    Both <code>duplicate</code> subgraphs and <code>variant</code> subgraphs are fully connected
+                    components within their own boundaries. If A is a variant of B, and B is a variant of C, then A, B,
+                    and C are all variants. Furthermore, all posts in a variant graph are correctly considered variants
+                    to <em>every</em> post inside a connected duplicate graph.
+                </p>
+            </div>
+
+            <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-2">
+                <h4 class="font-bold text-gray-200 font-mono text-xs">2. Severing Variant Links via Duplicate Collapse
+                </h4>
+                <p class="text-xs text-gray-300">
+                    Duplicate relationships do <em>not</em> propagate outward to variants (a variant of post A is not a
+                    duplicate of post A's duplicate). When a duplicate graph is collapsed into a single canonical "kept"
+                    post, P.A.C.K. <strong>severs all individual variant links pointing to the inferior duplicate
+                        posts</strong> and re-routes them directly to the kept post. This instantly eliminates dozens of
+                    redundant variant checks, tagging steps, and pool moves across posts that are destined for deletion.
+                </p>
+            </div>
+
+            <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-2">
+                <h4 class="font-bold text-gray-200 font-mono text-xs">3. Transitive Bipartite Propagation (Unrelated
+                    Sets)</h4>
+                <p class="text-xs text-gray-300">
+                    If a set of variants <span class="font-mono text-gray-200">{A₁, A₂}</span> is declared unrelated to
+                    another set <span class="font-mono text-gray-200">{B₁, B₂}</span>, marking just one pair as
+                    unrelated transitively marks <em>all</em> cross-pairs as unrelated.
+                </p>
+            </div>
+
+            <p>
+                Modeling post relationships this way is what ultimately makes the resolution process drastically simpler
+                for human reviewers. The underlying complexity wasn't created by P.A.C.K., it was already inherently
+                present in e621's web of post data. Graph theory is just how we keep it under control.
+            </p>
+
+            <p>
+                Now, if you're looking at this project in its initial/beta release state, you might notice that we're
+                only looking at exact, pixel-for-pixel duplicates right now. Yes, this is overkill for that, but I have
+                been looking over the vector search results for quite some time before deciding to make this site, and I
+                decided to just do things correctly the first time around so I don't have to do a full stack redesign
+                when I want to move to inexact matches. You have not seen what I have seen!
+            </p>
+        </div>
+
+        <!-- Section 3: Open Source & Links -->
+        <div class="border-t border-gray-800 pt-5 flex items-center justify-between text-xs text-gray-400 font-mono">
+            <a href="https://github.com/drhead/cleanup-coordinator" target="_blank"
+                class="bg-gray-800 hover:bg-gray-700 text-blue-400 hover:text-blue-300 border border-gray-700 px-3 py-1 rounded transition flex items-center space-x-1.5">
+                <span>View on GitHub</span>
+                <span>↗</span>
+            </a>
+        </div>
+
+    </div>
+
+</div>

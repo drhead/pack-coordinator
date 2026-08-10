@@ -27,16 +27,16 @@
     <load src="/templates/components/loading.html" />
 
     <template x-if="isAgeVerified && !isLoading">
-        <div>
+        <div class="min-h-screen flex flex-col">
             <!-- Top Navigation Header -->
             <header
                 class="bg-gray-900 border-b border-gray-800 px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50">
 
                 <!-- Left Side: App Brand Title & Dynamic Breadcrumb Navigation -->
                 <div class="flex items-center space-x-3 flex-wrap gap-y-1">
-                    <h1 class="text-lg font-bold text-blue-400 cursor-pointer hover:text-blue-300 transition"
+                    <h1 class="text-lg font-bold text-blue-400 cursor-pointer hover:text-blue-300 transition inline-flex items-baseline"
                         @click="currentScreen = 'projects'; $store.batches.activeProject = null; $store.batches.activeBatch = null;">
-                        P.A.C.K.
+                        <span class="mr-[0.00em]">P</span><span>.A.C.K.</span>
                     </h1>
 
                     <!-- Breadcrumbs Container -->
@@ -118,7 +118,8 @@
 
                     <!-- Active Lease Badge (Unclaimed State) -->
                     <template x-if="currentScreen !== 'projects' && !$store.batches.activeLease">
-                        <div class="h-7 flex items-center text-gray-500 bg-gray-950/60 border border-gray-800 px-3 rounded-md">
+                        <div
+                            class="h-7 flex items-center text-gray-500 bg-gray-950/60 border border-gray-800 px-3 rounded-md">
                             No batch claimed
                         </div>
                     </template>
@@ -126,7 +127,7 @@
             </header>
 
             <!-- Main Content Container -->
-            <main class="max-w-7xl mx-auto p-6">
+            <main class="max-w-7xl mx-auto p-6 flex-1 w-full">
 
                 <!-- SCREEN 1: PROJECT SELECTION -->
                 <load src="/templates/components/screen-projects.html" />
@@ -137,7 +138,25 @@
                 <!-- SCREEN 3: BATCH DETAIL VIEW -->
                 <load src="/templates/components/screen-batch-detail.html" />
 
+                <!-- SCREEN 4: ABOUT VIEW -->
+                <load src="/templates/components/screen-about.html" />
+
             </main>
+
+            <!-- Global Page Footer (Pushed to bottom via mt-auto) -->
+            <footer class="mt-auto border-t border-gray-800/80 py-6 text-center text-xs text-gray-500 font-mono">
+                <div class="flex items-center justify-center space-x-3">
+                    <a href="https://github.com/drhead/cleanup-coordinator" target="_blank"
+                        class="hover:text-gray-300 transition flex items-center space-x-1">
+                        <span>GitHub</span>
+                    </a>
+                    <span class="text-gray-700">|</span>
+                    <button @click="currentScreen = 'about'"
+                        class="hover:text-blue-400 text-gray-400 transition cursor-pointer">
+                        About
+                    </button>
+                </div>
+            </footer>
 
             <!-- General Instructions Modal -->
             <load src="/templates/components/instructions-modal.html" />
