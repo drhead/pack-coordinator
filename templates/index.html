@@ -43,7 +43,7 @@
                     <template x-if="$store.batches.activeProject">
                         <div class="flex items-center space-x-2 text-sm text-gray-400 flex-wrap">
                             <span>/</span>
-                            <button class="hover:text-white transition" @click="currentScreen = 'batches'"
+                            <button class="hover:text-white transition cursor-pointer" @click="currentScreen = 'batches'"
                                 x-text="$store.batches.activeProject.title"></button>
 
                             <template x-if="$store.batches.activeBatch">

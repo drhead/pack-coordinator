@@ -22,19 +22,19 @@
         <!-- Mode Selector -->
         <div class="flex items-center gap-2">
             <div class="flex bg-gray-900 border border-gray-800 rounded-md p-0.5">
-                <button @click="setMode('side-by-side')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                <button @click="setMode('side-by-side')" class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
                     :class="mode === 'side-by-side' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Side-by-Side
                 </button>
-                <button @click="setMode('swipe')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                <button @click="setMode('swipe')" class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
                     :class="mode === 'swipe' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Swipe
                 </button>
-                <button @click="setMode('diff')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                <button @click="setMode('diff')" class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
                     :class="mode === 'diff' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Diff
                 </button>
-                <button @click="setMode('blink')" class="text-xs px-2.5 py-1 rounded font-medium transition"
+                <button @click="setMode('blink')" class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
                     :class="mode === 'blink' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
                     Blink
                 </button>
@@ -297,17 +297,17 @@
                     <!-- Right Column: Action Buttons -->
                     <div class="flex items-center justify-end gap-2">
                         <button @click="showSuperiorPrompt = true"
-                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/80 active:scale-95 shadow-sm whitespace-nowrap">
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/80 active:scale-95 shadow-sm whitespace-nowrap cursor-pointer">
                             Duplicate / Inferior
                         </button>
 
                         <button @click="setRelationship('variant', $data)"
-                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/80 active:scale-95 shadow-sm whitespace-nowrap">
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/80 active:scale-95 shadow-sm whitespace-nowrap cursor-pointer">
                             Variants
                         </button>
 
                         <button @click="setRelationship('unrelated', $data)"
-                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 active:scale-95 shadow-sm whitespace-nowrap">
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 active:scale-95 shadow-sm whitespace-nowrap cursor-pointer">
                             Unrelated
                         </button>
                     </div>
@@ -325,7 +325,7 @@
                     <div class="flex justify-center">
                         <button
                             @click="setRelationship('duplicate', $data, currentPair.a.post_id); showSuperiorPrompt = false"
-                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate">
+                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate cursor-pointer">
                             <span x-text="`#${currentPair.a.post_id}`"></span>
                         </button>
                     </div>
@@ -334,14 +334,14 @@
                     <div class="flex justify-center">
                         <button
                             @click="setRelationship('duplicate', $data, currentPair.b.post_id); showSuperiorPrompt = false"
-                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate">
+                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate cursor-pointer">
                             <span x-text="`#${currentPair.b.post_id}`"></span>
                         </button>
                     </div>
 
                     <!-- Absolute Cancel Button on Far Right (Does not steal width from grid!) -->
                     <button @click="showSuperiorPrompt = false" title="Cancel selection"
-                        class="absolute right-0 text-xs px-2.5 py-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition">
+                        class="absolute right-0 text-xs px-2.5 py-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer">
                         ✕
                     </button>
                 </div>

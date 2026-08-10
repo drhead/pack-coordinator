@@ -35,26 +35,26 @@
         <!-- Zoom Controls & Actions -->
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-1.5 bg-gray-800/80 border border-gray-700/60 rounded px-2 py-1 text-xs">
-                <button @click="zoomOut()" class="p-1 hover:text-blue-400 font-bold transition"
+                <button @click="zoomOut()" class="p-1 hover:text-blue-400 font-bold transition cursor-pointer"
                     title="Zoom Out (-)">−</button>
 
                 <input type="range" :min="minZoom" :max="maxZoom" :step="zoomStep" x-model.number="zoomLevel"
                     class="w-24 accent-blue-500 cursor-pointer">
 
-                <button @click="zoomIn()" class="p-1 hover:text-blue-400 font-bold transition"
+                <button @click="zoomIn()" class="p-1 hover:text-blue-400 font-bold transition cursor-pointer"
                     title="Zoom In (+)">+</button>
 
                 <span class="font-mono w-12 text-center text-gray-300"
                     x-text="`${Math.round(zoomLevel * 100)}%`"></span>
 
                 <button @click="resetZoom()"
-                    class="ml-1 text-[11px] px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition">
+                    class="ml-1 text-[11px] px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition cursor-pointer">
                     Reset
                 </button>
             </div>
 
             <button @click="close()"
-                class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-600/80 border border-gray-700 text-gray-300 hover:text-white transition">
+                class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-600/80 border border-gray-700 text-gray-300 hover:text-white transition cursor-pointer">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>

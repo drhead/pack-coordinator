@@ -148,7 +148,7 @@
 
                                                             <button @click="removeHeadParent(graph)"
                                                                 title="Remove parent from kept post"
-                                                                class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
+                                                                class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition cursor-pointer">
                                                                 ✕
                                                             </button>
 
@@ -156,7 +156,7 @@
                                                             <template x-if="post.original?.parent_id && post.parent_id !== post.original.parent_id">
                                                                 <button @click="resetHeadParent(graph)"
                                                                     title="Reset to original parent"
-                                                                    class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                                    class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
                                                                     ↺ Reset
                                                                 </button>
                                                             </template>
@@ -169,7 +169,7 @@
                                                             <span class="line-through text-red-300 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 text-[11px] font-mono">#<span x-text="post.original.parent_id"></span></span>
                                                             <button @click="resetHeadParent(graph)"
                                                                 title="Restore original parent"
-                                                                class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                                class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
                                                                 ↺ Reset
                                                             </button>
                                                         </div>
@@ -234,7 +234,7 @@
 
                                                                     <button @click="removePoolFromHead(graph, poolId)"
                                                                         title="Remove pool from kept post"
-                                                                        class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition">
+                                                                        class="text-gray-500 hover:text-red-400 px-1 py-0.5 text-[10px] rounded hover:bg-red-950/50 transition cursor-pointer">
                                                                         ✕
                                                                     </button>
                                                                 </div>
@@ -250,7 +250,7 @@
                                                                     <span class="line-through text-red-300 text-[11px]">Pool #<span x-text="poolId"></span></span>
                                                                     <button @click="restorePoolToHead(graph, poolId)"
                                                                         title="Restore pool to kept post"
-                                                                        class="text-emerald-400 hover:text-emerald-300 font-bold px-1 text-[10px]">
+                                                                        class="text-emerald-400 hover:text-emerald-300 font-bold px-1 text-[10px] cursor-pointer">
                                                                         +
                                                                     </button>
                                                                 </div>
@@ -315,7 +315,7 @@
                                             <!-- Controls for Kept Post (Reset) -->
                                             <template x-if="isCanonical(graph, postId) && isDescriptionEdited(post)">
                                                 <button @click="resetHeadDescription(graph)"
-                                                    class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono">
+                                                    class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
                                                     ↺ Reset to Original
                                                 </button>
                                             </template>
@@ -325,7 +325,7 @@
                                                 x-if="!isCanonical(graph, postId) && graph.head && post.description">
                                                 <button @click="copyDescriptionToHead(graph, post.original.post_id)"
                                                     :disabled="resMgr.getPost(graph.head)?.description === post.description"
-                                                    class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 disabled:opacity-40 disabled:cursor-not-allowed border border-gray-700 rounded px-1.5 py-0.5 transition flex items-center gap-1 font-mono">
+                                                    class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 disabled:opacity-40 disabled:cursor-not-allowed border border-gray-700 rounded px-1.5 py-0.5 transition flex items-center gap-1 font-mono cursor-pointer">
                                                     <span>📋 Copy to Kept Post</span>
                                                 </button>
                                             </template>
@@ -363,7 +363,7 @@
                                                     <template x-if="isCanonical(graph, postId)">
                                                         <button @click="removeSourceFromHead(graph, src)"
                                                             title="Remove source from kept post"
-                                                            class="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-900/60 transition-colors shrink-0">
+                                                            class="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-900/60 transition-colors shrink-0 cursor-pointer">
                                                             <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-0" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
                                                                 <path d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z" />
                                                             </svg>
@@ -375,7 +375,7 @@
                                                         <div class="w-24 shrink-0 flex items-center justify-end">
                                                             <template x-if="!headHasSource(graph, src)">
                                                                 <button @click="addSourceToHead(graph, src)"
-                                                                    class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 rounded px-1.5 py-0.5 transition font-mono whitespace-nowrap block text-center w-full">
+                                                                    class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 rounded px-1.5 py-0.5 transition font-mono whitespace-nowrap block text-center w-full cursor-pointer">
                                                                     + Copy to Kept
                                                                 </button>
                                                             </template>
@@ -395,7 +395,7 @@
 
                                                         <button @click="restoreSourceToHead(graph, src)"
                                                             title="Restore source to kept post"
-                                                            class="w-5 h-5 flex items-center justify-center rounded text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/60 border border-transparent hover:border-emerald-800/80 transition-colors shrink-0">
+                                                            class="w-5 h-5 flex items-center justify-center rounded text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/60 border border-transparent hover:border-emerald-800/80 transition-colors shrink-0 cursor-pointer">
                                                             <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-45" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
                                                                 <path d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z" />
                                                             </svg>
@@ -426,7 +426,7 @@
 
                                     <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
                                         <button @click="submitFlag(postId)"
-                                            class="w-full md:w-28 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1">
+                                            class="w-full md:w-28 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1 cursor-pointer">
                                             <span style="font-variant-emoji: text;">🚩</span>
                                             <span>Flag</span>
                                         </button>

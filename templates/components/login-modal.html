@@ -12,7 +12,7 @@
                 <span>e621 Account Login</span>
             </h3>
             <button @click="$store.auth.closeLoginModal()"
-                class="text-gray-400 hover:text-white font-bold text-lg">&times;</button>
+                class="text-gray-400 hover:text-white font-bold text-lg cursor-pointer">&times;</button>
         </div>
 
         <!-- Body / Inputs -->
@@ -59,13 +59,13 @@
         <div class="flex items-center justify-between pt-3 border-t border-gray-800 shrink-0">
             <!-- Fixed submit button to invoke $store.auth.login() -->
             <button @click="$store.auth.login()" :disabled="$store.auth.isLoggingIn"
-                class="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white text-xs px-5 py-2 rounded font-semibold transition flex items-center gap-2">
+                class="bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white text-xs px-5 py-2 rounded font-semibold transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed">
                 <span x-show="!$store.auth.isLoggingIn">Login</span>
                 <span x-show="$store.auth.isLoggingIn">Verifying...</span>
             </button>
 
             <button @click="$store.auth.closeLoginModal()"
-                class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded font-medium transition">
+                class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded font-medium transition cursor-pointer">
                 Cancel
             </button>
         </div>
