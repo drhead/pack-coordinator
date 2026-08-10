@@ -230,7 +230,7 @@
                             <div class="flex flex-wrap gap-x-1 gap-y-1 content-start">
                                 <template x-for="tag in getSortedTags(lhsTags)" :key="tag.category + ':' + tag.name">
                                     <span
-                                        class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                                        class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
                                         :class="tagpill.getTagClasses(tag, lhsPost, 'lhs', { hoveredImplicationData, newTags })"
                                         :style="tagpill.getTagStyle(tag, lhsPost, hoveredImplicationData)"
                                         :title="tagpill.getTagTitle(tag.name, lhsPost)"
@@ -422,7 +422,7 @@
                             <div class="flex flex-wrap gap-x-1 gap-y-1 content-start">
                                 <template x-for="tag in getSortedTags(post)" :key="tag.category + ':' + tag.name">
                                     <span
-                                        class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
+                                        class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
                                         :class="tagpill.getTagClasses(tag, post, 'rhs', { hoveredImplicationData, isLhs: isTagOnLhs(tag.name) })"
                                         :style="tagpill.getTagStyle(tag, post, hoveredImplicationData)"
                                         :title="tagpill.getTagTitle(tag.name)"

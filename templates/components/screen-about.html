@@ -119,12 +119,14 @@
                 <p>
                     From the kNN dataset, candidate posts below specific similarity thresholds (depending on what I'm
                     looking for) are clustered into
-                    groups. This produces high-quality results that focus on the semantic content of images rather
+                    groups, then the clusters are filtered for anything already explainable (e.g. posts that are already
+                    deleted, or sets of posts within a cluster that are already in the same family or sharing a pool).
+                    This produces high-quality results that focus on the semantic content of images rather
                     than raw pixel values. And it's very important to have semantic similarity through a neural network
                     for this sort of thing, since all of the fixed function methods tend to just throw you results that
                     are completely out of left field on occasion. Ironically, the neural network is the more stable and
                     predictable one here. There's a good reason why this has been the prevailing standard in image
-                    processing for about a decade.
+                    processing for half a decade.
                 </p>
             </div>
         </div>

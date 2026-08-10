@@ -122,11 +122,14 @@ export const alpineHelpers = {
             // 3. Mode-Specific Base & Interactive States
             const classes = [];
 
-            if (mode === 'lhs' && newTags?.has(tagName)) {
-                classes.push('ring-2 ring-emerald-400 bg-emerald-950/60 text-emerald-300 font-bold');
+            if (mode === 'lhs') {
+                classes.push('cursor-pointer');
+                if (newTags?.has(tagName)) {
+                    classes.push('ring-2 ring-emerald-400 bg-emerald-950/60 text-emerald-300 font-bold');
+                }
             } else if (mode === 'rhs') {
                 if (isLhs) {
-                    classes.push('opacity-30 cursor-not-allowed');
+                    classes.push('opacity-30 cursor-default');
                 } else {
                     classes.push('cursor-pointer hover:brightness-125');
                 }
