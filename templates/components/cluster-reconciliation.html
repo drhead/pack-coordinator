@@ -123,20 +123,22 @@
 
             <!-- UNIFIED ACTION & NAVIGATION BAR -->
             <div
-                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
+                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 relative min-h-[52px] flex items-center justify-between shadow-sm">
 
                 <!-- Instructions Center View -->
-                <div class="text-gray-300 text-center md:text-left text-xs font-medium flex-1 w-full">
-                    <span>Review tag transfers below, then advance to proceed.</span>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
+                    <span class="text-sm font-semibold text-amber-300 text-center">
+                        Transfer over any tags that apply to #<span x-text="selectedSuperiorId"></span> below, then click the button to proceed.
+                    </span>
                 </div>
 
                 <!-- Navigation Action Button -->
-                <div class="flex items-center justify-end shrink-0">
+                <div class="ml-auto flex items-center justify-end shrink-0 z-10">
                     <button @click="advance($data)" :disabled="warnings && warnings.isBlocked(activeGraphIndex, $data)"
                         class="text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2"
                         :class="(warnings && warnings.isBlocked(activeGraphIndex, $data)) 
                                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60' 
-                                : 'bg-blue-600 hover:bg-blue-500 text-white'">
+                                : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer'">
                         <span x-text="nextButtonLabel"></span>
                         <span>→</span>
                     </button>

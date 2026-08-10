@@ -255,10 +255,11 @@ export function ComparisonManager(resMgr) {
         },
 
         /**
-         * Initiates comparison session instantly.
+         * Initiates comparison session
          * @param {RootData | null} [rootData]
+         * @param {HTMLElement | null} [containerEl]
          */
-        startComparison(rootData) {
+        startComparison(rootData, containerEl = null) {
             this.isLoading = false;
             this.isHovering = false;
 
@@ -307,6 +308,23 @@ export function ComparisonManager(resMgr) {
 
                 this.setPairFromIds(pairIds[0], pairIds[1]);
                 this.isActive = true;
+
+                // Smoothly scroll to position bottom of sticky header at midpoint of gap above cluster card
+                setTimeout(() => {
+                    const cardEl = containerEl?.closest('.border.rounded-lg') || containerEl;
+                    if (cardEl) {
+                        const header = document.querySelector('header');
+                        const headerHeight = header ? header.getBoundingClientRect().height : 56;
+                        const gapMidpoint = 8; // Midpoint of space-y-4 gap between cluster cards
+                        const cardTop = cardEl.getBoundingClientRect().top + window.scrollY;
+                        const targetY = Math.max(0, cardTop - headerHeight - gapMidpoint);
+
+                        window.scrollTo({
+                            top: targetY,
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 60);
 
             } catch (err) {
                 console.error('[ComparisonManager] Initiation error:', err);
