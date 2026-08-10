@@ -65,7 +65,7 @@
                         return [{
                             id: 'nerd_warning',
                             type: 'soft',
-                            icon: '🤓',
+                            icon: this._dismissed ? '🤓' : '⚠️',
                             title: 'Nerd Shit',
                             message: 'We\'re going to be going into practical applications of vector math and graph theory here. It may include things you just don\'t want to know. Don\'t blame me for the infodump, if you keep reading, that\'s entirely on you.',
                             isResolved: false,
