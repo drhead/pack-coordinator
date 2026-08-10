@@ -55,6 +55,31 @@
                 the next part's going to go.
             </p>
 
+            <!-- This is definitely what we designed this component for. -->
+            <div x-data="{
+                scopeId: 'nerd_shit',
+                _dismissed: false,
+                warnings: {
+                    hasActiveWarnings() { return true; },
+                    getActiveWarnings() {
+                        return [{
+                            id: 'nerd_warning',
+                            type: 'soft',
+                            icon: '🤓',
+                            title: 'Nerd Shit',
+                            message: 'We\'re going to be going into practical applications of vector math and graph theory here. It may include things you just don\'t want to know. Don\'t blame me for the infodump, if you keep reading, that\'s entirely on you.',
+                            isResolved: false,
+                            isDismissed: this._dismissed
+                        }];
+                    },
+                    dismiss() {
+                        this._dismissed = true;
+                    }
+                }
+            }" class="my-4">
+                <load src="/templates/components/warning-banner.html" />
+            </div>
+
             <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-3">
                 <h4 class="font-bold text-gray-200 font-mono text-xs">1. Feature Extraction</h4>
                 <p>
