@@ -25,7 +25,7 @@ document.addEventListener('alpine:init', () => {
                         type: 'info',
                         icon: '💡',
                         title: 'Summary Instructions',
-                        message: 'Review proposed changes below, copy over descriptions or sources to the kept post if needed, then click the action buttons to finalize.',
+                        message: 'Review proposed changes below, then click the action buttons to publish your changes to E621. All changes will be attributed to you.',
                         check: () => true
                     },
                     {
@@ -177,7 +177,7 @@ document.addEventListener('alpine:init', () => {
 
                 const targetNorm = this.normalizeUrl(sourceUrl);
                 const currentSources = Array.isArray(headPost.sources) ? headPost.sources : [];
-                
+
                 headPost.sources = currentSources.filter(s => this.normalizeUrl(s) !== targetNorm);
 
                 // Only track in _removedSources if it was an ORIGINAL source on headPost

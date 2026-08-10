@@ -204,12 +204,13 @@
             </div>
 
             <div class="space-y-2 pl-3 border-l-2 border-blue-500/50 my-2">
-                <h4 class="font-bold text-gray-200 font-mono text-xs">3. Transitive Bipartite Propagation (Unrelated
+                <h4 class="font-bold text-gray-200 font-mono text-xs">3. Disjoint Set Propagation (Unrelated
                     Sets)</h4>
                 <p class="text-xs text-gray-300">
                     If a set of variants <span class="font-mono text-gray-200">{A₁, A₂}</span> is declared unrelated to
-                    another set <span class="font-mono text-gray-200">{B₁, B₂}</span>, marking just one pair as
-                    unrelated transitively marks <em>all</em> cross-pairs as unrelated.
+                    another set <span class="font-mono text-gray-200">{B₁, B₂}</span>, marking a single cross-pair
+                    <span class="font-mono text-gray-200">(A₁, B₁)</span> as unrelated proves the two variant sets are
+                    disjoint, and marks <em>all</em> remaining cross-pairs as unrelated.
                 </p>
             </div>
 
