@@ -79,8 +79,7 @@
 
                                 <!-- Clickable Card Image Wrapper (Scaled down by card's own Collapsible Offset) -->
                                 <div class="relative w-full flex items-center justify-center overflow-hidden cursor-pointer group"
-                                    :style="{ height: getSbsImageWrapperHeight(item) }"
-                                    @click="openModal(item)">
+                                    :style="{ height: getSbsImageWrapperHeight(item) }" @click="openModal(item)">
 
                                     <div class="relative h-full max-w-full flex items-center justify-center">
                                         <template x-if="!item.fileUrl">
@@ -305,7 +304,7 @@
             </div>
             <!-- UNIFIED ACTION & NAVIGATION BAR -->
             <div x-data="{ showSuperiorPrompt: false }"
-                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 shadow-sm relative min-h-13 flex items-center">
+                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 shadow-sm relative min-h-15 flex items-center">
 
                 <!-- STAGE 1: Default Classification View -->
                 <div x-show="!showSuperiorPrompt" class="grid grid-cols-3 items-center w-full">
