@@ -102,7 +102,23 @@ export function ReconciliationManager(manager) {
          * @returns {ClusterPost | null}
          */
         getLocalClusterPost(postId) {
-            return this.resolutionManager.getPost(postId)?.original || null;
+            return this.resolutionManager?.getPost?.(postId)?.original || null;
+        },
+
+        /**
+         * @param {number} postId
+         * @returns {boolean}
+         */
+        isPostDeleted(postId) {
+            return !!this.getLocalClusterPost(postId)?.is_deleted;
+        },
+
+        /**
+         * @param {number} postId
+         * @returns {boolean}
+         */
+        isPostFlagged(postId) {
+            return !!this.getLocalClusterPost(postId)?.is_flagged;
         },
 
         get lhsPost() {

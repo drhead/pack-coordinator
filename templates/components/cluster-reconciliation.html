@@ -105,31 +105,53 @@
                         <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col"
                              x-data="{ collapsed: false }">
 
-                            <!-- Header Bar (click to collapse/expand image) -->
-                            <div class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800 cursor-pointer select-none"
-                                 @click="collapsed = !collapsed">
+                            <!-- Header Bar (click to collapse/expand image if not deleted) -->
+                            <div class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800 select-none"
+                                 :class="isPostDeleted(pId) ? 'cursor-default' : 'cursor-pointer'"
+                                 @click="if (!isPostDeleted(pId)) collapsed = !collapsed">
                                 <div class="flex items-center gap-2">
-                                    <a :href="`https://e621.net/posts/${pId}`" target="_blank" rel="noopener noreferrer"
-                                        class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
-                                        x-text="`#${pId}`"
-                                        @click.stop></a>
-                                    <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">Inferior</span>
+                                    <template x-if="!isPostDeleted(pId)">
+                                        <a :href="`https://e621.net/posts/${pId}`" target="_blank" rel="noopener noreferrer"
+                                            class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
+                                            x-text="`#${pId}`"
+                                            @click.stop></a>
+                                    </template>
+                                    <template x-if="isPostDeleted(pId)">
+                                        <span class="font-mono font-bold text-gray-400" x-text="`#${pId}`"></span>
+                                    </template>
 
-                                    <!-- Collapse indicator -->
-                                    <span class="text-[9px] text-gray-500 transition-transform"
-                                          :class="collapsed ? '' : 'rotate-180'">▼</span>
+                                    <!-- Badges -->
+                                    <template x-if="isPostDeleted(pId)">
+                                        <span class="text-[9px] uppercase font-black bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded">DELETED</span>
+                                    </template>
+                                    <template x-if="!isPostDeleted(pId) && isPostFlagged(pId)">
+                                        <span class="text-[9px] uppercase font-black bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded">FLAGGED</span>
+                                    </template>
+                                    <template x-if="!isPostDeleted(pId) && !isPostFlagged(pId)">
+                                        <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">INFERIOR</span>
+                                    </template>
+
+                                    <!-- Collapse indicator chevron (only if not deleted) -->
+                                    <template x-if="!isPostDeleted(pId)">
+                                        <span class="text-[9px] text-gray-500 transition-transform"
+                                              :class="collapsed ? '' : 'rotate-180'">▼</span>
+                                    </template>
                                 </div>
-                                <a :href="`https://e621.net/posts/${pId}`" target="_blank" rel="noopener noreferrer"
-                                    class="text-[11px] font-semibold text-gray-400 hover:text-gray-200 hover:underline flex items-center gap-0.5"
-                                    @click.stop>
-                                    <span>e621</span>
-                                    <span class="text-[9px]">&nearr;</span>
-                                </a>
+
+                                <!-- e621 external link (only if not deleted) -->
+                                <template x-if="!isPostDeleted(pId)">
+                                    <a :href="`https://e621.net/posts/${pId}`" target="_blank" rel="noopener noreferrer"
+                                        class="text-[11px] font-semibold text-gray-400 hover:text-gray-200 hover:underline flex items-center gap-0.5"
+                                        @click.stop>
+                                        <span>e621</span>
+                                        <span class="text-[9px]">&nearr;</span>
+                                    </a>
+                                </template>
                             </div>
 
                             <!-- Image Viewport (collapsible, edge-to-edge) -->
                             <div data-image-viewport>
-                                <div x-show="!collapsed"
+                                <div x-show="!isPostDeleted(pId) && !collapsed"
                                      x-transition:enter="transition-all duration-200 ease-out"
                                      x-transition:enter-start="opacity-0 max-h-0"
                                      x-transition:enter-end="opacity-100 max-h-72"
