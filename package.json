@@ -1,7 +1,7 @@
 {
-  "name": "e621-cleanup-coordinator",
+  "name": "pack-coordinator",
   "version": "1.0.0",
-  "description": "Image board duplicate post cleanup coordinator.",
+  "description": "Pairwise Analysis and Cleanup Kit for image boards",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/drhead/cleanup-coordinator.git"
+    "url": "git+https://github.com/drhead/pack-coordinator.git"
   },
   "license": "ISC",
   "devDependencies": {

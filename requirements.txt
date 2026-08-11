@@ -1,8 +1,7 @@
 fastapi>=0.100.0
-uvicorn[standard]>=0.20.0
-pydantic>=2.0.0
+uvicorn[standard]>=0.22.0
+asyncpg>=0.28.0
 msgspec>=0.18.0
 httpx>=0.24.0
-asyncpg>=0.31.0
-asyncpg-stubs>=0.31.0
-brotli-stubs>=1.2.0
+brotli>=1.0.9
+xxhash>=3.2.0
