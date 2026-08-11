@@ -356,7 +356,9 @@ export function ComparisonManager(resMgr) {
         proceedToReconciliation(rootData) {
             this.closeComparison();
             if (rootData) {
-                rootData.activeView = 'reconcile';
+                setTimeout(() => {
+                    rootData.activeView = 'reconcile';
+                }, 0);
             }
         },
 

@@ -134,6 +134,9 @@ declare global {
     /** Fetches remote details and initializes internal post wrappers */
     initializePosts(): Promise<void>;
 
+    /** Ensures a default duplicate graph exists for the cluster */
+    ensureDefaultDuplicateGraph(): void;
+
     /** Retrieves a ResolutionPost instance by ID */
     getPost(postId: number): ResolutionPost | undefined;
 

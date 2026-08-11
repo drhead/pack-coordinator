@@ -81,7 +81,7 @@
                                     <!-- Single Active Image Remaining: Re-tag Mode (Purple theme, Tag SVG) -->
                                     <template
                                         x-if="cluster.posts.filter(p => !p.is_deleted && !p.is_flagged).length === 1">
-                                        <button @click.stop="activeView = 'compare'"
+                                        <button @click.stop="activeView = 'reconcile'"
                                             class="h-7 bg-purple-950/80 hover:bg-purple-900/90 text-purple-300 border border-purple-800/80 text-xs px-3 rounded-md font-semibold transition flex items-center gap-1.5 shadow-md cursor-pointer leading-none">
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor"
                                                 stroke-width="2" viewBox="0 0 24 24">

@@ -422,6 +422,11 @@ export function ReconciliationManager(manager) {
             this.initWarnings();
 
             try {
+                if (this.resolutionManager) {
+                    this.resolutionManager.initializePosts();
+                    this.resolutionManager.ensureDefaultDuplicateGraph();
+                }
+
                 if (this.duplicateGraphs.length === 0) {
                     throw new Error('No duplicate graphs found in ResolutionManager to reconcile.');
                 }
@@ -618,7 +623,9 @@ export function ReconciliationManager(manager) {
         proceedToSummary(rootData) {
             this.closeReconciliation();
             if (rootData) {
-                rootData.activeView = 'summary';
+                setTimeout(() => {
+                    rootData.activeView = 'summary';
+                }, 0);
             }
         },
     };
