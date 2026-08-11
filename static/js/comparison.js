@@ -292,6 +292,21 @@ export function ComparisonManager(resMgr) {
                     throw new Error('No valid posts available in this cluster.');
                 }
 
+                const activePosts = validPosts.filter(p => !p.is_deleted && !p.is_flagged);
+
+                if (activePosts.length === 1) {
+                    const superiorPost = activePosts[0];
+                    for (const post of validPosts) {
+                        if (post.post_id !== superiorPost.post_id) {
+                            this.resolutionManager.addGraphEdge('duplicate', superiorPost.post_id, post.post_id, superiorPost.post_id);
+                        }
+                    }
+
+                    showToast(`Single active post (#${superiorPost.post_id}) auto-selected as superior. Skipping comparison stage.`, 'info');
+                    this.proceedToReconciliation(rootData);
+                    return;
+                }
+
                 if (validPosts.length === 1) {
                     showToast('Only one valid post available. Skipping comparison step.', 'info');
                     this.proceedToReconciliation(rootData);

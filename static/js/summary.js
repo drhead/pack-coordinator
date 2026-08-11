@@ -1,4 +1,5 @@
 import { WarningsManager } from './warnings.js';
+import { showToast } from './toasts.js';
 // NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
 import { applyResolutionPostEdits, flagResolutionPostInferior, substitutePoolPosts } from './e621_api.js';
 
@@ -31,7 +32,7 @@ document.addEventListener('alpine:init', () => {
                     {
                         id: 'uncopied-metadata',
                         type: 'soft',
-                        icon: '💡',
+                        icon: '📋',
                         title: 'Uncopied Metadata Available',
                         message: (ctx) => {
                             const details = ctx.getUncopiedMetadataDetails(ctx.graph);
@@ -96,8 +97,11 @@ document.addEventListener('alpine:init', () => {
                     details.push('Pools');
                 }
 
-                // Parent (Check against current headPost.parent_id)
-                const hasParent = otherPosts.some(p => (p.parent_id || p.original?.parent_id) && !headPost.parent_id);
+                // Parent (Check against current headPost.parent_id, ignoring self-referential parents pointing to kept post)
+                const hasParent = otherPosts.some(p => {
+                    const parentId = p.parent_id ?? p.original?.parent_id ?? null;
+                    return parentId && Number(parentId) !== Number(graph.head) && !headPost.parent_id;
+                });
                 if (hasParent) {
                     details.push('Parent Post');
                 }
@@ -220,6 +224,10 @@ document.addEventListener('alpine:init', () => {
             copyParentToHead(graph, parentId) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (headPost && parentId) {
+                    if (Number(parentId) === Number(graph.head)) {
+                        showToast('Cannot copy parent ID: Parent ID is the kept post itself.', 'warning');
+                        return;
+                    }
                     headPost.parent_id = Number(parentId);
                 }
             },
@@ -241,7 +249,7 @@ document.addEventListener('alpine:init', () => {
             headHasParent(graph, parentId) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (!headPost) return false;
-                return Number(headPost.parent_id) === Number(parentId);
+                return Number(headPost.parent_id) === Number(parentId) || Number(parentId) === Number(graph.head);
             },
 
             isParentEdited(post) {

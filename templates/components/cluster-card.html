@@ -17,15 +17,18 @@
         <!-- Left Indicators -->
         <div class="flex flex-wrap items-center gap-2 h-7">
             <svg class="w-4 h-4 text-gray-400 hover:text-white transition-transform duration-150 shrink-0"
-                :class="cluster.collapsed ? '' : 'rotate-90'"
-                viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                :class="cluster.collapsed ? '' : 'rotate-90'" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clip-rule="evenodd" />
             </svg>
 
-            <span class="font-mono text-xs text-gray-400 font-bold leading-none" x-text="`Cluster #${cluster.cluster_index}`"></span>
+            <span class="font-mono text-xs text-gray-400 font-bold leading-none"
+                x-text="`Cluster #${cluster.cluster_index}`"></span>
 
             <!-- Resolution Status Badge -->
-            <span class="text-[10px] px-2 h-5 rounded font-bold uppercase tracking-wider inline-flex items-center leading-none"
+            <span
+                class="text-[10px] px-2 h-5 rounded font-bold uppercase tracking-wider inline-flex items-center leading-none"
                 :class="cluster.is_resolved ? 'bg-green-950 text-green-400 border border-green-800/50' : 'bg-gray-800 text-gray-400'"
                 x-text="cluster.is_resolved ? 'RESOLVED' : 'UNRESOLVED'"></span>
 
@@ -54,16 +57,68 @@
             <template x-if="!cluster.collapsed && activeView === 'none'">
                 <div class="flex items-center h-7" @click.stop>
                     <template x-if="$store.auth?.e621User">
-                        <button @click.stop="activeView = 'compare'"
-                            class="h-7 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 rounded-md font-semibold transition flex items-center gap-1.5 shadow-md cursor-pointer leading-none">
-                            <span style="font-variant-emoji: text;">🔍</span>
-                            <span>Start Comparison</span>
-                        </button>
+                        <div>
+                            <!-- Disabled State: <=1 total post or 0 active posts -->
+                            <template
+                                x-if="!cluster.posts || cluster.posts.length <= 1 || cluster.posts.filter(p => !p.is_deleted && !p.is_flagged).length === 0">
+                                <button disabled :title="!cluster.posts || cluster.posts.length <= 1 
+                                            ? 'Cluster contains only 1 post' 
+                                            : 'No active (non-deleted, non-flagged) posts remaining in cluster'"
+                                    class="h-7 bg-gray-800 text-gray-500 border border-gray-700 text-xs px-3 rounded-md font-semibold flex items-center gap-1.5 cursor-not-allowed leading-none">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                    </svg>
+                                    <span>Start Comparison</span>
+                                </button>
+                            </template>
+
+                            <!-- Enabled State -->
+                            <template
+                                x-if="cluster.posts && cluster.posts.length > 1 && cluster.posts.filter(p => !p.is_deleted && !p.is_flagged).length > 0">
+                                <div>
+                                    <!-- Single Active Image Remaining: Re-tag Mode (Purple theme, Tag SVG) -->
+                                    <template
+                                        x-if="cluster.posts.filter(p => !p.is_deleted && !p.is_flagged).length === 1">
+                                        <button @click.stop="activeView = 'compare'"
+                                            class="h-7 bg-purple-950/80 hover:bg-purple-900/90 text-purple-300 border border-purple-800/80 text-xs px-3 rounded-md font-semibold transition flex items-center gap-1.5 shadow-md cursor-pointer leading-none">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor"
+                                                stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M6 6h.008v.008H6V6z" />
+                                            </svg>
+                                            <span>Re-tag Cluster</span>
+                                        </button>
+                                    </template>
+
+                                    <!-- Multiple Active Images Remaining: Standard Comparison Mode (Blue theme, Magnifier SVG) -->
+                                    <template
+                                        x-if="cluster.posts.filter(p => !p.is_deleted && !p.is_flagged).length > 1">
+                                        <button @click.stop="activeView = 'compare'"
+                                            class="h-7 bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 rounded-md font-semibold transition flex items-center gap-1.5 shadow-md cursor-pointer leading-none">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor"
+                                                stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                                            </svg>
+                                            <span>Start Comparison</span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
                     </template>
                     <template x-if="!$store.auth?.e621User">
                         <button disabled title="Log in with e621 credentials to start cluster comparison"
                             class="h-7 bg-gray-800 text-gray-500 border border-gray-700 text-xs px-3 rounded-md font-semibold flex items-center gap-1.5 cursor-not-allowed leading-none">
-                            <span style="font-variant-emoji: text;">🔍</span>
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
                             <span>Start Comparison</span>
                         </button>
                     </template>
@@ -76,7 +131,10 @@
                     <button @click.stop="discardAndExit()"
                         class="h-7 bg-red-950/60 hover:bg-red-900/80 text-red-300 hover:text-red-200 border border-red-800/60 text-xs px-3 rounded-md font-semibold transition flex items-center gap-1.5 cursor-pointer leading-none shadow-sm"
                         title="Exit workflow and discard all uncommitted changes for this cluster">
-                        <span style="font-variant-emoji: text;">✕</span>
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                         <span>Discard & Exit</span>
                     </button>
                 </div>
@@ -106,9 +164,13 @@
                     <div x-data="ReconciliationManager(resMgr)" x-init="startReconciliation()">
                         <!-- Loading Spinner while ReconciliationManager initializes -->
                         <template x-if="isLoading || !isActive">
-                            <div class="flex flex-col items-center justify-center min-h-[360px] p-8 space-y-3 bg-gray-950/60 border border-gray-800/80 rounded-lg shadow-inner">
-                                <div class="w-8 h-8 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-                                <p class="text-xs text-gray-400 font-medium animate-pulse">Loading tag reconciliation...</p>
+                            <div
+                                class="flex flex-col items-center justify-center min-h-[360px] p-8 space-y-3 bg-gray-950/60 border border-gray-800/80 rounded-lg shadow-inner">
+                                <div
+                                    class="w-8 h-8 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin">
+                                </div>
+                                <p class="text-xs text-gray-400 font-medium animate-pulse">Loading tag reconciliation...
+                                </p>
                             </div>
                         </template>
 

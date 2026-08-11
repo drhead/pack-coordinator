@@ -72,7 +72,9 @@
                     <!-- Blacklist Settings Modal Trigger -->
                     <button @click="$store.blacklist.openModal()"
                         class="h-7 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition cursor-pointer">
-                        <span style="font-variant-emoji: text;">🚫</span>
+                        <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
                         <span>Blacklist</span>
                     </button>
 
@@ -81,7 +83,9 @@
                         <template x-if="!$store.auth.e621User">
                             <button @click="$store.auth.openLoginModal()"
                                 class="h-7 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 rounded-md font-sans font-semibold flex items-center space-x-1.5 transition text-xs cursor-pointer">
-                                <span style="font-variant-emoji: text;">🔑</span>
+                                <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 11-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0121.75 8.25z" />
+                                </svg>
                                 <span>Login</span>
                             </button>
                         </template>
