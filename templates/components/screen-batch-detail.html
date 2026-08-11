@@ -39,7 +39,7 @@
             <!-- Batch Refresh Data Button (Fixed width & height to prevent resizing) -->
             <button @click="$store.batches.refreshBatch($store.batches.activeBatch)"
                 :disabled="Boolean($store.batches.activeBatch?.isRefreshing)"
-                class="min-w-[155px] bg-blue-950/40 hover:bg-blue-900/60 text-blue-400 hover:text-blue-300 text-xs px-4 py-2 rounded font-semibold border border-blue-800/60 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                class="min-w-38.75 bg-blue-950/40 hover:bg-blue-900/60 text-blue-400 hover:text-blue-300 text-xs px-4 py-2 rounded font-semibold border border-blue-800/60 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 <template x-if="$store.batches.activeBatch?.isRefreshing">
                     <span class="animate-spin">↻</span>
                 </template>
@@ -50,7 +50,7 @@
             <!-- Claim / Revoke Action State Buttons (Fixed width & height to prevent resizing) -->
             <template x-if="$store.batches.activeBatch?.isClaiming">
                 <button disabled
-                    class="min-w-[180px] bg-blue-600/80 text-white text-xs px-4 py-2 rounded font-semibold transition flex items-center justify-center gap-1.5 cursor-wait opacity-90">
+                    class="min-w-45 bg-blue-600/80 text-white text-xs px-4 py-2 rounded font-semibold transition flex items-center justify-center gap-1.5 cursor-wait opacity-90">
                     <span class="animate-spin">↻</span>
                     <span>Claiming Batch...</span>
                 </button>
@@ -58,7 +58,7 @@
 
             <template x-if="$store.batches.activeBatch?.isRevoking">
                 <button disabled
-                    class="min-w-[180px] bg-amber-600/80 text-white text-xs px-4 py-2 rounded font-semibold transition flex items-center justify-center gap-1.5 cursor-wait opacity-90">
+                    class="min-w-45 bg-amber-600/80 text-white text-xs px-4 py-2 rounded font-semibold transition flex items-center justify-center gap-1.5 cursor-wait opacity-90">
                     <span class="animate-spin">↻</span>
                     <span>Releasing Batch...</span>
                 </button>
@@ -67,7 +67,7 @@
             <template
                 x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.is_leased_by_you">
                 <button
-                    class="min-w-[180px] bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center cursor-pointer"
+                    class="min-w-45 bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center cursor-pointer"
                     @click="$store.batches.revokeLease($store.batches.activeBatch.batch_id)">
                     Release Batch
                 </button>
@@ -76,7 +76,7 @@
             <template
                 x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'AVAILABLE'">
                 <button
-                    class="min-w-[180px] text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center"
+                    class="min-w-45 text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center"
                     :class="$store.batches.canClaimActiveBatch() ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer' : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'"
                     :disabled="!$store.batches.canClaimActiveBatch()" @click="$store.batches.claimCurrentBatch()"
                     x-text="$store.batches.activeLease ? 'Lease Exists Elsewhere' : 'Claim Batch'">
@@ -86,7 +86,7 @@
             <template
                 x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && !$store.batches.activeBatch?.is_leased_by_you">
                 <button disabled
-                    class="min-w-[180px] bg-gray-800 text-gray-500 text-xs px-4 py-2 rounded font-semibold border border-gray-700 cursor-not-allowed text-center flex items-center justify-center">
+                    class="min-w-45 bg-gray-800 text-gray-500 text-xs px-4 py-2 rounded font-semibold border border-gray-700 cursor-not-allowed text-center flex items-center justify-center">
                     Claimed by Another User
                 </button>
             </template>

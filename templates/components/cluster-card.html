@@ -10,7 +10,7 @@
      }" :class="cluster.is_resolved ? 'bg-gray-900/60 border-gray-800/80 opacity-80' : 'bg-gray-900 border-gray-800'">
 
     <!-- Cluster Header Line (Collapsible Trigger) -->
-    <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none hover:bg-gray-800/30 transition min-h-[50px]"
+    <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 cursor-pointer select-none hover:bg-gray-800/30 transition min-h-12.5"
         @click="cluster.collapsed = !cluster.collapsed"
         :class="cluster.collapsed ? 'border-b border-transparent' : 'border-b border-gray-800/60'">
 
@@ -165,7 +165,7 @@
                         <!-- Loading Spinner while ReconciliationManager initializes -->
                         <template x-if="isLoading || !isActive">
                             <div
-                                class="flex flex-col items-center justify-center min-h-[360px] p-8 space-y-3 bg-gray-950/60 border border-gray-800/80 rounded-lg shadow-inner">
+                                class="flex flex-col items-center justify-center min-h-90 p-8 space-y-3 bg-gray-950/60 border border-gray-800/80 rounded-lg shadow-inner">
                                 <div
                                     class="w-8 h-8 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin">
                                 </div>

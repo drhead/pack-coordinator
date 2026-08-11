@@ -86,7 +86,7 @@
                                             <span
                                                 class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                         </summary>
-                                        <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap break-words max-h-36 overflow-y-auto"
+                                        <div class="px-2.5 py-2 border-t border-gray-800/80 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto"
                                             x-text="getLocalClusterPost(pId).description"></div>
                                     </details>
                                 </template>
@@ -123,12 +123,13 @@
 
             <!-- UNIFIED ACTION & NAVIGATION BAR -->
             <div
-                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 relative min-h-[52px] flex items-center justify-between shadow-sm">
+                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 relative min-h-13 flex items-center justify-between shadow-sm">
 
                 <!-- Instructions Center View -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
                     <span class="text-sm font-semibold text-amber-300 text-center">
-                        Transfer over any tags that apply to #<span x-text="selectedSuperiorId"></span> below, then click the button to proceed.
+                        Transfer over any tags that apply to #<span x-text="selectedSuperiorId"></span> below, then
+                        click the button to proceed.
                     </span>
                 </div>
 
@@ -269,7 +270,7 @@
                                         <template x-for="tag in getSortedTags(removedLhsTags)"
                                             :key="tag.category + ':' + tag.name">
                                             <span @click="addTagWithImplications(tag.name)"
-                                                class="cursor-pointer font-mono text-[11px] leading-tight inline-flex items-center px-1.5 py-0.5 rounded bg-gray-950 text-gray-600 line-through border border-gray-800 cursor-pointer hover:text-gray-300 hover:no-underline"
+                                                class="font-mono text-[11px] leading-tight inline-flex items-center px-1.5 py-0.5 rounded bg-gray-950 text-gray-600 line-through border border-gray-800 cursor-pointer hover:text-gray-300 hover:no-underline"
                                                 title="Click to restore">
                                                 <span x-text="tag.name"></span>
                                             </span>
@@ -301,7 +302,7 @@
                                 </template>
                             </div>
 
-                            <div class="relative flex-1 min-w-[200px] max-w-xs" x-data="tagAutocomplete()"
+                            <div class="relative flex-1 min-w-50 max-w-xs" x-data="tagAutocomplete()"
                                 @add-tag="addCustomTag()" @click.outside="isOpen = false">
 
                                 <div class="flex items-center gap-1.5 w-full">
@@ -319,7 +320,7 @@
                                 </div>
 
                                 <div x-show="isOpen && results.length > 0" x-transition
-                                    class="absolute bottom-full mb-1 left-0 right-0 min-w-[340px] z-50 bg-gray-950 border border-gray-800 rounded shadow-2xl max-h-72 overflow-y-auto divide-y divide-gray-900"
+                                    class="absolute bottom-full mb-1 left-0 right-0 min-w-85 z-50 bg-gray-950 border border-gray-800 rounded shadow-2xl max-h-72 overflow-y-auto divide-y divide-gray-900"
                                     style="display: none;">
 
                                     <template x-for="(item, index) in results"

@@ -20,7 +20,8 @@
             </div>
 
             <!-- Soft/Hard/Info Warning Stack for Graph Scope -->
-            <div x-data="{ scopeId: graphIdx, graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) }">
+            <div
+                x-data="{ scopeId: graphIdx, graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) }">
                 <load src="/templates/components/warning-banner.html" />
             </div>
 
@@ -45,7 +46,7 @@
 
                                 <!-- Left Section: Single Unified Thumbnail Block -->
                                 <div
-                                    class="w-full md:w-36 flex-shrink-0 border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
+                                    class="w-full md:w-36 shrink-0 border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
 
                                     <!-- 1. Header Bar (ID & Rating with Diff) -->
                                     <div
@@ -125,13 +126,13 @@
                                         </div>
                                     </template>
 
-                                </div>                                <!-- Middle Section: Diff UI (Parent/Pools, Tags, Description, Sources) -->
+                                </div> <!-- Middle Section: Diff UI (Parent/Pools, Tags, Description, Sources) -->
                                 <div class="flex-1 w-full flex flex-col gap-3 text-xs">
 
                                     <!-- Parent Post & Pools Line (Positioned ABOVE Tags section, no enclosing box container) -->
                                     <div class="flex flex-wrap items-center gap-4 text-xs font-mono">
                                         <!-- Left: Parent Column (Fixed w-56 width to accommodate 8-digit post IDs & action buttons without shift) -->
-                                        <div class="w-56 shrink-0 flex items-center gap-1.5 min-h-[24px]">
+                                        <div class="w-56 shrink-0 flex items-center gap-1.5 min-h-6">
                                             <span class="text-gray-400 font-semibold font-sans">Parent:</span>
 
                                             <!-- Kept Post Parent Controls -->
@@ -140,10 +141,13 @@
                                                     <!-- Active Parent (Original or Modified) -->
                                                     <template x-if="post.parent_id">
                                                         <div class="flex items-center gap-1 h-6">
-                                                            <a :href="`https://e621.net/posts/${post.parent_id}`" target="_blank"
+                                                            <a :href="`https://e621.net/posts/${post.parent_id}`"
+                                                                target="_blank"
                                                                 :class="post.parent_id === post.original?.parent_id ? 'bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border-gray-700' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
                                                                 class="border px-1.5 py-0.5 rounded text-[11px] font-mono transition">
-                                                                <span x-text="post.parent_id === post.original?.parent_id ? '' : '+ '"></span>#<span x-text="post.parent_id"></span>
+                                                                <span
+                                                                    x-text="post.parent_id === post.original?.parent_id ? '' : '+ '"></span>#<span
+                                                                    x-text="post.parent_id"></span>
                                                             </a>
 
                                                             <button @click="removeHeadParent(graph)"
@@ -153,7 +157,8 @@
                                                             </button>
 
                                                             <!-- Reset button if replacing an existing original parent -->
-                                                            <template x-if="post.original?.parent_id && post.parent_id !== post.original.parent_id">
+                                                            <template
+                                                                x-if="post.original?.parent_id && post.parent_id !== post.original.parent_id">
                                                                 <button @click="resetHeadParent(graph)"
                                                                     title="Reset to original parent"
                                                                     class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
@@ -166,7 +171,9 @@
                                                     <!-- Removed Original Parent (Red Strikethrough & Reset outside the box) -->
                                                     <template x-if="!post.parent_id && post.original?.parent_id">
                                                         <div class="flex items-center gap-1.5 h-6">
-                                                            <span class="line-through text-red-300 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 text-[11px] font-mono">#<span x-text="post.original.parent_id"></span></span>
+                                                            <span
+                                                                class="line-through text-red-300 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 text-[11px] font-mono">#<span
+                                                                    x-text="post.original.parent_id"></span></span>
                                                             <button @click="resetHeadParent(graph)"
                                                                 title="Restore original parent"
                                                                 class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
@@ -177,7 +184,8 @@
 
                                                     <!-- No Parent Fallback (when original was null and none added) -->
                                                     <template x-if="!post.parent_id && !post.original?.parent_id">
-                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                        <span
+                                                            class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
                                                 </div>
                                             </template>
@@ -186,13 +194,15 @@
                                             <template x-if="!isCanonical(graph, postId) && graph.head">
                                                 <div class="flex items-center gap-1.5">
                                                     <template x-if="!post.parent_id">
-                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                        <span
+                                                            class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
                                                     <template x-if="post.parent_id">
                                                         <div class="h-6 flex items-center">
                                                             <!-- Already in kept post: plain text, no controls -->
                                                             <template x-if="headHasParent(graph, post.parent_id)">
-                                                                <span class="text-gray-400 font-mono text-[11px]">#<span x-text="post.parent_id"></span></span>
+                                                                <span class="text-gray-400 font-mono text-[11px]">#<span
+                                                                        x-text="post.parent_id"></span></span>
                                                             </template>
                                                             <!-- Not in kept post: + #<id> button -->
                                                             <template x-if="!headHasParent(graph, post.parent_id)">
@@ -209,15 +219,17 @@
                                         </div>
 
                                         <!-- Right: Pools Column (Fixed distance from Parent, height locked for 0 micro-shifts) -->
-                                        <div class="flex items-center gap-1.5 min-w-0 min-h-[24px]">
+                                        <div class="flex items-center gap-1.5 min-w-0 min-h-6">
                                             <span class="text-gray-400 font-semibold font-sans">Pools:</span>
 
                                             <!-- Kept Post Pools Display -->
                                             <template x-if="isCanonical(graph, postId)">
                                                 <div class="flex items-center gap-1">
                                                     <!-- No pools fallback -->
-                                                    <template x-if="(!post.pool_ids || post.pool_ids.length === 0) && (!post._removedPools || post._removedPools.length === 0)">
-                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                    <template
+                                                        x-if="(!post.pool_ids || post.pool_ids.length === 0) && (!post._removedPools || post._removedPools.length === 0)">
+                                                        <span
+                                                            class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
 
                                                     <!-- Active Pools on Kept Post -->
@@ -226,10 +238,13 @@
                                                             <template x-for="poolId in post.pool_ids" :key="poolId">
                                                                 <div class="flex items-center gap-1 h-6">
                                                                     <!-- Original pool (standard blue badge) vs Moved-over pool (green badge) -->
-                                                                    <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
+                                                                    <a :href="`https://e621.net/pools/${poolId}`"
+                                                                        target="_blank"
                                                                         :class="post.original?.pool_ids?.includes(poolId) ? 'bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border-gray-800' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
                                                                         class="border text-[11px] px-1.5 py-0.5 rounded transition">
-                                                                        <span x-text="post.original?.pool_ids?.includes(poolId) ? '' : '+ '"></span>Pool #<span x-text="poolId"></span>
+                                                                        <span
+                                                                            x-text="post.original?.pool_ids?.includes(poolId) ? '' : '+ '"></span>Pool
+                                                                        #<span x-text="poolId"></span>
                                                                     </a>
 
                                                                     <button @click="removePoolFromHead(graph, poolId)"
@@ -243,11 +258,16 @@
                                                     </template>
 
                                                     <!-- Removed Original Pools on Kept Post (Red Strikethrough & Restore +) -->
-                                                    <template x-if="post._removedPools && post._removedPools.length > 0">
+                                                    <template
+                                                        x-if="post._removedPools && post._removedPools.length > 0">
                                                         <div class="flex flex-wrap items-center gap-1">
-                                                            <template x-for="poolId in post._removedPools" :key="'removed_pool:' + poolId">
-                                                                <div class="flex items-center gap-1 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 h-6">
-                                                                    <span class="line-through text-red-300 text-[11px]">Pool #<span x-text="poolId"></span></span>
+                                                            <template x-for="poolId in post._removedPools"
+                                                                :key="'removed_pool:' + poolId">
+                                                                <div
+                                                                    class="flex items-center gap-1 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 h-6">
+                                                                    <span
+                                                                        class="line-through text-red-300 text-[11px]">Pool
+                                                                        #<span x-text="poolId"></span></span>
                                                                     <button @click="restorePoolToHead(graph, poolId)"
                                                                         title="Restore pool to kept post"
                                                                         class="text-emerald-400 hover:text-emerald-300 font-bold px-1 text-[10px] cursor-pointer">
@@ -263,10 +283,13 @@
                                             <!-- Inferior Post Pools Display (Disappears without a trace when moved) -->
                                             <template x-if="!isCanonical(graph, postId) && graph.head">
                                                 <div class="flex flex-wrap items-center gap-1">
-                                                    <template x-if="getAvailableInferiorPools(graph, post).length === 0">
-                                                        <span class="text-gray-600 italic font-sans text-[11px]">(None)</span>
+                                                    <template
+                                                        x-if="getAvailableInferiorPools(graph, post).length === 0">
+                                                        <span
+                                                            class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
-                                                    <template x-for="poolId in getAvailableInferiorPools(graph, post)" :key="poolId">
+                                                    <template x-for="poolId in getAvailableInferiorPools(graph, post)"
+                                                        :key="poolId">
                                                         <div class="h-6 flex items-center">
                                                             <button @click="copyPoolToHead(graph, poolId)"
                                                                 title="Click to move pool to kept post"
@@ -334,7 +357,7 @@
                                         <div class="p-2 rounded border text-xs max-h-20 overflow-y-auto"
                                             :class="isDescriptionEdited(post) ? 'bg-green-950/40 border-green-800/60 text-green-200' : 'bg-gray-950 border-gray-800 text-gray-400'">
                                             <p x-text="post.description || '(No description)'"
-                                                class="whitespace-pre-wrap break-words"></p>
+                                                class="whitespace-pre-wrap wrap-break-word"></p>
                                         </div>
                                     </div>
 
@@ -342,7 +365,8 @@
                                     <div>
                                         <span class="text-gray-400 font-semibold block mb-1">Sources:</span>
                                         <ul class="flex flex-col gap-1 font-mono text-[11px] break-all">
-                                            <template x-if="(!post.sources || post.sources.length === 0) && (!post._removedSources || post._removedSources.length === 0)">
+                                            <template
+                                                x-if="(!post.sources || post.sources.length === 0) && (!post._removedSources || post._removedSources.length === 0)">
                                                 <li class="text-gray-600 italic font-sans">(No sources)</li>
                                             </template>
 
@@ -364,8 +388,10 @@
                                                         <button @click="removeSourceFromHead(graph, src)"
                                                             title="Remove source from kept post"
                                                             class="w-5 h-5 flex items-center justify-center rounded text-gray-500 hover:text-red-400 hover:bg-red-950/60 border border-transparent hover:border-red-900/60 transition-colors shrink-0 cursor-pointer">
-                                                            <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-0" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z" />
+                                                            <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-0"
+                                                                viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+                                                                <path
+                                                                    d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z" />
                                                             </svg>
                                                         </button>
                                                     </template>
@@ -385,19 +411,25 @@
                                             </template>
 
                                             <!-- Removed/Deleted Sources on Kept Post (Red Strikethrough & Restore via SVG rotated 45deg -> +) -->
-                                            <template x-if="isCanonical(graph, postId) && post._removedSources && post._removedSources.length > 0">
+                                            <template
+                                                x-if="isCanonical(graph, postId) && post._removedSources && post._removedSources.length > 0">
                                                 <template x-for="src in post._removedSources" :key="'removed:' + src">
-                                                    <li class="flex items-center justify-between gap-2 group bg-red-950/20 p-1 rounded border border-red-900/40 opacity-85 h-7">
+                                                    <li
+                                                        class="flex items-center justify-between gap-2 group bg-red-950/20 p-1 rounded border border-red-900/40 opacity-85 h-7">
                                                         <div class="flex items-center gap-1.5 min-w-0">
                                                             <span class="text-red-400 font-bold select-none">•</span>
-                                                            <span class="truncate line-through text-red-300/90 font-mono" x-text="src"></span>
+                                                            <span
+                                                                class="truncate line-through text-red-300/90 font-mono"
+                                                                x-text="src"></span>
                                                         </div>
 
                                                         <button @click="restoreSourceToHead(graph, src)"
                                                             title="Restore source to kept post"
                                                             class="w-5 h-5 flex items-center justify-center rounded text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/60 border border-transparent hover:border-emerald-800/80 transition-colors shrink-0 cursor-pointer">
-                                                            <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-45" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z" />
+                                                            <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-45"
+                                                                viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+                                                                <path
+                                                                    d="M2.22 2.22a.75.75 0 0 1 1.06 0L6 4.94l2.72-2.72a.75.75 0 1 1 1.06 1.06L7.06 6l2.72 2.72a.75.75 0 1 1-1.06 1.06L6 7.06l-2.72 2.72a.75.75 0 0 1-1.06-1.06L4.94 6 2.22 3.28a.75.75 0 0 1 0-1.06z" />
                                                             </svg>
                                                         </button>
                                                     </li>
