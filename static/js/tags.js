@@ -75,23 +75,24 @@ function getLatestValidCacheCutoff() {
     return cutoff.getTime();
 }
 
-async function getCachedTagMap() {
+async function getCachedTagBuffer() {
     try {
+        if (typeof indexedDB === 'undefined') return null;
         const db = await openTagDatabase();
         return new Promise((resolve) => {
             const tx = db.transaction('cache', 'readonly');
             const store = tx.objectStore('cache');
 
             const metaReq = store.get('cache_timestamp');
-            const dataReq = store.get('tagInfoMap');
+            const dataReq = store.get('tagBundleBuffer');
 
             tx.oncomplete = () => {
                 const timestamp = metaReq.result;
-                const tagMap = dataReq.result;
+                const buffer = dataReq.result;
                 const validCutoff = getLatestValidCacheCutoff();
 
-                if (timestamp && tagMap && timestamp >= validCutoff) {
-                    resolve(tagMap);
+                if (timestamp && buffer && timestamp >= validCutoff) {
+                    resolve(buffer);
                 } else {
                     resolve(null); // Cache stale or missing
                 }
@@ -104,24 +105,37 @@ async function getCachedTagMap() {
 }
 
 /** 
- * @param {TagInfoMap} parsedMap 
+ * @param {ArrayBuffer} buffer 
  * @returns {Promise<void>}
  */
-async function setCachedTagMap(parsedMap) {
+async function setCachedTagBuffer(buffer) {
     try {
+        if (typeof indexedDB === 'undefined') return;
         const db = await openTagDatabase();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction('cache', 'readwrite');
-            const store = tx.objectStore('cache');
+        return await new Promise((resolve) => {
+            try {
+                const tx = db.transaction('cache', 'readwrite');
+                const store = tx.objectStore('cache');
 
-            store.put(Date.now(), 'cache_timestamp');
-            store.put(parsedMap, 'tagInfoMap');
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => {
+                    console.warn('[TagManager] IndexedDB cache write skipped/failed:', tx.error || e);
+                    resolve();
+                };
+                tx.onabort = (e) => {
+                    console.warn('[TagManager] IndexedDB transaction aborted:', tx.error || e);
+                    resolve();
+                };
 
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
+                store.put(Date.now(), 'cache_timestamp');
+                store.put(buffer, 'tagBundleBuffer');
+            } catch (err) {
+                console.warn('[TagManager] Error starting IndexedDB transaction:', err);
+                resolve();
+            }
         });
     } catch (err) {
-        console.warn('[TagManager] Failed to write to IndexedDB:', err);
+        console.warn('[TagManager] Failed to access IndexedDB for caching:', err);
     }
 }
 
@@ -166,18 +180,18 @@ export class TagManager {
         this.error = null;
 
         try {
-            // 1. Try loading from IndexedDB
+            // 1. Check for cached ArrayBuffer in IndexedDB
             this._reportProgress('Checking local cache...', 5, onProgress);
             await yieldToMain();
 
-            let parsedMap = await getCachedTagMap();
+            let buffer = await getCachedTagBuffer();
 
-            if (parsedMap) {
-                console.log('[TagManager] Loaded tag metadata from IndexedDB cache hit.');
-                this._reportProgress('Loaded from cache', 80, onProgress);
+            if (buffer) {
+                console.log('[TagManager] Loaded tag bundle ArrayBuffer from IndexedDB cache hit.');
+                this._reportProgress('Loaded from cache', 30, onProgress);
                 await yieldToMain();
             } else {
-                // 2. Cache miss -> Fetch and decode MsgPack
+                // 2. Cache miss -> Fetch MsgPack binary
                 console.log('[TagManager] Cache miss or stale; fetching fresh bundle...');
                 this._reportProgress('Fetching tag bundle...', 10, onProgress);
                 await yieldToMain();
@@ -190,36 +204,39 @@ export class TagManager {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                this._reportProgress('Unpacking tag bundle...', 40, onProgress);
-                await yieldToMain();
+                buffer = await response.arrayBuffer();
 
-                const buffer = await response.arrayBuffer();
-                const rawBundle = /** @type {Record<string, RawTagBundleEntry>} */ (decode(buffer)) || {};
+                // Save binary buffer back to IndexedDB asynchronously in background (non-blocking)
+                setCachedTagBuffer(buffer);
+            }
 
-                this._reportProgress('Processing tag graph...', 60, onProgress);
-                await yieldToMain();
+            this._reportProgress('Unpacking tag bundle...', 40, onProgress);
+            await yieldToMain();
 
-                parsedMap = {};
+            const rawBundle = /** @type {Record<string, RawTagBundleEntry>} */ (decode(buffer)) || {};
 
-                for (const [tag, entry] of Object.entries(rawBundle)) {
-                    /** @type {TagInfo} */
-                    const info = {
-                        category: CATEGORY_MAP[entry.category] || 'GENERAL',
-                        tag_count: entry.count ?? 0,
-                        implies: entry.implies ?? [],
-                        implied_by: entry.implied_by ?? [],
-                        alias_to: entry.alias_to ?? undefined
-                    };
+            this._reportProgress('Processing tag graph...', 60, onProgress);
+            await yieldToMain();
 
-                    // if (entry.alias_to) info.alias_to = entry.alias_to;
+            /** @type {TagInfoMap} */
+            const parsedMap = {};
+            const entries = Object.entries(rawBundle);
+            const total = entries.length;
 
-                    parsedMap[tag] = info;
+            for (let i = 0; i < total; i++) {
+                const [tag, entry] = entries[i];
+                parsedMap[tag] = {
+                    category: CATEGORY_MAP[entry.category] || 'GENERAL',
+                    tag_count: entry.count ?? 0,
+                    implies: entry.implies ?? [],
+                    implied_by: entry.implied_by ?? [],
+                    alias_to: entry.alias_to ?? undefined
+                };
+
+                // Yield to main event loop every 30,000 items to prevent UI lockup
+                if (i > 0 && i % 30000 === 0) {
+                    await yieldToMain();
                 }
-
-                // 3. Save processed map back to IndexedDB asynchronously
-                this._reportProgress('Caching tag data locally...', 80, onProgress);
-                await yieldToMain();
-                await setCachedTagMap(parsedMap);
             }
 
             this.tagInfoMap = parsedMap;
