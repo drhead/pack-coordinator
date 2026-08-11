@@ -77,62 +77,69 @@ export const alpineHelpers = {
                 return 'opacity-60 cursor-not-allowed select-none bg-gray-900 border-gray-700/50 text-gray-400';
             }
 
+            // Determine cursor class based on mode and interactivity
+            let cursorClass = 'cursor-default';
+            if (mode === 'lhs') {
+                cursorClass = 'cursor-pointer';
+            } else if (mode === 'rhs') {
+                cursorClass = isLhs ? 'cursor-default opacity-30' : 'cursor-pointer';
+            }
+
             // 2. Implication Hover States (Active Post Match) - Only if not locked
             if (hoveredImplicationData && hoveredImplicationData.postId === postId) {
                 const hi = hoveredImplicationData;
 
-                // Exact Tag Match
-                if (hi.tagName === tagName) {
-                    return 'bg-slate-700! text-white! border-slate-300! font-bold! shadow-md!';
-                }
+                let implicationStyle = '';
 
-                // Implicators (Amber) - High emphasis on LHS removal
-                if (hi.directImplicators.has(tagName)) {
-                    return mode === 'lhs'
+                // Exact Tag Match: outline in interactive modes, no outline in display mode
+                if (hi.tagName === tagName) {
+                    implicationStyle = mode === 'display'
+                        ? 'bg-slate-700! text-white! border-transparent! font-bold! shadow-md!'
+                        : 'bg-slate-700! text-white! border-slate-300! font-bold! shadow-md!';
+                }
+                // Implicators (Amber) - Outlines on LHS deletion where implicators are affected
+                else if (hi.directImplicators.has(tagName)) {
+                    implicationStyle = mode === 'lhs'
                         ? 'bg-amber-500/80! text-white! border-amber-300! font-bold! shadow-md! shadow-amber-500/40!'
                         : mode === 'rhs'
-                            ? 'bg-amber-500/20! text-amber-100! border-amber-400/20!'
-                            : 'bg-amber-500/30! text-amber-300! border-amber-400!';
+                            ? 'bg-amber-500/20! text-amber-100! border-transparent!'
+                            : 'bg-amber-500/30! text-amber-300! border-transparent!';
                 }
-                if (hi.indirectImplicators.has(tagName)) {
-                    return mode === 'lhs'
+                else if (hi.indirectImplicators.has(tagName)) {
+                    implicationStyle = mode === 'lhs'
                         ? 'bg-amber-600/60! text-amber-100! border-dashed! border-amber-300! font-bold! shadow-sm!'
                         : mode === 'rhs'
-                            ? 'bg-amber-600/20! text-amber-200! border-dashed! border-amber-400/20!'
-                            : 'bg-amber-500/10! text-amber-400/80! border-dashed! border-amber-500/60!';
+                            ? 'bg-amber-600/20! text-amber-200! border-dashed! border-transparent!'
+                            : 'bg-amber-500/10! text-amber-400/80! border-dashed! border-transparent!';
                 }
-
-                // Implied Tags (Cyan) - High emphasis on RHS addition
-                if (hi.directImplied.has(tagName)) {
-                    return mode === 'rhs'
+                // Implied Tags (Cyan) - Outlines on RHS transfer where implied tags are transferred
+                else if (hi.directImplied.has(tagName)) {
+                    implicationStyle = mode === 'rhs'
                         ? 'bg-cyan-500/80! text-white! border-cyan-300! font-bold! shadow-md! shadow-cyan-500/40!'
                         : mode === 'lhs'
-                            ? 'bg-cyan-500/20! text-cyan-100! border-cyan-300/20! font-bold!'
-                            : 'bg-cyan-500/30! text-cyan-300! border-cyan-400!';
+                            ? 'bg-cyan-500/20! text-cyan-100! border-transparent! font-bold!'
+                            : 'bg-cyan-500/30! text-cyan-300! border-transparent!';
                 }
-                if (hi.indirectImplied.has(tagName)) {
-                    return mode === 'rhs'
+                else if (hi.indirectImplied.has(tagName)) {
+                    implicationStyle = mode === 'rhs'
                         ? 'bg-cyan-600/60! text-cyan-100! border-dashed! border-cyan-300! font-bold! shadow-sm!'
                         : mode === 'lhs'
-                            ? 'bg-cyan-600/20! text-cyan-100! border-dashed! border-cyan-400/20! font-bold!'
-                            : 'bg-cyan-500/10! text-cyan-400/80! border-dashed! border-cyan-500/60!';
+                            ? 'bg-cyan-600/20! text-cyan-100! border-dashed! border-transparent! font-bold!'
+                            : 'bg-cyan-500/10! text-cyan-400/80! border-dashed! border-transparent!';
+                }
+
+                if (implicationStyle) {
+                    return `${cursorClass} ${implicationStyle}`;
                 }
             }
 
             // 3. Mode-Specific Base & Interactive States
-            const classes = [];
+            const classes = [cursorClass];
 
-            if (mode === 'lhs') {
-                classes.push('cursor-pointer');
-                if (newTags?.has(tagName)) {
-                    classes.push('ring-2 ring-emerald-400 bg-emerald-950/60 text-emerald-300 font-bold');
-                }
-            } else if (mode === 'rhs') {
-                if (isLhs) {
-                    classes.push('opacity-30 cursor-default');
-                } else {
-                    classes.push('cursor-pointer hover:brightness-125');
-                }
+            if (mode === 'lhs' && newTags?.has(tagName)) {
+                classes.push('ring-2 ring-emerald-400 bg-emerald-950/60 text-emerald-300 font-bold');
+            } else if (mode === 'rhs' && !isLhs) {
+                classes.push('hover:brightness-125');
             }
 
             return classes.join(' ');

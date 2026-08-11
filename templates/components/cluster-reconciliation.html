@@ -36,14 +36,18 @@
                         <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
 
                             <!-- Header Bar -->
-                            <div class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800">
+                            <div
+                                class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800">
                                 <div class="flex items-center gap-2">
-                                    <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank" rel="noopener noreferrer"
+                                    <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank"
+                                        rel="noopener noreferrer"
                                         class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
                                         x-text="`#${selectedSuperiorId}`"></a>
-                                    <span class="text-[9px] uppercase font-black bg-blue-800 px-1.5 py-0.5 rounded text-blue-200">Kept (Superior)</span>
+                                    <span
+                                        class="text-[9px] uppercase font-black bg-blue-800 px-1.5 py-0.5 rounded text-blue-200">SUPERIOR</span>
                                 </div>
-                                <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank" rel="noopener noreferrer"
+                                <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank"
+                                    rel="noopener noreferrer"
                                     class="text-[11px] font-semibold text-gray-400 hover:text-gray-200 hover:underline flex items-center gap-0.5">
                                     <span>e621</span>
                                     <span class="text-[9px]">&nearr;</span>
@@ -51,7 +55,8 @@
                             </div>
 
                             <!-- Image Viewport (edge-to-edge) -->
-                            <div data-image-viewport class="relative w-full h-72 bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer group"
+                            <div data-image-viewport
+                                class="relative w-full h-72 bg-gray-950 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
                                 @click="openModal(getLocalClusterPost(selectedSuperiorId))">
                                 <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
                                     <img :src="getLocalClusterPost(selectedSuperiorId)?.fileUrl"
@@ -66,9 +71,11 @@
                                     <template
                                         x-if="getLocalClusterPost(selectedSuperiorId)?.description && getLocalClusterPost(selectedSuperiorId)?.description.trim().length > 0">
                                         <details class="text-[11px] group border-t border-gray-800">
-                                            <summary class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                            <summary
+                                                class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                                 <span>Description</span>
-                                                <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                                <span
+                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                             </summary>
                                             <div class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950"
                                                 x-text="getLocalClusterPost(selectedSuperiorId).description"></div>
@@ -78,12 +85,18 @@
                                     <template
                                         x-if="getLocalClusterPost(selectedSuperiorId)?.sources && getLocalClusterPost(selectedSuperiorId)?.sources.length > 0">
                                         <details class="text-[11px] group border-t border-gray-800">
-                                            <summary class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
-                                                <span x-text="`Sources (${getLocalClusterPost(selectedSuperiorId).sources.length})`"></span>
-                                                <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                            <summary
+                                                class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                                <span
+                                                    x-text="`Sources (${getLocalClusterPost(selectedSuperiorId).sources.length})`"></span>
+                                                <span
+                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                             </summary>
-                                            <div class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950">
-                                                <template x-for="(src, sIdx) in getLocalClusterPost(selectedSuperiorId).sources" :key="sIdx">
+                                            <div
+                                                class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950">
+                                                <template
+                                                    x-for="(src, sIdx) in getLocalClusterPost(selectedSuperiorId).sources"
+                                                    :key="sIdx">
                                                     <a :href="src" target="_blank" rel="noopener noreferrer"
                                                         class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]"
                                                         x-text="src"></a>
@@ -103,18 +116,18 @@
                     <template x-for="pId in rhsPostIds" :key="pId">
                         <!-- RHS Cohesive Card (Collapsible Image) -->
                         <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col"
-                             x-data="{ collapsed: false }">
+                            x-data="{ collapsed: false }">
 
                             <!-- Header Bar (click to collapse/expand image if not deleted) -->
                             <div class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800 select-none"
-                                 :class="isPostDeleted(pId) ? 'cursor-default' : 'cursor-pointer'"
-                                 @click="if (!isPostDeleted(pId)) collapsed = !collapsed">
+                                :class="isPostDeleted(pId) ? 'cursor-default' : 'cursor-pointer'"
+                                @click="if (!isPostDeleted(pId)) collapsed = !collapsed">
                                 <div class="flex items-center gap-2">
                                     <template x-if="!isPostDeleted(pId)">
-                                        <a :href="`https://e621.net/posts/${pId}`" target="_blank" rel="noopener noreferrer"
+                                        <a :href="`https://e621.net/posts/${pId}`" target="_blank"
+                                            rel="noopener noreferrer"
                                             class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
-                                            x-text="`#${pId}`"
-                                            @click.stop></a>
+                                            x-text="`#${pId}`" @click.stop></a>
                                     </template>
                                     <template x-if="isPostDeleted(pId)">
                                         <span class="font-mono font-bold text-gray-400" x-text="`#${pId}`"></span>
@@ -122,19 +135,22 @@
 
                                     <!-- Badges -->
                                     <template x-if="isPostDeleted(pId)">
-                                        <span class="text-[9px] uppercase font-black bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded">DELETED</span>
+                                        <span
+                                            class="text-[9px] uppercase font-black bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded">DELETED</span>
                                     </template>
                                     <template x-if="!isPostDeleted(pId) && isPostFlagged(pId)">
-                                        <span class="text-[9px] uppercase font-black bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded">FLAGGED</span>
+                                        <span
+                                            class="text-[9px] uppercase font-black bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded">FLAGGED</span>
                                     </template>
                                     <template x-if="!isPostDeleted(pId) && !isPostFlagged(pId)">
-                                        <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">INFERIOR</span>
+                                        <span
+                                            class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">INFERIOR</span>
                                     </template>
 
                                     <!-- Collapse indicator chevron (only if not deleted) -->
                                     <template x-if="!isPostDeleted(pId)">
                                         <span class="text-[9px] text-gray-500 transition-transform"
-                                              :class="collapsed ? '' : 'rotate-180'">▼</span>
+                                            :class="collapsed ? '' : 'rotate-180'">▼</span>
                                     </template>
                                 </div>
 
@@ -152,19 +168,19 @@
                             <!-- Image Viewport (collapsible, edge-to-edge) -->
                             <div data-image-viewport>
                                 <div x-show="!isPostDeleted(pId) && !collapsed"
-                                     x-transition:enter="transition-all duration-200 ease-out"
-                                     x-transition:enter-start="opacity-0 max-h-0"
-                                     x-transition:enter-end="opacity-100 max-h-72"
-                                     x-transition:leave="transition-all duration-150 ease-in"
-                                     x-transition:leave-start="opacity-100 max-h-72"
-                                     x-transition:leave-end="opacity-0 max-h-0"
-                                     class="relative w-full h-72 bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer group"
-                                     @click="openModal(getLocalClusterPost(pId))">
-                                <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
-                                    <img :src="getLocalClusterPost(pId)?.fileUrl"
-                                        class="max-h-72 max-w-full object-contain">
-                                    <load src="/templates/components/expand-image-button.html" />
-                                </div>
+                                    x-transition:enter="transition-all duration-200 ease-out"
+                                    x-transition:enter-start="opacity-0 max-h-0"
+                                    x-transition:enter-end="opacity-100 max-h-72"
+                                    x-transition:leave="transition-all duration-150 ease-in"
+                                    x-transition:leave-start="opacity-100 max-h-72"
+                                    x-transition:leave-end="opacity-0 max-h-0"
+                                    class="relative w-full h-72 bg-gray-950 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
+                                    @click="openModal(getLocalClusterPost(pId))">
+                                    <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
+                                        <img :src="getLocalClusterPost(pId)?.fileUrl"
+                                            class="max-h-72 max-w-full object-contain">
+                                        <load src="/templates/components/expand-image-button.html" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -174,9 +190,11 @@
                                     <template
                                         x-if="getLocalClusterPost(pId)?.description && getLocalClusterPost(pId)?.description.trim().length > 0">
                                         <details class="text-[11px] group border-t border-gray-800">
-                                            <summary class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                            <summary
+                                                class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                                 <span>Description</span>
-                                                <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                                <span
+                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                             </summary>
                                             <div class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950"
                                                 x-text="getLocalClusterPost(pId).description"></div>
@@ -186,12 +204,17 @@
                                     <template
                                         x-if="getLocalClusterPost(pId)?.sources && getLocalClusterPost(pId)?.sources.length > 0">
                                         <details class="text-[11px] group border-t border-gray-800">
-                                            <summary class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
-                                                <span x-text="`Sources (${getLocalClusterPost(pId).sources.length})`"></span>
-                                                <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                                            <summary
+                                                class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
+                                                <span
+                                                    x-text="`Sources (${getLocalClusterPost(pId).sources.length})`"></span>
+                                                <span
+                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
                                             </summary>
-                                            <div class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950">
-                                                <template x-for="(src, sIdx) in getLocalClusterPost(pId).sources" :key="sIdx">
+                                            <div
+                                                class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950">
+                                                <template x-for="(src, sIdx) in getLocalClusterPost(pId).sources"
+                                                    :key="sIdx">
                                                     <a :href="src" target="_blank" rel="noopener noreferrer"
                                                         class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]"
                                                         x-text="src"></a>
@@ -445,27 +468,29 @@
             </div>
 
             <!-- RHS: Set Union Tag Cloud for All Inferior Posts in Graph -->
-            <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm flex flex-col h-full justify-between">
+            <div
+                class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-3.5 text-xs space-y-3 shadow-sm flex flex-col h-full justify-between">
                 <div class="space-y-3 flex-1 flex flex-col">
                     <!-- Post Header Line (Single post vs Combined multi-post) -->
                     <template x-if="rhsPosts.length === 1">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2">
                                 <template x-if="rhsPosts[0].rating">
-                                    <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
-                                          :class="$store.tags.getRatingBadgeClass(rhsPosts[0].rating)"
-                                          x-text="$store.tags.getRatingLabel(rhsPosts[0].rating)"></span>
+                                    <span
+                                        class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
+                                        :class="$store.tags.getRatingBadgeClass(rhsPosts[0].rating)"
+                                        x-text="$store.tags.getRatingLabel(rhsPosts[0].rating)"></span>
                                 </template>
 
                                 <a :href="`https://e621.net/posts/${rhsPosts[0].post_id}`" target="_blank"
-                                   class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
+                                    class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
                                     <span x-text="`#${rhsPosts[0].post_id}`"></span>
                                     <span class="text-gray-600 text-xs">&nearr;</span>
                                 </a>
 
                                 <template x-if="rhsPosts[0].parent_id">
                                     <a :href="`https://e621.net/posts/${rhsPosts[0].parent_id}`" target="_blank"
-                                       class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
+                                        class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
                                         Parent #<span x-text="rhsPosts[0].parent_id"></span>
                                     </a>
                                 </template>
@@ -475,7 +500,7 @@
                                     <div class="flex items-center space-x-1 font-mono">
                                         <template x-for="poolId in rhsPosts[0].pool_ids" :key="poolId">
                                             <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
-                                               class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
+                                                class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
                                                 Pool #<span x-text="poolId"></span>
                                             </a>
                                         </template>
@@ -486,15 +511,17 @@
                             <!-- Right Details: Flag Status, Dimensions Info -->
                             <div class="flex items-center space-x-2">
                                 <template x-if="rhsPosts[0].is_deleted">
-                                    <span class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
+                                    <span
+                                        class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
                                 </template>
                                 <template x-if="!rhsPosts[0].is_deleted && rhsPosts[0].is_flagged">
-                                    <span class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
+                                    <span
+                                        class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                                 </template>
 
                                 <span class="font-mono text-[11px]"
-                                      :class="image.isUniform(cluster.posts, rhsPosts[0]) ? 'text-gray-600' : 'text-gray-400'"
-                                      x-text="image.formatSpecs(rhsPosts[0])">
+                                    :class="image.isUniform(cluster.posts, rhsPosts[0]) ? 'text-gray-600' : 'text-gray-400'"
+                                    x-text="image.formatSpecs(rhsPosts[0])">
                                 </span>
                             </div>
                         </div>
@@ -506,12 +533,13 @@
                                 <template x-for="post in rhsPosts" :key="post.post_id">
                                     <div class="flex items-center space-x-1.5">
                                         <template x-if="post.rating">
-                                            <span class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
-                                                  :class="$store.tags.getRatingBadgeClass(post.rating)"
-                                                  x-text="$store.tags.getRatingLabel(post.rating)"></span>
+                                            <span
+                                                class="w-5 h-5 inline-flex items-center justify-center rounded text-[12px] font-bold font-mono transition-colors"
+                                                :class="$store.tags.getRatingBadgeClass(post.rating)"
+                                                x-text="$store.tags.getRatingLabel(post.rating)"></span>
                                         </template>
                                         <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
-                                           class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-0.5">
+                                            class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-0.5">
                                             <span x-text="`#${post.post_id}`"></span>
                                             <span class="text-gray-600 text-xs">&nearr;</span>
                                         </a>
@@ -520,15 +548,18 @@
                             </div>
 
                             <div class="text-[11px] font-mono text-gray-400 font-semibold">
-                                <span x-text="`${allRhsUnionTagNames.length} tags from ${rhsPosts.length} posts`"></span>
+                                <span
+                                    x-text="`${allRhsUnionTagNames.length} tags from ${rhsPosts.length} posts`"></span>
                             </div>
                         </div>
                     </template>
 
                     <!-- Union Tag Cloud -->
-                    <div class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5 flex-1 flex flex-col">
+                    <div
+                        class="bg-gray-900/90 p-2.5 rounded-md border border-gray-800/80 space-y-1.5 flex-1 flex flex-col">
                         <div class="flex flex-wrap gap-x-1 gap-y-1 content-start">
-                            <template x-for="tag in getSortedTags(allRhsUnionTagNames)" :key="tag.category + ':' + tag.name">
+                            <template x-for="tag in getSortedTags(allRhsUnionTagNames)"
+                                :key="tag.category + ':' + tag.name">
                                 <span
                                     class="font-mono text-[11px] leading-tight inline-flex items-center px-1 rounded border border-transparent select-none transition-all duration-150 ease-in-out"
                                     :class="tagpill.getTagClasses(tag, getRhsSourcePost(tag.name), 'rhs', { hoveredImplicationData, isLhs: isTagOnLhs(tag.name) })"
