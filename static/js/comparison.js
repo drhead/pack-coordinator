@@ -51,6 +51,104 @@ export function ComparisonManager(resMgr) {
         currentPair: null,
 
         /**
+         * Gets the number of collapsibles (description and/or sources) for a post item.
+         * @param {ClusterPost | null} item
+         * @returns {number}
+         */
+        getItemCollapsibleCount(item) {
+            if (!item) return 0;
+            let count = 0;
+            if (item.description && item.description.trim().length > 0) count++;
+            if (item.sources && item.sources.length > 0) count++;
+            return count;
+        },
+
+        /**
+         * Gets max collapsible count between pair items in SBS mode.
+         * @returns {number}
+         */
+        getMaxPairCollapsibleCount() {
+            if (!this.currentPair) return 0;
+            const countA = this.getItemCollapsibleCount(this.currentPair.a);
+            const countB = this.getItemCollapsibleCount(this.currentPair.b);
+            return Math.max(countA, countB);
+        },
+
+        /**
+         * Gets max height style for image container and image element in SBS mode.
+         * @returns {string} CSS max-height value, e.g. "calc(50vh - 52px)"
+         */
+        getSbsImageMaxHeight() {
+            const maxCount = this.getMaxPairCollapsibleCount();
+            if (maxCount === 0) return '50vh';
+            const reservedPx = maxCount * 26;
+            return `calc(50vh - ${reservedPx}px)`;
+        },
+
+        /** @type {Record<number, number>} */
+        overlayHeights: {},
+
+        /**
+         * Dynamically measures collapsed height of collapsibles overlay element for a post.
+         * @param {number} postId
+         * @param {HTMLElement | null} el
+         */
+        updateOverlayHeight(postId, el) {
+            if (!el || !postId) return;
+
+            const measure = () => {
+                const summaries = el.querySelectorAll('summary');
+                let collapsedH = 0;
+                summaries.forEach(s => {
+                    collapsedH += s.getBoundingClientRect().height;
+                });
+                if (this.overlayHeights[postId] !== collapsedH) {
+                    this.overlayHeights[postId] = collapsedH;
+                }
+            };
+
+            measure();
+
+            if (window.ResizeObserver && !/** @type {any} */ (el)._roAttached) {
+                /** @type {any} */ (el)._roAttached = true;
+                const ro = new ResizeObserver(() => {
+                    measure();
+                });
+                ro.observe(el);
+            }
+        },
+
+        /**
+         * Gets dynamic height style for an SBS card item relative to the other item in currentPair.
+         * @param {ClusterPost | null} item
+         * @returns {string} CSS height value, e.g. "100%" or "calc(100% - 27px)"
+         */
+        getSbsCardHeight(item) {
+            if (!this.currentPair || !item) return '100%';
+            const otherItem = item.post_id === this.currentPair.a.post_id ? this.currentPair.b : this.currentPair.a;
+            if (!otherItem) return '100%';
+
+            const thisH = this.overlayHeights[item.post_id] || 0;
+            const otherH = this.overlayHeights[otherItem.post_id] || 0;
+            const diff = otherH - thisH;
+
+            if (diff <= 0) return '100%';
+            return `calc(100% - ${diff}px)`;
+        },
+
+        /**
+         * Gets height style for Card Image Wrapper scaled down by card's own Card Collapsible Offset.
+         * @param {ClusterPost | null} item
+         * @returns {string} CSS height value, e.g. "100%" or "calc(100% - 54px)"
+         */
+        getSbsImageWrapperHeight(item) {
+            if (!item) return '100%';
+            const ownOffset = this.overlayHeights[item.post_id] || 0;
+            if (ownOffset <= 0) return '100%';
+            return `calc(100% - ${ownOffset}px)`;
+        },
+
+        /**
          * @param {'side-by-side' | 'swipe' | 'diff' | 'blink'} newMode
          */
         setMode(newMode) {
@@ -273,7 +371,8 @@ export function ComparisonManager(resMgr) {
                 }
 
                 if (globalActiveComparison && globalActiveComparison !== this) {
-                    globalActiveComparison.closeComparison();
+                    globalActiveComparison.stopBlink();
+                    globalActiveComparison.isHovering = false;
                 }
                 globalActiveComparison = this;
 
