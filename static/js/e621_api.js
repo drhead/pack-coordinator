@@ -149,9 +149,9 @@ export async function fetchCurrentUserProfile(credentials) {
 export function ensureClusterPostsInfo(clusterPosts) {
     if (!clusterPosts || clusterPosts.length === 0) return Promise.resolve();
 
-    // 1. Filter out posts that already have fileUrl, description, and sources populated
+    // 1. Filter out posts that already have fileUrl defined (null indicates it was fetched but post is deleted/has no image URL)
     const missingPosts = clusterPosts.filter(post =>
-        (!post.fileUrl || post.description === undefined || post.sources === undefined) && post.post_id
+        post.fileUrl === undefined && post.post_id
     );
     if (missingPosts.length === 0) return Promise.resolve();
 
@@ -185,11 +185,23 @@ export function ensureClusterPostsInfo(clusterPosts) {
             for (const apiPost of (data.posts || [])) {
                 const targetPost = missingMap.get(apiPost.id);
                 if (targetPost) {
-                    // Assign properties directly in-place
-                    targetPost.fileUrl = apiPost.file?.url || '';
+                    // Assign properties directly in-place; set fileUrl to apiPost.file?.url or null if deleted/missing
+                    targetPost.fileUrl = apiPost.file?.url || null;
                     targetPost.description = apiPost.description || '';
                     targetPost.sources = Array.isArray(apiPost.sources) ? apiPost.sources : [];
                     targetPost.locked_tags = Array.isArray(apiPost.locked_tags) ? apiPost.locked_tags : [];
+                    if (apiPost.flags?.deleted || apiPost.is_deleted) {
+                        targetPost.is_deleted = true;
+                    }
+                }
+            }
+
+            // For any requested post IDs that e621 API did not return or returned without URL,
+            // set fileUrl to null so we don't re-query them.
+            for (const id of idsToFetch) {
+                const targetPost = missingMap.get(id);
+                if (targetPost && targetPost.fileUrl === undefined) {
+                    targetPost.fileUrl = null;
                 }
             }
         });
