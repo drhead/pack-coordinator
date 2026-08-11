@@ -68,6 +68,9 @@ export function ReconciliationManager(manager) {
         tagInput: '',
         hoveredImplicationData: null,
 
+        /** @type {ResizeObserver|null} */
+        _imageAlignObserver: null,
+
         /**
          * Filter resolution graphs down to duplicate graphs only.
          * @returns {import('./resolution.js').ResolutionGraph[]}
@@ -176,13 +179,40 @@ export function ReconciliationManager(manager) {
         },
 
         /**
-         * Get active single RHS post for comparison/retagging.
+         * Get all inferior post objects in current graph.
          * @returns {ClusterPost[]}
          */
         get rhsPosts() {
-            if (!this.currentRhsPostId) return [];
-            const post = this.getLocalClusterPost(this.currentRhsPostId);
-            return post ? [post] : [];
+            if (!this.currentGraph || !this.selectedSuperiorId) return [];
+            return this.rhsPostIds
+                .map(id => this.getLocalClusterPost(id))
+                .filter(/** @type {(p: ClusterPost|null) => p is ClusterPost} */ (p => p !== null));
+        },
+
+        /**
+         * Computes the set union of all tags across all inferior posts in current graph.
+         * @returns {string[]}
+         */
+        get allRhsUnionTagNames() {
+            if (!this.currentGraph || !this.selectedSuperiorId) return [];
+            const tagSet = new Set();
+            for (const post of this.rhsPosts) {
+                if (!post || !Array.isArray(post.tags)) continue;
+                for (const tag of post.tags) {
+                    tagSet.add(tag);
+                }
+            }
+            return Array.from(tagSet);
+        },
+
+        /**
+         * Finds the inferior source post object that contains a specific tag name.
+         * @param {string} tagName
+         * @returns {ClusterPost | null}
+         */
+        getRhsSourcePost(tagName) {
+            if (!tagName || !this.rhsPosts.length) return null;
+            return this.rhsPosts.find(p => Array.isArray(p.tags) && p.tags.includes(tagName)) || this.rhsPosts[0] || null;
         },
 
         /**
@@ -190,9 +220,6 @@ export function ReconciliationManager(manager) {
          * @returns {string}
          */
         get nextButtonLabel() {
-            if (this.activeRhsIndex < this.rhsPostIds.length - 1) {
-                return 'Next Post';
-            }
             if (this.activeGraphIndex < this.duplicateGraphs.length - 1) {
                 return 'Next Graph';
             }
@@ -432,6 +459,59 @@ export function ReconciliationManager(manager) {
 
             // Collapse graph and update referencing variant graphs
             this.resolutionManager.resolveDuplicateGraph(this.currentGraph);
+
+            // Re-align after Alpine re-renders the new graph content
+            this.$nextTick(() => this.alignLhsImage());
+        },
+
+        /**
+         * Sets up a ResizeObserver on the RHS column to keep the LHS image
+         * viewport bottom-edge-aligned with the last RHS image viewport.
+         * Called via x-init on the RHS column element.
+         * @param {HTMLElement} rhsEl
+         */
+        setupImageAlignment(rhsEl) {
+            if (this._imageAlignObserver) {
+                this._imageAlignObserver.disconnect();
+            }
+
+            this._imageAlignObserver = new ResizeObserver(() => {
+                this.alignLhsImage();
+            });
+            this._imageAlignObserver.observe(rhsEl);
+
+            // Initial alignment after first render
+            this.$nextTick(() => this.alignLhsImage());
+        },
+
+        /**
+         * Aligns the LHS image viewport bottom edge with the last RHS image
+         * viewport bottom edge by computing padding-top on the LHS column.
+         *
+         * Uses incremental math: newPadding = max(0, currentPadding + (rhsBottom - lhsBottom)).
+         * The currentPadding cancels out algebraically, so this converges in one step
+         * regardless of existing padding state.
+         */
+        alignLhsImage() {
+            const lhsCol = this.$refs?.lhsColumn;
+            const rhsCol = this.$refs?.rhsColumn;
+            if (!lhsCol || !rhsCol) return;
+
+            const lhsViewport = lhsCol.querySelector('[data-image-viewport]');
+            const rhsViewports = rhsCol.querySelectorAll('[data-image-viewport]');
+
+            if (!lhsViewport || !rhsViewports.length) {
+                lhsCol.style.paddingTop = '0px';
+                return;
+            }
+
+            const lastRhsViewport = rhsViewports[rhsViewports.length - 1];
+            const lhsBottom = lhsViewport.getBoundingClientRect().bottom;
+            const rhsBottom = lastRhsViewport.getBoundingClientRect().bottom;
+            const currentPadding = parseFloat(lhsCol.style.paddingTop) || 0;
+            const newPadding = Math.max(0, currentPadding + (rhsBottom - lhsBottom));
+
+            lhsCol.style.paddingTop = newPadding + 'px';
         },
 
         /**
@@ -500,9 +580,7 @@ export function ReconciliationManager(manager) {
         advance(rootData) {
             if (this.warnings.isBlocked(this.activeGraphIndex, this)) return;
 
-            if (this.activeRhsIndex < this.rhsPostIds.length - 1) {
-                this.activeRhsIndex++;
-            } else if (this.activeGraphIndex < this.duplicateGraphs.length - 1) {
+            if (this.activeGraphIndex < this.duplicateGraphs.length - 1) {
                 this.selectGraph(this.activeGraphIndex + 1);
             } else {
                 this.proceedToSummary(rootData);
