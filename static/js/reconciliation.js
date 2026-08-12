@@ -459,9 +459,26 @@ export function ReconciliationManager(manager) {
         setupCurrentGraph() {
             if (!this.currentGraph) return;
 
-            // Retrieve superior post from graph head (defaulting to first post if head isn't set)
-            const superiorId = this.currentGraph.head || Array.from(this.currentGraph.posts)[0];
+            const graphPostIds = Array.from(this.currentGraph.posts);
 
+            // Find first active (undeleted & unflagged) post in the graph
+            const activePostId = graphPostIds.find(pId => {
+                const post = this.getLocalClusterPost(pId);
+                return post && !post.is_deleted && !post.is_flagged;
+            });
+
+            // Retrieve superior post: validate existing graph.head or select remaining active post
+            let superiorId = this.currentGraph.head;
+            if (superiorId) {
+                const headPost = this.getLocalClusterPost(superiorId);
+                if (!headPost || headPost.is_deleted || headPost.is_flagged) {
+                    superiorId = activePostId || graphPostIds[0];
+                }
+            } else {
+                superiorId = activePostId || graphPostIds[0];
+            }
+
+            this.currentGraph.head = superiorId;
             this.selectedSuperiorId = superiorId;
             this.lhsPostId = superiorId;
             this.selectedParentId = null;

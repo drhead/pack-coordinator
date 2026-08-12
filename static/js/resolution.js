@@ -149,7 +149,8 @@ document.addEventListener('alpine:init', () => {
             const hasDuplicate = this.graphs.some(g => g.type === 'duplicate');
             if (!hasDuplicate) {
                 const postIds = this.cluster.posts.map(p => p.post_id);
-                const headId = postIds[0];
+                const activePost = this.cluster.posts.find(p => !p.is_deleted && !p.is_flagged);
+                const headId = activePost ? activePost.post_id : postIds[0];
                 this.graphs.push({
                     type: 'duplicate',
                     posts: new Set(postIds),
