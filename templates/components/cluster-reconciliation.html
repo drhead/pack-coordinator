@@ -365,10 +365,6 @@
                                                     clip-rule="evenodd" />
                                             </svg>
                                         </template>
-                                        <template x-if="!tagpill.isTagLocked(tag.name, lhsPost)">
-                                            <span
-                                                class="text-[9px] text-gray-400 hover:text-red-400 ml-1 cursor-pointer">×</span>
-                                        </template>
                                     </span>
                                 </template>
                             </div>
@@ -572,9 +568,6 @@
                                     <span x-show="isImpliedTag(tag.name, getRhsSourcePost(tag.name))"
                                         class="text-emerald-400 font-bold text-[9px] ml-0.5 select-none"
                                         title="Implied tag">i</span>
-                                    <template x-if="!isTagOnLhs(tag.name)">
-                                        <span class="ml-1 text-[9px] text-blue-400 font-bold">+</span>
-                                    </template>
                                 </span>
                             </template>
                         </div>
