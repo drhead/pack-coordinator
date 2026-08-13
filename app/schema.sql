@@ -218,9 +218,7 @@ CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE clusters
-    SET 
-        note = v.computed_note,
-        is_resolved = v.computed_is_resolved
+    SET is_resolved = v.computed_is_resolved
     FROM v_cluster_evaluations v
     WHERE clusters.cluster_id = NEW.cluster_id AND v.cluster_id = NEW.cluster_id;
     RETURN NEW;
@@ -257,3 +255,22 @@ AFTER UPDATE OF manual_resolution, custom_note ON clusters
 FOR EACH ROW
 WHEN OLD.manual_resolution IS DISTINCT FROM NEW.manual_resolution
 EXECUTE FUNCTION fn_reevaluate_cluster_from_cluster();
+
+-- 3. Recalculate cluster evaluation on post_flags changes
+CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_flag()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE clusters
+    SET is_resolved = v.computed_is_resolved
+    FROM v_cluster_evaluations v
+    WHERE clusters.cluster_id = v.cluster_id
+      AND clusters.is_resolved != v.computed_is_resolved;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_flag_change ON post_flags;
+CREATE TRIGGER trg_reevaluate_cluster_on_post_flag_change
+AFTER INSERT OR UPDATE OR DELETE ON post_flags
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_reevaluate_cluster_from_post_flag();
