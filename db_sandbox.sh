@@ -26,6 +26,17 @@ done
 COMMAND="${1:-}"
 EXTRA_ARG="${2:-}"
 
+# Automatically source .env file if present in current or parent directory
+if [[ -f ".env" ]]; then
+    set -a
+    source .env
+    set +a
+elif [[ -f "../.env" ]]; then
+    set -a
+    source ../.env
+    set +a
+fi
+
 # Parse connection string or fallback to individual env vars
 if [[ -n "$RAW_CONN" ]]; then
     # Use python to safely decompose standard PostgreSQL URI format
@@ -47,11 +58,11 @@ print(f"PGPORT=\"{port}\"")
 print(f"SOURCE_DB=\"{dbname}\"")
 ' "$RAW_CONN")"
 else
-    PGHOST="${PGHOST:-localhost}"
-    PGPORT="${PGPORT:-5432}"
-    PGUSER="${PGUSER:-coordinator}"
-    PGPASSWORD="${PGPASSWORD:-your_secure_password}"
-    SOURCE_DB="${SOURCE_DB:-coordinator_db}"
+    PGHOST="${PGHOST:-${POSTGRES_HOST:-localhost}}"
+    PGPORT="${PGPORT:-${POSTGRES_PORT:-5432}}"
+    PGUSER="${PGUSER:-${POSTGRES_USER:-coordinator}}"
+    PGPASSWORD="${PGPASSWORD:-${POSTGRES_PASSWORD:-}}"
+    SOURCE_DB="${SOURCE_DB:-${POSTGRES_DB:-coordinator_db}}"
 fi
 
 SANDBOX_DB="${SOURCE_DB}${SANDBOX_DB_SUFFIX}"

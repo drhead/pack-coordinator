@@ -1,6 +1,16 @@
 # --- Stage 1: Build Vite / Tailwind Frontend ---
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
+
+# Build arguments for frontend compile-time constants
+ARG VITE_E621_APP_AUTHOR=anonymous
+ARG VITE_APP_ENV=prod
+ARG VITE_DOMAIN=""
+
+ENV VITE_E621_APP_AUTHOR=$VITE_E621_APP_AUTHOR
+ENV VITE_APP_ENV=$VITE_APP_ENV
+ENV VITE_DOMAIN=$VITE_DOMAIN
+
 COPY package*.json ./
 RUN npm ci
 

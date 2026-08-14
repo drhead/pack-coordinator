@@ -8,12 +8,12 @@ services:
     container_name: coordinator_postgres_prod
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-coordinator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-coordinator_db}
     shm_size: 16gb
     ports:
-      - "${PROD_DB_PORT}:5432"
+      - "${PROD_DB_PORT:-5436}:5432"
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     command:
@@ -49,7 +49,7 @@ services:
       - "-c"
       - "min_wal_size=2GB"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coordinator} -d ${POSTGRES_DB:-coordinator_db}"]
       interval: 3s
       timeout: 3s
       retries: 5
@@ -64,7 +64,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      UPSTREAM_DB_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      UPSTREAM_DB_URL: postgres://${POSTGRES_USER:-coordinator}:${POSTGRES_PASSWORD:-your_secure_password}@postgres:5432/${POSTGRES_DB:-coordinator_db}
       LISTEN_ADDRESS: 0.0.0.0:5433
       DEPLOYMENT_MODE: standalone
       STORAGE_DIR: /data/cache
@@ -72,7 +72,7 @@ services:
       CACHE_MODE: deep
     shm_size: 16gb
     ports:
-      - "${PROD_READYSET_PORT}:5433"
+      - "${PROD_READYSET_PORT:-5437}:5433"
     networks:
       - readyset-net-prod
     volumes:
@@ -82,6 +82,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_E621_APP_AUTHOR: ${VITE_E621_APP_AUTHOR}
+        VITE_APP_ENV: ${VITE_APP_ENV:-prod}
+        VITE_DOMAIN: ${VITE_DOMAIN}
     container_name: coordinator_web_prod
     restart: unless-stopped
     depends_on:
@@ -90,17 +94,20 @@ services:
       readyset:
         condition: service_started
     environment:
+      APP_ENV: ${APP_ENV:-prod}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       READYSET_HOST: readyset
       READYSET_PORT: 5433
       USE_READYSET: "true"
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER:-coordinator}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB:-coordinator_db}
       E621_USERNAME: ${E621_USERNAME}
+      VITE_E621_APP_AUTHOR: ${VITE_E621_APP_AUTHOR}
+      VITE_DOMAIN: ${VITE_DOMAIN}
     ports:
-      - "${PROD_WEB_PORT}:8500"
+      - "${PROD_WEB_PORT:-8621}:8500"
     volumes:
       - ./data:/app/data
     networks:

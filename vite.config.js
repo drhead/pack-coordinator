@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => {
     ? viteDomain.split(',').map((host) => host.trim()).filter(Boolean)
     : true;
 
+  const backendPort = process.env.PORT || env.PORT || '8501';
+  const vitePort = process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 8623;
+
   return {
     root: '.',
     publicDir: 'static',
@@ -19,14 +22,14 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       allowedHosts,
-      port: 8621,
+      port: vitePort,
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:8500',
+          target: `http://127.0.0.1:${backendPort}`,
           changeOrigin: true,
         },
         '/static/data': {
-          target: 'http://127.0.0.1:8500',
+          target: `http://127.0.0.1:${backendPort}`,
           changeOrigin: true,
         },
       },

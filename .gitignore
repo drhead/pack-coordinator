@@ -36,11 +36,10 @@ data/
 # Secrets file
 /secrets.json
 
-# Profiles
-/profile*
 
 /tailwindcss
 node_modules/
 notes/
 dist/
 .env.prod
+migrations/
