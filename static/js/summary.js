@@ -20,6 +20,17 @@ document.addEventListener('alpine:init', () => {
             resMgr: /** @type {ResolutionManagerComponent} */ (manager),
             warnings: new WarningsManager(),
 
+            submittingMap: {},
+
+            /**
+             * Checks if a post is currently submitting changes/flag
+             * @param {number} postId
+             * @returns {boolean}
+             */
+            isSubmitting(postId) {
+                return !!this.submittingMap[postId];
+            },
+
             init() {
                 this.warnings.registerRules([
                     {
@@ -36,7 +47,29 @@ document.addEventListener('alpine:init', () => {
                         icon: '💡',
                         title: 'Summary Instructions',
                         message: 'Review proposed changes below, then click the action buttons to publish your changes to E621. All changes will be attributed to you.',
-                        check: () => !!getE621User()
+                        check: (ctx) => {
+                            if (!getE621User()) return false;
+                            if (!ctx || !ctx.graph || !ctx.graph.posts) return true;
+
+                            const posts = Array.from(ctx.graph.posts)
+                                .map(id => this.resMgr?.getPost(id))
+                                .filter(Boolean);
+
+                            if (posts.length === 0) return true;
+
+                            const allResolved = posts.every(post => {
+                                const isCanonicalPost = ctx.graph.head ? Number(post.original?.post_id) === Number(ctx.graph.head) : false;
+                                const isApplyButton = ctx.graph.type === 'unrelated' || isCanonicalPost || ctx.graph.type === 'variant';
+
+                                if (isApplyButton) {
+                                    return Boolean(post.is_applied);
+                                } else {
+                                    return Boolean(post.is_flagged || post.original?.is_flagged || post.original?.is_deleted || post.flag);
+                                }
+                            });
+
+                            return !allResolved;
+                        }
                     },
                     {
                         id: 'uncopied-metadata',
@@ -345,7 +378,7 @@ document.addEventListener('alpine:init', () => {
              * @returns {string[]}
              */
             getAddedTags(post) {
-                if (!post) return [];
+                if (!post || post.is_applied) return [];
                 return post.tags.filter(t => !post.original.tags?.includes(t));
             },
 
@@ -355,7 +388,7 @@ document.addEventListener('alpine:init', () => {
              * @returns {string[]}
              */
             getRemovedTags(post) {
-                if (!post || !Array.isArray(post.original.tags)) return [];
+                if (!post || post.is_applied || !Array.isArray(post.original.tags)) return [];
                 return post.original.tags.filter(t => !post.tags.includes(t));
             },
 
@@ -370,54 +403,59 @@ document.addEventListener('alpine:init', () => {
             },
 
             /**
+             * Evaluates whether a ResolutionPost has any pending modifications to apply.
+             * @param {ResolutionPost} post
+             * @returns {boolean}
+             */
+            hasChangesToApply(post) {
+                if (!post) return false;
+                /** @type {any} */
+                const original = post.original || {};
+                const pAny = /** @type {any} */ (post);
+
+                // 1. Tags diff
+                const origTags = Array.isArray(original.tags) ? original.tags : [];
+                const currentTags = Array.isArray(post.tags) ? post.tags : [];
+                if (origTags.join(' ') !== currentTags.join(' ')) return true;
+
+                // 2. Sources diff
+                const origSources = Array.isArray(original.sources) ? original.sources : [];
+                const currentSources = Array.isArray(post.sources) ? post.sources : [];
+                if (origSources.join('\r\n') !== currentSources.join('\r\n')) return true;
+
+                // 3. Description diff
+                const origDesc = original.description ?? '';
+                const currentDesc = post.description ?? '';
+                if (origDesc !== currentDesc) return true;
+
+                // 4. Rating diff
+                if (post.rating !== null && post.rating !== original.rating) return true;
+
+                // 5. Parent ID diff
+                const origParent = original.parent_id ?? null;
+                const currentParent = post.parent_id ?? null;
+                if (origParent !== currentParent) return true;
+
+                // 6. Pool substitutions
+                if (Array.isArray(pAny._poolSubstitutions) && pAny._poolSubstitutions.length > 0) return true;
+
+                return false;
+            },
+
+            /**
              * Applies changes for a post
              * @param {number} postId
              */
             async applyChanges(postId) {
                 const post = this.resMgr.getPost(postId);
-                if (!post) return;
+                if (!post || this.isSubmitting(postId) || post.is_applied) return;
 
                 if (!getE621User()) {
                     showToast('You must be logged in to apply changes.', 'error');
                     return;
                 }
 
-                // Construct simulated payload diff for debug console output
-                const original = post.original || {};
-                /** @type {Record<string, any>} */
-                const edits = {};
-                const origTags = Array.isArray(original.tags) ? original.tags : [];
-                const currentTags = Array.isArray(post.tags) ? post.tags : [];
-                if (origTags.join(' ') !== currentTags.join(' ')) {
-                    edits.old_tag_string = origTags.join(' ');
-                    edits.tag_string = currentTags.join(' ');
-                }
-
-                const origSources = Array.isArray(original.sources) ? original.sources : [];
-                const currentSources = Array.isArray(post.sources) ? post.sources : [];
-                if (origSources.join('\n') !== currentSources.join('\n')) {
-                    edits.old_source = origSources.join('\n');
-                    edits.source = currentSources.join('\n');
-                }
-
-                const origDesc = original.description ?? '';
-                const currentDesc = post.description ?? '';
-                if (origDesc !== currentDesc) {
-                    edits.old_description = origDesc;
-                    edits.description = currentDesc;
-                }
-
-                if (post.rating !== null && post.rating !== original.rating) {
-                    edits.old_rating = original.rating;
-                    edits.rating = post.rating;
-                }
-
-                const origParent = original.parent_id ?? null;
-                const currentParent = post.parent_id ?? null;
-                if (origParent !== currentParent) {
-                    edits.old_parent_id = origParent !== null ? origParent : '';
-                    edits.parent_id = currentParent !== null ? currentParent : '';
-                }
+                this.submittingMap[postId] = true;
 
                 // Construct dynamic edit_reason including active project title if available
                 const batchesStore = /** @type {any} */ (window.Alpine?.store('batches'));
@@ -427,35 +465,73 @@ document.addEventListener('alpine:init', () => {
                     ? `Edited from P.A.C.K. Editor, part of "${projectName}" project.`
                     : 'Edited from P.A.C.K. Editor.';
 
+                // Construct debug payload object for silent console logging
+                const original = post.original || {};
+                /** @type {Record<string, any>} */
+                const edits = {};
+                const origTags = Array.isArray(original.tags) ? original.tags : [];
+                const currentTags = Array.isArray(post.tags) ? post.tags : [];
+                if (origTags.join(' ') !== currentTags.join(' ')) {
+                    const oldTagStr = origTags.join(' ').trim();
+                    if (oldTagStr) edits.old_tag_string = oldTagStr;
+                    edits.tag_string = currentTags.join(' ');
+                }
+                const origSources = Array.isArray(original.sources) ? original.sources : [];
+                const currentSources = Array.isArray(post.sources) ? post.sources : [];
+                if (origSources.join('\r\n') !== currentSources.join('\r\n')) {
+                    const oldSourceStr = origSources.join('\r\n').trim();
+                    if (oldSourceStr) edits.old_source = oldSourceStr;
+                    edits.source = currentSources.join('\r\n');
+                }
+                const origDesc = original.description ?? '';
+                const currentDesc = post.description ?? '';
+                if (origDesc !== currentDesc) {
+                    const oldDescStr = origDesc.trim();
+                    if (oldDescStr) edits.old_description = oldDescStr;
+                    edits.description = currentDesc;
+                }
+                if (post.rating !== null && post.rating !== original.rating) {
+                    if (original.rating) edits.old_rating = original.rating;
+                    edits.rating = post.rating;
+                }
+                const origParent = original.parent_id ?? null;
+                const currentParent = post.parent_id ?? null;
+                if (origParent !== currentParent) {
+                    if (origParent !== null && String(origParent).trim() !== '') {
+                        edits.old_parent_id = origParent;
+                    }
+                    edits.parent_id = currentParent !== null ? currentParent : '';
+                }
                 edits.edit_reason = editReason;
 
-                console.log('[DEBUG MODE] Simulated API Call - applyResolutionPostEdits:', {
+                console.log('[LIVE API] Sending applyResolutionPostEdits:', {
                     postId: Number(postId),
                     edits: edits,
                     poolSubstitutions: post._poolSubstitutions || []
                 });
 
-                showToast(`[Debug Mode] Query not sent. Simulated apply for post #${postId}. Check console for payload.`, 'warning');
-
-                /*
-                // =========================================================================
-                // NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
-                // DO NOT UNCOMMENT UNTIL PRODUCTION ROLLOUT IS READY.
-                // =========================================================================
                 try {
                     const response = await applyResolutionPostEdits(post, editReason);
                     console.log('Successfully applied post updates to e621:', response);
-                    
+
                     // If pool substitutions were queued:
-                    // if (Array.isArray(post._poolSubstitutions) && post._poolSubstitutions.length > 0) {
-                    //     for (const sub of post._poolSubstitutions) {
-                    //         await substitutePoolPosts(sub.poolId, [{ originalPostId: sub.origId, replacementPostId: sub.newId }]);
-                    //     }
-                    // }
+                    if (Array.isArray(post._poolSubstitutions) && post._poolSubstitutions.length > 0) {
+                        for (const sub of post._poolSubstitutions) {
+                            await substitutePoolPosts(sub.poolId, [{ originalPostId: sub.origId, replacementPostId: sub.newId }]);
+                        }
+                    }
+
+                    // Update local post.original and mark as applied to eliminate green highlights instantly
+                    post.markApplied(response);
+
+                    showToast(`Successfully applied updates for post #${postId} to e621!`, 'success');
                 } catch (err) {
                     console.error('Failed to apply post edits to e621:', err);
+                    const msg = err instanceof Error ? err.message : String(err);
+                    showToast(`Failed to apply updates for post #${postId}: ${msg}`, 'error');
+                } finally {
+                    this.submittingMap[postId] = false;
                 }
-                */
             },
 
             /**
@@ -465,14 +541,15 @@ document.addEventListener('alpine:init', () => {
              */
             async submitFlag(postId, superiorPostId) {
                 const post = this.resMgr.getPost(postId);
-                if (!post) return;
+                const pAny = /** @type {any} */ (post);
+                if (!post || this.isSubmitting(postId) || pAny.is_flagged || post.original?.is_flagged) return;
 
                 if (!getE621User()) {
                     showToast('You must be logged in to submit flags.', 'error');
                     return;
                 }
 
-                post.flag = true;
+                this.submittingMap[postId] = true;
 
                 let headId = superiorPostId;
                 if (!headId && this.resMgr?.graphs) {
@@ -485,26 +562,29 @@ document.addEventListener('alpine:init', () => {
                     headId = Number(postId);
                 }
 
-                console.log('[DEBUG MODE] Simulated API Call - flagResolutionPostInferior:', {
+                console.log('[LIVE API] Sending flagResolutionPostInferior:', {
                     postId: Number(postId),
                     superiorPostId: Number(headId),
                     flagNote: post.flag_note
                 });
 
-                showToast(`[Debug Mode] Query not sent. Simulated flag for post #${postId}. Check console for payload.`, 'warning');
-
-                /*
-                // =========================================================================
-                // NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
-                // DO NOT UNCOMMENT UNTIL PRODUCTION ROLLOUT IS READY.
-                // =========================================================================
                 try {
                     const response = await flagResolutionPostInferior(post, Number(headId));
+                    if (typeof pAny.markFlagged === 'function') {
+                        pAny.markFlagged();
+                    } else {
+                        post.flag = true;
+                        if (post.original) post.original.is_flagged = true;
+                    }
                     console.log('Successfully submitted inferior flag to e621:', response);
+                    showToast(`Successfully submitted inferior flag for post #${postId}!`, 'success');
                 } catch (err) {
                     console.error('Failed to submit inferior flag to e621:', err);
+                    let msg = err instanceof Error ? err.message : String(err);
+                    showToast(`Failed to flag post #${postId}: ${msg}`, 'error');
+                } finally {
+                    this.submittingMap[postId] = false;
                 }
-                */
             }
         };
     });

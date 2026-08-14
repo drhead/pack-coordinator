@@ -292,7 +292,29 @@ async function _flagPostInferior(postId, parentId, note = '') {
     });
 
     if (!response.ok) {
-        throw new Error(`Failed to flag post #${postId}: HTTP ${response.status}`);
+        let errDetail = `HTTP ${response.status}`;
+        try {
+            const errData = await response.json();
+            if (errData?.errors) {
+                if (Array.isArray(errData.errors)) {
+                    errDetail = errData.errors.join(', ');
+                } else if (typeof errData.errors === 'object') {
+                    const messages = [];
+                    for (const [key, val] of Object.entries(errData.errors)) {
+                        messages.push(`${key}: ${Array.isArray(val) ? val.join(', ') : val}`);
+                    }
+                    if (messages.length > 0) errDetail = messages.join('; ');
+                }
+            } else if (errData?.message) {
+                errDetail = errData.message;
+            }
+        } catch (_) {
+            // fallback
+        }
+        if (response.status === 429) {
+            errDetail = `Rate limit reached (20 flags/hour max). ${errDetail}`;
+        }
+        throw new Error(errDetail);
     }
 
     return await response.json();
@@ -344,7 +366,12 @@ async function _updatePost(postId, edits) {
     let hasChanges = false;
     for (const [key, formKey] of Object.entries(fieldMap)) {
         if (edits[key] !== undefined && edits[key] !== null) {
-            params.append(formKey, String(edits[key]));
+            const val = String(edits[key]);
+            // Omit blank old_* comparison parameters to match e621 web form behavior
+            if (key.startsWith('old_') && val.trim() === '') {
+                continue;
+            }
+            params.append(formKey, val);
             hasChanges = true;
         }
     }
@@ -432,7 +459,7 @@ export async function flagResolutionPostInferior(resPost, superiorPostId) {
  * Evaluates changes on a ResolutionPost and submits a PATCH update to e621 if edits exist.
  * 
  * @param {ResolutionPost} resPost The resolution post containing proposed changes.
- * @param {string} [editReason='Cluster resolution update'] Audit message for the edit.
+ * @param {string} [editReason='Edited from P.A.C.K. Editor'] Audit message for the edit.
  * @returns {Promise<Object|null>} Updated e621 response object, or `null` if no changes were detected.
  */
 export async function applyResolutionPostEdits(resPost, editReason = 'Edited from P.A.C.K. Editor') {
@@ -449,37 +476,42 @@ export async function applyResolutionPostEdits(resPost, editReason = 'Edited fro
     const origTags = Array.isArray(original.tags) ? original.tags : [];
     const currentTags = Array.isArray(resPost.tags) ? resPost.tags : [];
     if (origTags.join(' ') !== currentTags.join(' ')) {
-        edits.old_tag_string = origTags.join(' ');
+        const oldTagStr = origTags.join(' ').trim();
+        if (oldTagStr) edits.old_tag_string = oldTagStr;
         edits.tag_string = currentTags.join(' ');
     }
 
-    // 2. Sources Diff
+    // 2. Sources Diff (Use \r\n CRLF to match e621 web form behavior)
     const origSources = Array.isArray(original.sources) ? original.sources : [];
     const currentSources = Array.isArray(resPost.sources) ? resPost.sources : [];
-    if (origSources.join('\n') !== currentSources.join('\n')) {
-        edits.old_source = origSources.join('\n');
-        edits.source = currentSources.join('\n');
+    if (origSources.join('\r\n') !== currentSources.join('\r\n')) {
+        const oldSourceStr = origSources.join('\r\n').trim();
+        if (oldSourceStr) edits.old_source = oldSourceStr;
+        edits.source = currentSources.join('\r\n');
     }
 
-    // 3. Description Diff
+    // 3. Description Diff (Omit old_description if blank)
     const origDesc = original.description ?? '';
     const currentDesc = resPost.description ?? '';
     if (origDesc !== currentDesc) {
-        edits.old_description = origDesc;
+        const oldDescStr = origDesc.trim();
+        if (oldDescStr) edits.old_description = oldDescStr;
         edits.description = currentDesc;
     }
 
-    // 4. Rating Diff
+    // 4. Rating Diff (Omit old_rating if blank)
     if (resPost.rating !== null && resPost.rating !== original.rating) {
-        edits.old_rating = original.rating;
+        if (original.rating) edits.old_rating = original.rating;
         edits.rating = resPost.rating;
     }
 
-    // 5. Parent ID Diff
+    // 5. Parent ID Diff (Omit old_parent_id if blank)
     const origParent = original.parent_id ?? null;
     const currentParent = resPost.parent_id ?? null;
     if (origParent !== currentParent) {
-        edits.old_parent_id = origParent !== null ? origParent : '';
+        if (origParent !== null && String(origParent).trim() !== '') {
+            edits.old_parent_id = origParent;
+        }
         edits.parent_id = currentParent !== null ? currentParent : '';
     }
 

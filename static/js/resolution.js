@@ -54,6 +54,23 @@ export class ResolutionPost {
 
         /** @type {string} */
         this.flag_note = "";
+
+        /** @type {boolean} */
+        this.is_applied = false;
+
+        /** @type {boolean} */
+        this.is_flagged = Boolean(original.is_flagged);
+    }
+
+    /**
+     * Marks the post as flagged permanently in local state.
+     */
+    markFlagged() {
+        this.is_flagged = true;
+        this.flag = true;
+        if (this.original) {
+            this.original.is_flagged = true;
+        }
     }
 
     /**
@@ -88,6 +105,57 @@ export class ResolutionPost {
      */
     set description(val) {
         this._description = val;
+    }
+
+    /**
+     * Updates post.original with current values (or API response) and marks the post as applied,
+     * clearing diff overrides so green highlights disappear and UI reflects applied state.
+     * @param {Object} [updatedApiPost]
+     */
+    markApplied(updatedApiPost) {
+        let finalTags = Array.isArray(this.tags) ? [...this.tags] : [];
+        let finalSources = Array.isArray(this.sources) ? [...this.sources] : [];
+        let finalDesc = this.description;
+        let finalRating = this.getEffectiveRating();
+        let finalParent = this.parent_id;
+
+        if (updatedApiPost && typeof updatedApiPost === 'object') {
+            const apiObj = updatedApiPost.post || updatedApiPost;
+            if (apiObj.post_id || apiObj.id) {
+                if (Array.isArray(apiObj.tags)) finalTags = [...apiObj.tags];
+                else if (typeof apiObj.tag_string === 'string') finalTags = apiObj.tag_string.split(' ').filter(Boolean);
+                if (Array.isArray(apiObj.sources)) finalSources = [...apiObj.sources];
+                if (typeof apiObj.description === 'string') finalDesc = apiObj.description;
+                if (apiObj.rating) finalRating = apiObj.rating;
+                if (apiObj.parent_id !== undefined) finalParent = apiObj.parent_id;
+            }
+        }
+
+        const pAny = /** @type {any} */ (this);
+
+        // Deep copy final state into both working properties and original snapshot
+        this.tags = [...finalTags];
+        if (!this.original) this.original = /** @type {any} */ ({});
+        this.original.tags = [...finalTags];
+
+        this.sources = [...finalSources];
+        this.original.sources = [...finalSources];
+
+        this.description = finalDesc;
+        this.original.description = finalDesc;
+
+        this.rating = null;
+        this.original.rating = finalRating;
+
+        this.parent_id = null;
+        this.original.parent_id = finalParent;
+
+        this._sources = null;
+        this._description = null;
+        pAny._removedSources = [];
+        pAny._poolSubstitutions = [];
+
+        this.is_applied = true;
     }
 
     /**

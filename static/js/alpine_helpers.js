@@ -34,12 +34,17 @@ export const alpineHelpers = {
          * @param {ClusterPost} post
          */
         isUniform(posts, post) {
-            return posts.every(p =>
-                p.image_width === post.image_width &&
-                p.image_height === post.image_height &&
-                p.image_format === post.image_format &&
-                p.image_quality === post.image_quality
-            );
+            if (!posts || !post) return true;
+            const postsArray = Array.isArray(posts) ? posts : Array.from(/** @type {any} */ (posts) || []);
+            if (postsArray.length === 0) return true;
+            return postsArray.every(p => {
+                const item = typeof p === 'number' || typeof p === 'string' ? null : p;
+                if (!item) return true;
+                return item.image_width === post.image_width &&
+                    item.image_height === post.image_height &&
+                    item.image_format === post.image_format &&
+                    item.image_quality === post.image_quality;
+            });
         },
 
         /**
