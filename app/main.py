@@ -65,5 +65,10 @@ app.include_router(leases.router)
 app.include_router(static_data.router)
 
 # Static files
+from pathlib import Path
+
+if Path("dist/assets").is_dir():
+    app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/components", StaticFiles(directory="templates/components"), name="components")

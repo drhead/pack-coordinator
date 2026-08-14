@@ -79,19 +79,25 @@ CREATE INDEX IF NOT EXISTS idx_post_flags_pk_only ON post_flags(flag_id);
 -- =========================================================================
 
 -- Raw aggregate counts directly maintained on post_flags changes
-SELECT create_immv(
-    'immv_post_flag_counts',
-    $$
-    SELECT 
-        pf.post_id,
-        COUNT(CASE WHEN pf.is_resolved = FALSE AND pf.is_deletion = TRUE THEN 1 END) AS active_deletion_count,
-        COUNT(CASE WHEN pf.is_resolved = FALSE AND pf.is_deletion = FALSE THEN 1 END) AS active_flag_count
-    FROM post_flags pf
-    GROUP BY pf.post_id
-    $$
-);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'immv_post_flag_counts') THEN
+        PERFORM create_immv(
+            'immv_post_flag_counts',
+            $query$
+            SELECT 
+                pf.post_id,
+                COUNT(CASE WHEN pf.is_resolved = FALSE AND pf.is_deletion = TRUE THEN 1 END) AS active_deletion_count,
+                COUNT(CASE WHEN pf.is_resolved = FALSE AND pf.is_deletion = FALSE THEN 1 END) AS active_flag_count
+            FROM post_flags pf
+            GROUP BY pf.post_id
+            $query$
+        );
+    END IF;
+END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_immv_post_flag_counts_post_id ON immv_post_flag_counts(post_id);
+ALTER TABLE immv_post_flag_counts REPLICA IDENTITY FULL;
 
 -- Standard view presenting clean boolean state per post
 CREATE OR REPLACE VIEW cluster_post_flags AS
@@ -253,7 +259,7 @@ DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_cluster_change ON clusters;
 CREATE TRIGGER trg_reevaluate_cluster_on_cluster_change
 AFTER UPDATE OF manual_resolution, custom_note ON clusters
 FOR EACH ROW
-WHEN OLD.manual_resolution IS DISTINCT FROM NEW.manual_resolution
+WHEN (OLD.manual_resolution IS DISTINCT FROM NEW.manual_resolution)
 EXECUTE FUNCTION fn_reevaluate_cluster_from_cluster();
 
 -- 3. Recalculate cluster evaluation on post_flags changes

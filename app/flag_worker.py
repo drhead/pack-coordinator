@@ -61,10 +61,69 @@ async def refresh_post_flags(
         )
 
 
+from pathlib import Path
+
+FLAGS_DUMP_PATHS = [
+    Path("data/e621_flags_dump.jsonl"),
+    Path("e621_flags_dump.jsonl"),
+    Path("../scripts/e621_flags_dump.jsonl"),
+    Path("/mnt/megrez/e621/scripts/e621_flags_dump.jsonl"),
+]
+
+
+single_flag_decoder = msgspec.json.Decoder(type=E621PostFlagItem)
+
+
+async def seed_flags_from_dump_if_needed(conn: asyncpg.Connection | asyncpg.pool.PoolConnectionProxy) -> None:
+    """If post_flags is empty, seed from local JSONL flags dump if available."""
+    count = await conn.fetchval("SELECT COUNT(*) FROM post_flags;")
+    if count and count > 0:
+        return
+
+    dump_path: Path | None = None
+    for p in FLAGS_DUMP_PATHS:
+        if p.exists():
+            dump_path = p
+            break
+
+    if not dump_path:
+        print("[FlagWorker] No initial flag dump found, will poll directly from e621 API.")
+        return
+
+    print(f"[FlagWorker] Empty post_flags table detected. Seeding initial flags from dump at {dump_path}...")
+    file_bytes = dump_path.read_bytes()
+    records: list[E621PostFlagItem] = single_flag_decoder.decode_lines(file_bytes)
+    print(f"[FlagWorker] Decoded {len(records)} flags from dump file. Importing via unnest...")
+
+    batch_size = 10_000
+    flag_ids = [f.id for f in records]
+    post_ids = [f.post_id for f in records]
+    is_resolved_list = [f.is_resolved for f in records]
+    is_deletion_list = [f.is_deletion for f in records]
+
+    query = """
+        INSERT INTO post_flags (flag_id, post_id, is_resolved, is_deletion)
+        SELECT * FROM UNNEST($1::bigint[], $2::bigint[], $3::boolean[], $4::boolean[])
+        ON CONFLICT (flag_id) DO NOTHING;
+    """
+
+    for i in range(0, len(flag_ids), batch_size):
+        await conn.execute(
+            query,
+            flag_ids[i : i + batch_size],
+            post_ids[i : i + batch_size],
+            is_resolved_list[i : i + batch_size],
+            is_deletion_list[i : i + batch_size],
+        )
+
+    print(f"[FlagWorker] Successfully seeded {len(records)} flags from dump into PostgreSQL!")
+
+
 async def fetch_all_new_flags(client: httpx.AsyncClient) -> None:
     """Executes a poll cycle fetching flags until reaching known DB state."""
     pool = get_db()
     async with pool.acquire() as conn:
+        await seed_flags_from_dump_if_needed(conn)
         max_known_id = await get_known_flag_ids(conn)
 
     current_before_id: int | None = None

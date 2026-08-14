@@ -16,6 +16,12 @@ async def init_db_pool() -> None:
     if _pool is not None:
         return
 
+    # Automatically ensure DDL schema is applied to Postgres before opening pool
+    try:
+        await init_db()
+    except Exception as err:
+        print(f"[DB] Schema initialization notice: {err}")
+
     pool_host = settings.readyset_host if settings.use_readyset else settings.postgres_host
     pool_port = settings.readyset_port if settings.use_readyset else settings.postgres_port
 

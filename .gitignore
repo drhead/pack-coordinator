@@ -43,3 +43,4 @@ data/
 node_modules/
 notes/
 dist/
+.env.prod
