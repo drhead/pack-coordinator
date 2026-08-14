@@ -75,11 +75,11 @@ document.addEventListener('alpine:init', () => {
                         id: 'uncopied-metadata',
                         type: 'soft',
                         icon: '📋',
-                        title: 'Uncopied Metadata Available',
+                        title: 'Untransferred Metadata Available',
                         message: (ctx) => {
                             const details = ctx.getUncopiedMetadataDetails(ctx.graph);
                             const headId = ctx.graph?.head;
-                            return `Other posts in this graph contain metadata (${details.join(', ')}) that could be copied over to kept post #${headId}.`;
+                            return `Other posts in this graph contain metadata (${details.join(', ')}) that could be transferred over to the superior post #${headId}.`;
                         },
                         check: (ctx) => ctx.hasUncopiedMetadata(ctx.graph)
                     }
@@ -139,7 +139,7 @@ document.addEventListener('alpine:init', () => {
                     details.push('Pools');
                 }
 
-                // Parent (Check against current headPost.parent_id, ignoring self-referential parents pointing to kept post)
+                // Parent (Check against current headPost.parent_id, ignoring self-referential parents pointing to superior post)
                 const hasParent = otherPosts.some(p => {
                     const parentId = p.parent_id ?? p.original?.parent_id ?? null;
                     return parentId && Number(parentId) !== Number(graph.head) && !headPost.parent_id;
@@ -267,7 +267,7 @@ document.addEventListener('alpine:init', () => {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (headPost && parentId) {
                     if (Number(parentId) === Number(graph.head)) {
-                        showToast('Cannot copy parent ID: Parent ID is the kept post itself.', 'warning');
+                        showToast('Cannot transfer parent ID: Parent ID is the superior post itself.', 'warning');
                         return;
                     }
                     headPost.parent_id = Number(parentId);

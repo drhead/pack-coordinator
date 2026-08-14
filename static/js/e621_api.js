@@ -89,11 +89,12 @@ async function rateLimitedFetch(input, init) {
  */
 function getApiHeaders(overrideAuth) {
     const appAuthor = import.meta.env.VITE_E621_APP_AUTHOR || 'anonymous';
+    const envLabel = import.meta.env.VITE_APP_ENV || (import.meta.env.MODE === 'production' ? 'prod' : 'dev');
     const user = overrideAuth || getE621User();
 
     /** @type {Record<string, string>} */
     const headers = {
-        'User-Agent': `E621CleanupCoordinator/1.0 (by ${appAuthor})`
+        'User-Agent': `P.A.C.K. Editor (Frontend) (0.3 Alpha - ${envLabel}) (by ${appAuthor})`
     };
 
     if (user?.username && user?.apiKey) {
