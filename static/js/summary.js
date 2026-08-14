@@ -1,5 +1,6 @@
 import { WarningsManager } from './warnings.js';
 import { showToast } from './toasts.js';
+import { getE621User } from './auth.js';
 // NOTE: KEEP API CALLS COMMENTED OUT UNTIL LAUNCH!
 import { applyResolutionPostEdits, flagResolutionPostInferior, substitutePoolPosts } from './e621_api.js';
 
@@ -22,12 +23,20 @@ document.addEventListener('alpine:init', () => {
             init() {
                 this.warnings.registerRules([
                     {
+                        id: 'login-required-blocker',
+                        type: 'hard',
+                        icon: '🔑',
+                        title: 'Login Required',
+                        message: 'You can review proposed changes in test mode, but you must log in with your e621 credentials to apply changes.',
+                        check: () => !getE621User()
+                    },
+                    {
                         id: 'review-summary',
                         type: 'info',
                         icon: '💡',
                         title: 'Summary Instructions',
                         message: 'Review proposed changes below, then click the action buttons to publish your changes to E621. All changes will be attributed to you.',
-                        check: () => true
+                        check: () => !!getE621User()
                     },
                     {
                         id: 'uncopied-metadata',
@@ -367,7 +376,66 @@ document.addEventListener('alpine:init', () => {
             async applyChanges(postId) {
                 const post = this.resMgr.getPost(postId);
                 if (!post) return;
-                console.log('Applying resolution updates for post:', postId, post);
+
+                if (!getE621User()) {
+                    showToast('You must be logged in to apply changes.', 'error');
+                    return;
+                }
+
+                // Construct simulated payload diff for debug console output
+                const original = post.original || {};
+                /** @type {Record<string, any>} */
+                const edits = {};
+                const origTags = Array.isArray(original.tags) ? original.tags : [];
+                const currentTags = Array.isArray(post.tags) ? post.tags : [];
+                if (origTags.join(' ') !== currentTags.join(' ')) {
+                    edits.old_tag_string = origTags.join(' ');
+                    edits.tag_string = currentTags.join(' ');
+                }
+
+                const origSources = Array.isArray(original.sources) ? original.sources : [];
+                const currentSources = Array.isArray(post.sources) ? post.sources : [];
+                if (origSources.join('\n') !== currentSources.join('\n')) {
+                    edits.old_source = origSources.join('\n');
+                    edits.source = currentSources.join('\n');
+                }
+
+                const origDesc = original.description ?? '';
+                const currentDesc = post.description ?? '';
+                if (origDesc !== currentDesc) {
+                    edits.old_description = origDesc;
+                    edits.description = currentDesc;
+                }
+
+                if (post.rating !== null && post.rating !== original.rating) {
+                    edits.old_rating = original.rating;
+                    edits.rating = post.rating;
+                }
+
+                const origParent = original.parent_id ?? null;
+                const currentParent = post.parent_id ?? null;
+                if (origParent !== currentParent) {
+                    edits.old_parent_id = origParent !== null ? origParent : '';
+                    edits.parent_id = currentParent !== null ? currentParent : '';
+                }
+
+                // Construct dynamic edit_reason including active project title if available
+                const batchesStore = /** @type {any} */ (window.Alpine?.store('batches'));
+                const activeProject = batchesStore?.activeProject;
+                const projectName = activeProject?.title || activeProject?.name || activeProject?.project_id;
+                const editReason = projectName
+                    ? `Edited from P.A.C.K. Editor, part of "${projectName}" project.`
+                    : 'Edited from P.A.C.K. Editor.';
+
+                edits.edit_reason = editReason;
+
+                console.log('[DEBUG MODE] Simulated API Call - applyResolutionPostEdits:', {
+                    postId: Number(postId),
+                    edits: edits,
+                    poolSubstitutions: post._poolSubstitutions || []
+                });
+
+                showToast(`[Debug Mode] Query not sent. Simulated apply for post #${postId}. Check console for payload.`, 'warning');
 
                 /*
                 // =========================================================================
@@ -375,7 +443,7 @@ document.addEventListener('alpine:init', () => {
                 // DO NOT UNCOMMENT UNTIL PRODUCTION ROLLOUT IS READY.
                 // =========================================================================
                 try {
-                    const response = await applyResolutionPostEdits(post, 'Cluster cleanup resolution');
+                    const response = await applyResolutionPostEdits(post, editReason);
                     console.log('Successfully applied post updates to e621:', response);
                     
                     // If pool substitutions were queued:
@@ -398,8 +466,32 @@ document.addEventListener('alpine:init', () => {
             async submitFlag(postId, superiorPostId) {
                 const post = this.resMgr.getPost(postId);
                 if (!post) return;
+
+                if (!getE621User()) {
+                    showToast('You must be logged in to submit flags.', 'error');
+                    return;
+                }
+
                 post.flag = true;
-                console.log('Flagging post as inferior:', postId, 'Superior:', superiorPostId, 'Note:', post.flag_note);
+
+                let headId = superiorPostId;
+                if (!headId && this.resMgr?.graphs) {
+                    const containingGraph = this.resMgr.graphs.find(g => g.posts && g.posts.has(Number(postId)));
+                    if (containingGraph && containingGraph.head) {
+                        headId = containingGraph.head;
+                    }
+                }
+                if (!headId) {
+                    headId = Number(postId);
+                }
+
+                console.log('[DEBUG MODE] Simulated API Call - flagResolutionPostInferior:', {
+                    postId: Number(postId),
+                    superiorPostId: Number(headId),
+                    flagNote: post.flag_note
+                });
+
+                showToast(`[Debug Mode] Query not sent. Simulated flag for post #${postId}. Check console for payload.`, 'warning');
 
                 /*
                 // =========================================================================
@@ -407,8 +499,7 @@ document.addEventListener('alpine:init', () => {
                 // DO NOT UNCOMMENT UNTIL PRODUCTION ROLLOUT IS READY.
                 // =========================================================================
                 try {
-                    const headId = superiorPostId || Number(postId);
-                    const response = await flagResolutionPostInferior(post, headId);
+                    const response = await flagResolutionPostInferior(post, Number(headId));
                     console.log('Successfully submitted inferior flag to e621:', response);
                 } catch (err) {
                     console.error('Failed to submit inferior flag to e621:', err);

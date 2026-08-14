@@ -435,7 +435,7 @@ export async function flagResolutionPostInferior(resPost, superiorPostId) {
  * @param {string} [editReason='Cluster resolution update'] Audit message for the edit.
  * @returns {Promise<Object|null>} Updated e621 response object, or `null` if no changes were detected.
  */
-export async function applyResolutionPostEdits(resPost, editReason = 'Cluster resolution update') {
+export async function applyResolutionPostEdits(resPost, editReason = 'Edited from P.A.C.K. Editor') {
     if (!resPost || !resPost.original?.post_id) {
         throw new Error('Invalid ResolutionPost provided for edit submission.');
     }

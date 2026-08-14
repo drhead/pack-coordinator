@@ -467,11 +467,11 @@
                                     </template>
 
                                     <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
-                                        <button @click="submitFlag(postId)"
-                                            :disabled="post.original.is_flagged || post.original.is_deleted"
-                                            :title="post.original.is_deleted ? 'Post is already deleted.' : (post.original.is_flagged ? 'Post is already flagged.' : '')"
+                                        <button @click="submitFlag(postId, graph.head)"
+                                            :disabled="post.original.is_flagged || post.original.is_deleted || !$store.auth?.e621User"
+                                            :title="post.original.is_deleted ? 'Post is already deleted.' : (post.original.is_flagged ? 'Post is already flagged.' : (!$store.auth?.e621User ? 'Log in with e621 credentials to submit flags.' : ''))"
                                             class="w-full md:w-28 font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1"
-                                            :class="(post.original.is_flagged || post.original.is_deleted)
+                                            :class="(post.original.is_flagged || post.original.is_deleted || !$store.auth?.e621User)
                                                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60'
                                                     : 'bg-amber-600 hover:bg-amber-500 text-white cursor-pointer'">
                                             <span style="font-variant-emoji: text;">🚩</span>

@@ -2,6 +2,8 @@
 
 import { showToast } from './toasts.js';
 import { openImageModal } from './image_modal.js';
+import { WarningsManager } from './warnings.js';
+import { getE621User } from './auth.js';
 
 /**
  * @typedef {Object} RootData
@@ -20,6 +22,21 @@ export function ComparisonManager(resMgr) {
         isActive: false,
         isLoading: false,
         activePairIndex: 0,
+
+        warnings: new WarningsManager(),
+
+        initWarnings() {
+            this.warnings.registerRules([
+                {
+                    id: 'login-required-info',
+                    type: 'info',
+                    icon: '🧪',
+                    title: 'Testing Mode',
+                    message: "You can test the interface (and please provide feedback!), but you'll have to log in to apply changes.",
+                    check: () => !getE621User()
+                }
+            ]);
+        },
 
         /** @type {ResolutionManagerComponent} */
         resolutionManager: resMgr,
@@ -420,6 +437,7 @@ export function ComparisonManager(resMgr) {
                     return;
                 }
 
+                this.initWarnings();
                 this.setPairFromIds(pairIds[0], pairIds[1]);
                 this.isActive = true;
 

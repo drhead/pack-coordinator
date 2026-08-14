@@ -8,6 +8,7 @@ import { ResolutionPost } from './resolution.js';
 import { alpineHelpers } from './alpine_helpers.js';
 import { openImageModal } from './image_modal.js';
 import { WarningsManager } from './warnings.js';
+import { getE621User } from './auth.js';
 
 /**
  * @typedef {Object} RootData
@@ -35,6 +36,14 @@ export function ReconciliationManager(manager) {
 
         initWarnings() {
             this.warnings.registerRules([
+                {
+                    id: 'login-required-info',
+                    type: 'info',
+                    icon: '🧪',
+                    title: 'Testing Mode',
+                    message: "You can test the interface (and please provide feedback!), but you'll have to log in to apply changes.",
+                    check: () => !getE621User()
+                },
                 {
                     id: 'rating-mismatch',
                     type: 'hard',

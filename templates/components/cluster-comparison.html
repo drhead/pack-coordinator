@@ -56,6 +56,11 @@
     <!-- Main Image Display View Area -->
     <template x-if="currentPair">
         <div class="space-y-4">
+            <!-- Warnings Stack Container (Positioned above image cards) -->
+            <div x-data="{ scopeId: activePairIndex }" class="w-full">
+                <load src="/templates/components/warning-banner.html" />
+            </div>
+
             <div class="h-[60vh]">
                 <!-- 1. SIDE-BY-SIDE MODE -->
                 <div x-show="mode === 'side-by-side'" class="h-full grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
