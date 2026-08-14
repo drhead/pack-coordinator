@@ -302,7 +302,7 @@ document.addEventListener('alpine:init', () => {
             },
 
             // --- Pools Controls ---
-            copyPoolToHead(graph, poolId) {
+            copyPoolToHead(graph, poolId, sourcePostId) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (!headPost || !poolId) return;
 
@@ -315,6 +315,22 @@ document.addEventListener('alpine:init', () => {
                 if (Array.isArray(headPost._removedPools)) {
                     headPost._removedPools = headPost._removedPools.filter(id => id !== pId);
                 }
+
+                if (sourcePostId && Number(sourcePostId) !== Number(graph.head)) {
+                    const pAny = /** @type {any} */ (headPost);
+                    if (!Array.isArray(pAny._poolSubstitutions)) {
+                        pAny._poolSubstitutions = [];
+                    }
+                    const origId = Number(sourcePostId);
+                    const newId = Number(headPost.original?.post_id || graph.head);
+                    const existingIdx = pAny._poolSubstitutions.findIndex((/** @type {any} */ s) => s.poolId === pId);
+                    const subRecord = { poolId: pId, origId, newId };
+                    if (existingIdx >= 0) {
+                        pAny._poolSubstitutions[existingIdx] = subRecord;
+                    } else {
+                        pAny._poolSubstitutions.push(subRecord);
+                    }
+                }
             },
 
             removePoolFromHead(graph, poolId) {
@@ -324,6 +340,11 @@ document.addEventListener('alpine:init', () => {
                 const pId = Number(poolId);
                 const currentPools = Array.isArray(headPost.pool_ids) ? headPost.pool_ids : [];
                 headPost.pool_ids = currentPools.filter(id => id !== pId);
+
+                const pAny = /** @type {any} */ (headPost);
+                if (Array.isArray(pAny._poolSubstitutions)) {
+                    pAny._poolSubstitutions = pAny._poolSubstitutions.filter((/** @type {any} */ s) => s.poolId !== pId);
+                }
 
                 // Only track in _removedPools if it was an ORIGINAL pool on headPost
                 const wasOriginalHeadPool = Array.isArray(headPost.original?.pool_ids) && headPost.original.pool_ids.includes(pId);
@@ -346,8 +367,8 @@ document.addEventListener('alpine:init', () => {
                 return origPools.filter(id => !headPools.has(Number(id)));
             },
 
-            restorePoolToHead(graph, poolId) {
-                this.copyPoolToHead(graph, poolId);
+            restorePoolToHead(graph, poolId, sourcePostId) {
+                this.copyPoolToHead(graph, poolId, sourcePostId);
             },
 
             resetHeadPools(graph) {

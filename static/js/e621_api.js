@@ -256,7 +256,16 @@ async function _updatePoolPostIds(poolId, postIds) {
         throw new Error(`Failed to update pool #${poolId}: HTTP ${response.status}`);
     }
 
-    return await response.json();
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+        return { success: true, poolId };
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (_) {
+        return { success: true, poolId };
+    }
 }
 
 /**
