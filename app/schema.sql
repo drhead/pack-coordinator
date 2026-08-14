@@ -134,16 +134,16 @@ LEFT JOIN leases l ON b.batch_id = l.batch_id
 GROUP BY b.batch_id, b.project_id, b.batch_number, l.batch_id, l.expires_at;
 
 CREATE OR REPLACE VIEW v_cluster_evaluations AS
-WITH active_posts AS (
+WITH active_posts AS NOT MATERIALIZED (
     SELECT 
         cp.cluster_id,
         cp.post_id,
         cp.parent_id,
         cp.pool_ids
     FROM cluster_posts cp
-    LEFT JOIN cluster_post_flags cpf ON cp.post_id = cpf.post_id
-    WHERE COALESCE(cpf.is_flagged, FALSE) = FALSE 
-      AND COALESCE(cpf.is_deleted, FALSE) = FALSE
+    LEFT JOIN immv_post_flag_counts fc ON cp.post_id = fc.post_id
+    WHERE COALESCE(fc.active_flag_count > 0, FALSE) = FALSE 
+      AND COALESCE(fc.active_deletion_count > 0, FALSE) = FALSE
 ),
 cluster_metrics AS (
     SELECT 
@@ -219,29 +219,35 @@ LEFT JOIN cluster_metrics m ON c.cluster_id = m.cluster_id;
 -- TRIGGER FUNCTIONS & TRIGGERS
 -- =========================================================================
 
--- 1. Recalculate cluster evaluation on cluster_posts metadata changes
-CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post()
+-- 1. Batch recalculate cluster evaluation on cluster_posts metadata changes
+CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_batch()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE clusters
     SET is_resolved = v.computed_is_resolved
-    FROM v_cluster_evaluations v
-    WHERE clusters.cluster_id = NEW.cluster_id AND v.cluster_id = NEW.cluster_id;
-    RETURN NEW;
+    FROM (
+        SELECT DISTINCT cluster_id FROM new_table
+    ) affected
+    JOIN v_cluster_evaluations v ON affected.cluster_id = v.cluster_id
+    WHERE clusters.cluster_id = affected.cluster_id
+      AND clusters.is_resolved != v.computed_is_resolved;
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_change ON cluster_posts;
 CREATE TRIGGER trg_reevaluate_cluster_on_post_change
-AFTER UPDATE OF parent_id, pool_ids ON cluster_posts
-FOR EACH ROW
-EXECUTE FUNCTION fn_reevaluate_cluster_from_post();
+AFTER UPDATE ON cluster_posts
+REFERENCING NEW TABLE AS new_table
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_reevaluate_cluster_from_post_batch();
 
 DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_insert ON cluster_posts;
 CREATE TRIGGER trg_reevaluate_cluster_on_post_insert
 AFTER INSERT ON cluster_posts
-FOR EACH ROW
-EXECUTE FUNCTION fn_reevaluate_cluster_from_post();
+REFERENCING NEW TABLE AS new_table
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_reevaluate_cluster_from_post_batch();
 
 -- 2. Recalculate cluster evaluation on manual resolution or custom note toggles
 CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_cluster()
@@ -262,21 +268,36 @@ FOR EACH ROW
 WHEN (OLD.manual_resolution IS DISTINCT FROM NEW.manual_resolution)
 EXECUTE FUNCTION fn_reevaluate_cluster_from_cluster();
 
--- 3. Recalculate cluster evaluation on post_flags changes
-CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_flag()
+-- 3. Scoped recalculate cluster evaluation on post_flags changes
+CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_flag_batch()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE clusters
     SET is_resolved = v.computed_is_resolved
-    FROM v_cluster_evaluations v
-    WHERE clusters.cluster_id = v.cluster_id
+    FROM (
+        SELECT DISTINCT cp.cluster_id
+        FROM new_table n
+        JOIN cluster_posts cp ON n.post_id = cp.post_id
+    ) affected
+    JOIN v_cluster_evaluations v ON affected.cluster_id = v.cluster_id
+    WHERE clusters.cluster_id = affected.cluster_id
       AND clusters.is_resolved != v.computed_is_resolved;
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_flag_change ON post_flags;
-CREATE TRIGGER trg_reevaluate_cluster_on_post_flag_change
-AFTER INSERT OR UPDATE OR DELETE ON post_flags
+DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_flag_insert ON post_flags;
+DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_flag_update ON post_flags;
+
+CREATE TRIGGER trg_reevaluate_cluster_on_post_flag_insert
+AFTER INSERT ON post_flags
+REFERENCING NEW TABLE AS new_table
 FOR EACH STATEMENT
-EXECUTE FUNCTION fn_reevaluate_cluster_from_post_flag();
+EXECUTE FUNCTION fn_reevaluate_cluster_from_post_flag_batch();
+
+CREATE TRIGGER trg_reevaluate_cluster_on_post_flag_update
+AFTER UPDATE ON post_flags
+REFERENCING NEW TABLE AS new_table
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_reevaluate_cluster_from_post_flag_batch();

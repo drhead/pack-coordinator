@@ -64,5 +64,17 @@ class Settings:
     def e621_username(self) -> str:
         return os.getenv("E621_USERNAME") or os.getenv("VITE_E621_APP_AUTHOR") or "anonymous"
 
+    @property
+    def version(self) -> str:
+        return "0.3 Alpha"
+
+    @property
+    def app_env(self) -> str:
+        return os.getenv("APP_ENV", "dev")
+
+    @property
+    def user_agent(self) -> str:
+        return f"P.A.C.K. Coordinator (Backend) ({self.version} - {self.app_env}) (by {self.e621_username})"
+
 
 settings = Settings()
