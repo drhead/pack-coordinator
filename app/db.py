@@ -3,9 +3,8 @@
 from pathlib import Path
 import asyncpg
 import asyncio
-from app.secrets import secrets
+from app.config import settings
 
-SECRETS_PATH = Path("secrets.json")
 SCHEMA_PATH = Path("app/schema.sql")
 
 _pool: asyncpg.Pool | None = None
@@ -17,12 +16,15 @@ async def init_db_pool() -> None:
     if _pool is not None:
         return
 
+    pool_host = settings.readyset_host if settings.use_readyset else settings.postgres_host
+    pool_port = settings.readyset_port if settings.use_readyset else settings.postgres_port
+
     _pool = await asyncpg.create_pool(
-        user=secrets.postgresql_user,
-        password=secrets.postgresql_password,
-        database="coordinator_db",
-        host="localhost",
-        port=5433,
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        database=settings.postgres_db,
+        host=pool_host,
+        port=pool_port,
         min_size=10,
         max_size=50,
     )
@@ -55,11 +57,11 @@ async def init_db() -> None:
     conn: asyncpg.Connection
     # Connect directly to run the whole DDL script
     conn = await asyncpg.connect(
-        user=secrets.postgresql_user,
-        password=secrets.postgresql_password,
-        database="coordinator_db",
-        host="localhost",
-        port=5432,
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        database=settings.postgres_db,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
     )
     try:
         await conn.execute(schema_sql)

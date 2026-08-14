@@ -8,12 +8,12 @@ import httpx
 import msgspec
 
 from app.db import get_db
-from app.secrets import secrets
+from app.config import settings
 from app.rate_limiter import e621_limiter
 from app.structs import PostData
 from app.flag_worker import refresh_post_flags
 
-USER_AGENT = f"cleanup-coordinator_posts-worker/1.2 (by {secrets.e621_username})"
+USER_AGENT = f"cleanup-coordinator_posts-worker/1.2 (by {settings.e621_username})"
 
 POSTS_URL = "https://e621.net/posts.json"
 CHUNK_LIMIT = 320

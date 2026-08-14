@@ -6,11 +6,11 @@ import httpx
 import asyncpg
 
 from app.db import get_db
-from app.secrets import secrets
+from app.config import settings
 from app.rate_limiter import e621_limiter
 from app.structs import E621PostFlagItem
 
-USER_AGENT = f"cleanup-coordinator_flag-worker/1.2 (by {secrets.e621_username})"
+USER_AGENT = f"cleanup-coordinator_flag-worker/1.2 (by {settings.e621_username})"
 
 BASE_URL = "https://e621.net/post_flags.json"
 CHUNK_LIMIT = 320

@@ -1,13 +1,22 @@
-from pathlib import Path
-import msgspec
+"""Deprecated module: Secrets are now managed via environment variables and app/config.py."""
 
-SECRETS_PATH = Path("secrets.json")
-
-
-class Secrets(msgspec.Struct, kw_only=True):
-    e621_username: str
-    postgresql_user: str
-    postgresql_password: str
+from app.config import settings
 
 
-secrets = msgspec.json.decode(SECRETS_PATH.read_bytes(), type=Secrets)
+class DeprecatedSecrets:
+    """Backward compatibility shim mapping old secret properties to settings."""
+
+    @property
+    def e621_username(self) -> str:
+        return settings.e621_username
+
+    @property
+    def postgresql_user(self) -> str:
+        return settings.postgres_user
+
+    @property
+    def postgresql_password(self) -> str:
+        return settings.postgres_password
+
+
+secrets = DeprecatedSecrets()
