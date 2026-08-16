@@ -123,7 +123,7 @@ async def refresh_posts_metadata(
                 async with pool.acquire() as conn:
                     await conn.execute(
                         """
-                        UPDATE cluster_posts cp
+                        UPDATE posts p
                         SET parent_id = u.parent_id,
                             pool_ids = u.pool_ids::int[],
                             tags = u.tags::text[],
@@ -135,12 +135,12 @@ async def refresh_posts_metadata(
                             $4::text[],
                             $5::bigint[]
                         ) AS u(parent_id, pool_ids, tags, rating, post_id)
-                        WHERE cp.post_id = u.post_id
+                        WHERE p.post_id = u.post_id
                         AND (
-                            cp.parent_id IS DISTINCT FROM u.parent_id OR
-                            cp.pool_ids IS DISTINCT FROM u.pool_ids::int[] OR
-                            cp.tags IS DISTINCT FROM u.tags::text[] OR
-                            cp.rating IS DISTINCT FROM u.rating
+                            p.parent_id IS DISTINCT FROM u.parent_id OR
+                            p.pool_ids IS DISTINCT FROM u.pool_ids::int[] OR
+                            p.tags IS DISTINCT FROM u.tags::text[] OR
+                            p.rating IS DISTINCT FROM u.rating
                         );
                         """,
                         list(parent_ids),

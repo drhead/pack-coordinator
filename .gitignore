@@ -43,3 +43,5 @@ notes/
 dist/
 .env.prod
 migrations/
+e621_deduplication_playground.ipynb
+e621_blacklist.py

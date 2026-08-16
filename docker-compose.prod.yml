@@ -11,14 +11,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-coordinator}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_secure_password}
       POSTGRES_DB: ${POSTGRES_DB:-coordinator_db}
-    shm_size: 16gb
+    shm_size: 2gb
     ports:
       - "${PROD_DB_PORT:-5436}:5432"
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
     command:
       - "postgres"
-      - "-c" 
+      - "-c"
       - "shared_preload_libraries=pg_stat_statements"
       - "-c"
       - "wal_level=logical"
@@ -27,27 +27,27 @@ services:
       - "-c"
       - "max_wal_senders=10"
       - "-c"
-      - "max_connections=400"
+      - "max_connections=100"
       - "-c"
-      - "shared_buffers=32GB"
+      - "shared_buffers=4GB"
       - "-c"
-      - "work_mem=64MB"
+      - "work_mem=16MB"
       - "-c"
-      - "maintenance_work_mem=4GB"
+      - "maintenance_work_mem=512MB"
       - "-c"
-      - "effective_cache_size=96GB"
+      - "effective_cache_size=16GB"
       - "-c"
       - "random_page_cost=1.1"
       - "-c"
-      - "max_worker_processes=128"
+      - "max_worker_processes=16"
       - "-c"
-      - "max_parallel_workers=64"
+      - "max_parallel_workers=8"
       - "-c"
-      - "max_parallel_workers_per_gather=16"
+      - "max_parallel_workers_per_gather=2"
       - "-c"
-      - "max_wal_size=16GB"
+      - "max_wal_size=4GB"
       - "-c"
-      - "min_wal_size=2GB"
+      - "min_wal_size=1GB"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coordinator} -d ${POSTGRES_DB:-coordinator_db}"]
       interval: 3s

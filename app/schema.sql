@@ -29,9 +29,8 @@ CREATE TABLE IF NOT EXISTS clusters (
     manual_resolution BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS cluster_posts (
-    cluster_id BIGINT NOT NULL REFERENCES clusters(cluster_id) ON DELETE CASCADE,
-    post_id BIGINT NOT NULL,
+CREATE TABLE IF NOT EXISTS posts (
+    post_id BIGINT PRIMARY KEY,
     parent_id BIGINT,
     pool_ids INTEGER[] NOT NULL DEFAULT '{}',
     rating TEXT,
@@ -39,7 +38,12 @@ CREATE TABLE IF NOT EXISTS cluster_posts (
     image_width INTEGER CHECK (image_width IS NULL OR image_width >= 0),
     image_height INTEGER CHECK (image_height IS NULL OR image_height >= 0),
     image_format TEXT,
-    image_quality INTEGER CHECK (image_quality IS NULL OR (image_quality >= 0 AND image_quality <= 101)),
+    image_quality INTEGER CHECK (image_quality IS NULL OR (image_quality >= 0 AND image_quality <= 101))
+);
+
+CREATE TABLE IF NOT EXISTS cluster_posts (
+    cluster_id BIGINT NOT NULL REFERENCES clusters(cluster_id) ON DELETE CASCADE,
+    post_id BIGINT NOT NULL REFERENCES posts(post_id) ON DELETE CASCADE,
     PRIMARY KEY (cluster_id, post_id)
 );
 
@@ -67,9 +71,9 @@ CREATE INDEX IF NOT EXISTS idx_clusters_batch_id ON clusters(batch_id);
 CREATE INDEX IF NOT EXISTS idx_cluster_posts_post_id ON cluster_posts(post_id);
 CREATE INDEX IF NOT EXISTS idx_post_flags_lookup ON post_flags(post_id, is_resolved, is_deletion);
 
--- GIN Indexes for high-performance array operations
-CREATE INDEX IF NOT EXISTS idx_cluster_posts_pools_gin ON cluster_posts USING GIN (pool_ids);
-CREATE INDEX IF NOT EXISTS idx_cluster_posts_tags_gin ON cluster_posts USING GIN (tags);
+-- GIN Indexes for high-performance array operations on posts
+CREATE INDEX IF NOT EXISTS idx_posts_pools_gin ON posts USING GIN (pool_ids);
+CREATE INDEX IF NOT EXISTS idx_posts_tags_gin ON posts USING GIN (tags);
 
 CREATE INDEX IF NOT EXISTS idx_clusters_batch_index ON clusters(batch_id, cluster_index);
 CREATE INDEX IF NOT EXISTS idx_post_flags_pk_only ON post_flags(flag_id);
@@ -138,9 +142,10 @@ WITH active_posts AS NOT MATERIALIZED (
     SELECT 
         cp.cluster_id,
         cp.post_id,
-        cp.parent_id,
-        cp.pool_ids
+        p.parent_id,
+        p.pool_ids
     FROM cluster_posts cp
+    JOIN posts p ON cp.post_id = p.post_id
     LEFT JOIN immv_post_flag_counts fc ON cp.post_id = fc.post_id
     WHERE COALESCE(fc.active_flag_count > 0, FALSE) = FALSE 
       AND COALESCE(fc.active_deletion_count > 0, FALSE) = FALSE
@@ -219,8 +224,33 @@ LEFT JOIN cluster_metrics m ON c.cluster_id = m.cluster_id;
 -- TRIGGER FUNCTIONS & TRIGGERS
 -- =========================================================================
 
--- 1. Batch recalculate cluster evaluation on cluster_posts metadata changes
+-- 1. Batch recalculate cluster evaluation on posts metadata changes
 CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_batch()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE clusters
+    SET is_resolved = v.computed_is_resolved
+    FROM (
+        SELECT DISTINCT cp.cluster_id
+        FROM new_table n
+        JOIN cluster_posts cp ON n.post_id = cp.post_id
+    ) affected
+    JOIN v_cluster_evaluations v ON affected.cluster_id = v.cluster_id
+    WHERE clusters.cluster_id = affected.cluster_id
+      AND clusters.is_resolved != v.computed_is_resolved;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_change ON posts;
+CREATE TRIGGER trg_reevaluate_cluster_on_post_change
+AFTER UPDATE ON posts
+REFERENCING NEW TABLE AS new_table
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_reevaluate_cluster_from_post_batch();
+
+-- 2. Recalculate cluster evaluation on cluster_posts insertions
+CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_cluster_post_insert()
 RETURNS TRIGGER AS $$
 BEGIN
     UPDATE clusters
@@ -235,21 +265,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_change ON cluster_posts;
-CREATE TRIGGER trg_reevaluate_cluster_on_post_change
-AFTER UPDATE ON cluster_posts
-REFERENCING NEW TABLE AS new_table
-FOR EACH STATEMENT
-EXECUTE FUNCTION fn_reevaluate_cluster_from_post_batch();
-
-DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_insert ON cluster_posts;
-CREATE TRIGGER trg_reevaluate_cluster_on_post_insert
+DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_cluster_post_insert ON cluster_posts;
+CREATE TRIGGER trg_reevaluate_cluster_on_cluster_post_insert
 AFTER INSERT ON cluster_posts
 REFERENCING NEW TABLE AS new_table
 FOR EACH STATEMENT
-EXECUTE FUNCTION fn_reevaluate_cluster_from_post_batch();
+EXECUTE FUNCTION fn_reevaluate_cluster_from_cluster_post_insert();
 
--- 2. Recalculate cluster evaluation on manual resolution or custom note toggles
+-- 3. Recalculate cluster evaluation on cluster_posts deletions
+CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_cluster_post_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE clusters
+    SET is_resolved = v.computed_is_resolved
+    FROM (
+        SELECT DISTINCT cluster_id FROM old_table
+    ) affected
+    JOIN v_cluster_evaluations v ON affected.cluster_id = v.cluster_id
+    WHERE clusters.cluster_id = affected.cluster_id
+      AND clusters.is_resolved != v.computed_is_resolved;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_cluster_post_delete ON cluster_posts;
+CREATE TRIGGER trg_reevaluate_cluster_on_cluster_post_delete
+AFTER DELETE ON cluster_posts
+REFERENCING OLD TABLE AS old_table
+FOR EACH STATEMENT
+EXECUTE FUNCTION fn_reevaluate_cluster_from_cluster_post_delete();
+
+-- 4. Recalculate cluster evaluation on manual resolution or custom note toggles
 CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_cluster()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -268,7 +314,7 @@ FOR EACH ROW
 WHEN (OLD.manual_resolution IS DISTINCT FROM NEW.manual_resolution)
 EXECUTE FUNCTION fn_reevaluate_cluster_from_cluster();
 
--- 3. Scoped recalculate cluster evaluation on post_flags changes
+-- 5. Scoped recalculate cluster evaluation on post_flags changes
 CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_flag_batch()
 RETURNS TRIGGER AS $$
 BEGIN

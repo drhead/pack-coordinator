@@ -101,14 +101,15 @@ ORDER BY batch_number ASC;
 \echo '--- EXPLAIN ANALYZE: Flat cluster+post data query ---'
 EXPLAIN (ANALYZE, BUFFERS, TIMING)
 SELECT c.batch_id, c.cluster_id, c.cluster_index, c.custom_note AS note, c.is_resolved, 
-       c.manual_resolution, cp.post_id, cp.parent_id, cp.pool_ids, 
-       cp.rating, cp.tags,
-       cp.image_width, cp.image_height, cp.image_format, cp.image_quality,
+       c.manual_resolution, cp.post_id, p.parent_id, p.pool_ids, 
+       p.rating, p.tags,
+       p.image_width, p.image_height, p.image_format, p.image_quality,
        COALESCE(fc.active_deletion_count > 0, FALSE) AS is_deleted, 
        COALESCE(fc.active_flag_count > 0, FALSE) AS is_flagged
 FROM clusters c
 JOIN batches b ON c.batch_id = b.batch_id
 LEFT JOIN cluster_posts cp ON c.cluster_id = cp.cluster_id
+LEFT JOIN posts p ON cp.post_id = p.post_id
 LEFT JOIN immv_post_flag_counts fc ON cp.post_id = fc.post_id
 WHERE b.project_id = (SELECT project_id FROM projects LIMIT 1)
 ORDER BY c.batch_id ASC, c.cluster_index ASC, cp.post_id ASC;
@@ -126,30 +127,30 @@ EXPLAIN (ANALYZE, BUFFERS, TIMING)
 SELECT post_id, is_flagged, is_deleted
 FROM cluster_post_flags
 WHERE post_id = ANY(
-    (SELECT array_agg(post_id) FROM (SELECT post_id FROM cluster_posts LIMIT 320) t)::bigint[]
+    (SELECT array_agg(post_id) FROM (SELECT post_id FROM posts LIMIT 320) t)::bigint[]
 );
 
 \echo ''
-\echo '--- EXPLAIN ANALYZE: Bulk UPDATE cluster_posts ---'
+\echo '--- EXPLAIN ANALYZE: Bulk UPDATE posts ---'
 BEGIN;
 EXPLAIN (ANALYZE, BUFFERS, TIMING)
-UPDATE cluster_posts cp
+UPDATE posts p
 SET parent_id = u.parent_id,
     pool_ids = u.pool_ids::int[],
     tags = u.tags::text[],
     rating = u.rating
 FROM UNNEST(
-    (SELECT array_agg(parent_id) FROM (SELECT parent_id FROM cluster_posts LIMIT 320) t)::bigint[],
-    (SELECT array_agg(pool_ids::text) FROM (SELECT pool_ids FROM cluster_posts LIMIT 320) t)::text[],
-    (SELECT array_agg(tags::text) FROM (SELECT tags FROM cluster_posts LIMIT 320) t)::text[],
-    (SELECT array_agg(rating) FROM (SELECT rating FROM cluster_posts LIMIT 320) t)::text[],
-    (SELECT array_agg(post_id) FROM (SELECT post_id FROM cluster_posts LIMIT 320) t)::bigint[]
+    (SELECT array_agg(parent_id) FROM (SELECT parent_id FROM posts LIMIT 320) t)::bigint[],
+    (SELECT array_agg(pool_ids::text) FROM (SELECT pool_ids FROM posts LIMIT 320) t)::text[],
+    (SELECT array_agg(tags::text) FROM (SELECT tags FROM posts LIMIT 320) t)::text[],
+    (SELECT array_agg(rating) FROM (SELECT rating FROM posts LIMIT 320) t)::text[],
+    (SELECT array_agg(post_id) FROM (SELECT post_id FROM posts LIMIT 320) t)::bigint[]
 ) AS u(parent_id, pool_ids, tags, rating, post_id)
-WHERE cp.post_id = u.post_id
+WHERE p.post_id = u.post_id
 AND (
-    cp.parent_id IS DISTINCT FROM u.parent_id OR
-    cp.pool_ids IS DISTINCT FROM u.pool_ids::int[] OR
-    cp.tags IS DISTINCT FROM u.tags::text[] OR
-    cp.rating IS DISTINCT FROM u.rating
+    p.parent_id IS DISTINCT FROM u.parent_id OR
+    p.pool_ids IS DISTINCT FROM u.pool_ids::int[] OR
+    p.tags IS DISTINCT FROM u.tags::text[] OR
+    p.rating IS DISTINCT FROM u.rating
 );
 COMMIT;

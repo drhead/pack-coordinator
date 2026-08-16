@@ -158,14 +158,15 @@ async def get_project_batches(
         flat_rows = await conn.fetch(
             """
             SELECT c.batch_id, c.cluster_id, c.cluster_index, c.custom_note AS note, c.is_resolved, 
-                   c.manual_resolution, cp.post_id, cp.parent_id, cp.pool_ids, 
-                   cp.rating, cp.tags,
-                   cp.image_width, cp.image_height, cp.image_format, cp.image_quality,
+                   c.manual_resolution, cp.post_id, p.parent_id, p.pool_ids, 
+                   p.rating, p.tags,
+                   p.image_width, p.image_height, p.image_format, p.image_quality,
                    COALESCE(fc.active_deletion_count > 0, FALSE) AS is_deleted, 
                    COALESCE(fc.active_flag_count > 0, FALSE) AS is_flagged
-            FROM clusters c
-            JOIN batches b ON c.batch_id = b.batch_id
+            FROM batches b
+            JOIN clusters c ON b.batch_id = c.batch_id
             LEFT JOIN cluster_posts cp ON c.cluster_id = cp.cluster_id
+            LEFT JOIN posts p ON cp.post_id = p.post_id
             LEFT JOIN immv_post_flag_counts fc ON cp.post_id = fc.post_id
             WHERE b.project_id = $1
             ORDER BY c.batch_id ASC, c.cluster_index ASC, cp.post_id ASC
