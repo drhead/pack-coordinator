@@ -92,77 +92,31 @@ export function ComparisonManager(resMgr) {
         },
 
         /**
-         * Gets max height style for image container and image element in SBS mode.
-         * @returns {string} CSS max-height value, e.g. "calc(50vh - 52px)"
-         */
-        getSbsImageMaxHeight() {
-            const maxCount = this.getMaxPairCollapsibleCount();
-            if (maxCount === 0) return '50vh';
-            const reservedPx = maxCount * 26;
-            return `calc(50vh - ${reservedPx}px)`;
-        },
-
-        /** @type {Record<number, number>} */
-        overlayHeights: {},
-
-        /**
-         * Dynamically measures collapsed height of collapsibles overlay element for a post.
-         * @param {number} postId
-         * @param {HTMLElement | null} el
-         */
-        updateOverlayHeight(postId, el) {
-            if (!el || !postId) return;
-
-            const measure = () => {
-                const summaries = el.querySelectorAll('summary');
-                let collapsedH = 0;
-                summaries.forEach(s => {
-                    collapsedH += s.getBoundingClientRect().height;
-                });
-                if (this.overlayHeights[postId] !== collapsedH) {
-                    this.overlayHeights[postId] = collapsedH;
-                }
-            };
-
-            measure();
-
-            if (window.ResizeObserver && !/** @type {any} */ (el)._roAttached) {
-                /** @type {any} */ (el)._roAttached = true;
-                const ro = new ResizeObserver(() => {
-                    measure();
-                });
-                ro.observe(el);
-            }
-        },
-
-        /**
-         * Gets dynamic height style for an SBS card item relative to the other item in currentPair.
+         * Gets dynamic height style for an SBS card item so any whitespace from differing
+         * collapsible counts is cleanly outside the card rather than inside.
          * @param {ClusterPost | null} item
-         * @returns {string} CSS height value, e.g. "100%" or "calc(100% - 27px)"
+         * @returns {string} CSS height value, e.g. "100%" or "calc(100% - 26px)"
          */
         getSbsCardHeight(item) {
             if (!this.currentPair || !item) return '100%';
-            const otherItem = item.post_id === this.currentPair.a.post_id ? this.currentPair.b : this.currentPair.a;
-            if (!otherItem) return '100%';
-
-            const thisH = this.overlayHeights[item.post_id] || 0;
-            const otherH = this.overlayHeights[otherItem.post_id] || 0;
-            const diff = otherH - thisH;
-
+            const maxCount = this.getMaxPairCollapsibleCount();
+            const ownCount = this.getItemCollapsibleCount(item);
+            const diff = maxCount - ownCount;
             if (diff <= 0) return '100%';
-            return `calc(100% - ${diff}px)`;
+            return `calc(100% - ${diff * 26}px)`;
         },
 
         /**
-         * Gets height style for Card Image Wrapper scaled down by card's own Card Collapsible Offset.
+         * Gets height style for Card Image Wrapper scaled down by card's own collapsible count,
+         * guaranteeing both SBS images have the exact same relative viewport size and vertical alignment.
          * @param {ClusterPost | null} item
-         * @returns {string} CSS height value, e.g. "100%" or "calc(100% - 54px)"
+         * @returns {string} CSS height value, e.g. "100%", "calc(100% - 26px)", or "calc(100% - 52px)"
          */
         getSbsImageWrapperHeight(item) {
             if (!item) return '100%';
-            const ownOffset = this.overlayHeights[item.post_id] || 0;
-            if (ownOffset <= 0) return '100%';
-            return `calc(100% - ${ownOffset}px)`;
+            const ownCount = this.getItemCollapsibleCount(item);
+            if (ownCount <= 0) return '100%';
+            return `calc(100% - ${ownCount * 26}px)`;
         },
 
         /**
@@ -245,14 +199,28 @@ export function ComparisonManager(resMgr) {
 
         /**
          * Standard Single Post Loupe Style
+         * Scales based on larger image in the pair so loupe shows consistent FOV percentage across pairs with 1-4x upscale from native.
          * @param {ClusterPost | null} post
          * @returns {Record<string, string>}
          */
         getLoupeStyle(post) {
             if (!this.enableLoupe || !post || !post.fileUrl) return { display: 'none' };
 
-            const nativeW = post.image_width || 1000;
-            const nativeH = post.image_height || 1000;
+            const pairA = this.currentPair?.a;
+            const pairB = this.currentPair?.b;
+
+            const nativeW = Math.max(
+                pairA?.image_width || 0,
+                pairB?.image_width || 0,
+                post.image_width || 0,
+                1000
+            );
+            const nativeH = Math.max(
+                pairA?.image_height || 0,
+                pairB?.image_height || 0,
+                post.image_height || 0,
+                1000
+            );
             const dpr = window.devicePixelRatio || 1;
 
             const bgW = nativeW * this.zoomLevel * dpr;
@@ -265,6 +233,7 @@ export function ComparisonManager(resMgr) {
                 width: `${this.loupeSize}px`,
                 height: `${this.loupeSize}px`,
                 backgroundImage: `url(${post.fileUrl})`,
+                backgroundColor: '#1f2937',
                 backgroundSize: `${bgW}px ${bgH}px`,
                 backgroundPosition: `${bgLeft}px ${bgTop}px`,
                 imageRendering: this.zoomLevel > 1 ? 'pixelated' : 'auto'
@@ -280,8 +249,8 @@ export function ComparisonManager(resMgr) {
         getDiffLoupeStyle(postA, postB) {
             if (!this.enableLoupe || !postA?.fileUrl || !postB?.fileUrl) return { display: 'none' };
 
-            const nativeW = Math.max(postA.image_width || 1000, postB.image_width || 1000);
-            const nativeH = Math.max(postA.image_height || 1000, postB.image_height || 1000);
+            const nativeW = Math.max(postA.image_width || 0, postB.image_width || 0, 1000);
+            const nativeH = Math.max(postA.image_height || 0, postB.image_height || 0, 1000);
             const dpr = window.devicePixelRatio || 1;
 
             const bgW = nativeW * this.zoomLevel * dpr;
@@ -307,12 +276,17 @@ export function ComparisonManager(resMgr) {
          * @returns {Record<string, string>}
          */
         getSwipeLoupeClipStyle() {
-            if (!this.containerWidth) return {};
-            const swipeX = (this.swipePos / 100) * this.containerWidth;
-            const cursorX = this.relX * this.containerWidth;
-            const diffX = swipeX - cursorX;
-            const loupeLineX = (this.loupeSize / 2) + (diffX * this.zoomLevel);
+            const pairA = this.currentPair?.a;
+            const pairB = this.currentPair?.b;
+            const nativeW = Math.max(
+                pairA?.image_width || 0,
+                pairB?.image_width || 0,
+                1000
+            );
+            const dpr = window.devicePixelRatio || 1;
+            const bgW = nativeW * this.zoomLevel * dpr;
 
+            const loupeLineX = (this.loupeSize / 2) + ((this.swipePos / 100) - this.relX) * bgW;
             const rightClip = Math.max(0, Math.min(this.loupeSize, this.loupeSize - loupeLineX));
             return {
                 clipPath: `inset(0 ${rightClip}px 0 0)`

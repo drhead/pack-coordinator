@@ -16,9 +16,24 @@ async def init_db_pool() -> None:
     if _pool is not None:
         return
 
-    # Automatically ensure DDL schema is applied to Postgres before opening pool
+    # Only execute DDL initialization if the database schema has not been created yet
     try:
-        await init_db()
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            database=settings.postgres_db,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+        )
+        try:
+            schema_exists = await conn.fetchval(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'projects');"
+            )
+            if not schema_exists:
+                schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
+                await conn.execute(schema_sql)
+        finally:
+            await conn.close()
     except Exception as err:
         print(f"[DB] Schema initialization notice: {err}")
 

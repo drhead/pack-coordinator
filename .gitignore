@@ -29,6 +29,7 @@ data/
 /import_*
 /export_*
 /update_*
+/populate_*
 /e621_archive_manager.py
 /e621_db_reader.py
 /e621_metadata_manager.py
@@ -45,3 +46,4 @@ dist/
 migrations/
 e621_deduplication_playground.ipynb
 e621_blacklist.py
+e621_zero_copy_dataloader.py
