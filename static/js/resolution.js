@@ -38,10 +38,10 @@ export class ResolutionPost {
         this.rating = null;
 
         /** @type {number|null} */
-        this.parent_id = original.parent_id ?? null;
+        this.parentId = original.parentId ?? null;
 
         /** @type {number[]} */
-        this.pool_ids = Array.isArray(original.pool_ids) ? [...original.pool_ids] : [];
+        this.poolIds = Array.isArray(original.poolIds) ? [...original.poolIds] : [];
 
         /** @type {string[]|null} */
         this._sources = null;
@@ -49,27 +49,36 @@ export class ResolutionPost {
         /** @type {string|null} */
         this._description = null;
 
+        /** @type {string[]|null} */
+        this._removedSources = null;
+
+        /** @type {number[]|null} */
+        this._removedPools = null;
+
+        /** @type {Array<{origId: number, newId: number, poolId: number}>|null} */
+        this._poolSubstitutions = null;
+
         /** @type {boolean} */
         this.flag = false;
 
         /** @type {string} */
-        this.flag_note = "";
+        this.flagNote = "";
 
         /** @type {boolean} */
-        this.is_applied = false;
+        this.isApplied = false;
 
         /** @type {boolean} */
-        this.is_flagged = Boolean(original.is_flagged);
+        this.isFlagged = Boolean(original.isFlagged);
     }
 
     /**
      * Marks the post as flagged permanently in local state.
      */
     markFlagged() {
-        this.is_flagged = true;
+        this.isFlagged = true;
         this.flag = true;
         if (this.original) {
-            this.original.is_flagged = true;
+            this.original.isFlagged = true;
         }
     }
 
@@ -117,17 +126,18 @@ export class ResolutionPost {
         let finalSources = Array.isArray(this.sources) ? [...this.sources] : [];
         let finalDesc = this.description;
         let finalRating = this.getEffectiveRating();
-        let finalParent = this.parent_id;
+        let finalParent = this.parentId;
 
         if (updatedApiPost && typeof updatedApiPost === 'object') {
             const apiObj = updatedApiPost.post || updatedApiPost;
-            if (apiObj.post_id || apiObj.id) {
+            if (apiObj.post_id || apiObj.id || apiObj.postId) {
                 if (Array.isArray(apiObj.tags)) finalTags = [...apiObj.tags];
                 else if (typeof apiObj.tag_string === 'string') finalTags = apiObj.tag_string.split(' ').filter(Boolean);
                 if (Array.isArray(apiObj.sources)) finalSources = [...apiObj.sources];
                 if (typeof apiObj.description === 'string') finalDesc = apiObj.description;
                 if (apiObj.rating) finalRating = apiObj.rating;
                 if (apiObj.parent_id !== undefined) finalParent = apiObj.parent_id;
+                else if (apiObj.parentId !== undefined) finalParent = apiObj.parentId;
             }
         }
 
@@ -147,15 +157,15 @@ export class ResolutionPost {
         this.rating = null;
         this.original.rating = finalRating;
 
-        this.parent_id = null;
-        this.original.parent_id = finalParent;
+        this.parentId = null;
+        this.original.parentId = finalParent;
 
         this._sources = null;
         this._description = null;
         pAny._removedSources = [];
         pAny._poolSubstitutions = [];
 
-        this.is_applied = true;
+        this.isApplied = true;
     }
 
     /**
@@ -196,8 +206,8 @@ document.addEventListener('alpine:init', () => {
             }
 
             for (const post of this.cluster.posts) {
-                if (!this.posts.has(post.post_id)) {
-                    this.posts.set(post.post_id, new ResolutionPost(post));
+                if (!this.posts.has(post.postId)) {
+                    this.posts.set(post.postId, new ResolutionPost(post));
                 }
             }
 
@@ -216,9 +226,9 @@ document.addEventListener('alpine:init', () => {
             }
             const hasDuplicate = this.graphs.some(g => g.type === 'duplicate');
             if (!hasDuplicate) {
-                const postIds = this.cluster.posts.map(p => p.post_id);
-                const activePost = this.cluster.posts.find(p => !p.is_deleted && !p.is_flagged);
-                const headId = activePost ? activePost.post_id : postIds[0];
+                const postIds = this.cluster.posts.map(p => p.postId);
+                const activePost = this.cluster.posts.find(p => !p.isDeleted && !p.isFlagged);
+                const headId = activePost ? activePost.postId : postIds[0];
                 this.graphs.push({
                     type: 'duplicate',
                     posts: new Set(postIds),
@@ -551,12 +561,12 @@ document.addEventListener('alpine:init', () => {
             for (const [, resPost] of this.posts.entries()) {
                 resPost.tags = Array.isArray(resPost.original.tags) ? [...resPost.original.tags] : [];
                 resPost.rating = null;
-                resPost.parent_id = resPost.original.parent_id ?? null;
-                resPost.pool_ids = Array.isArray(resPost.original.pool_ids) ? [...resPost.original.pool_ids] : [];
+                resPost.parentId = resPost.original.parentId ?? null;
+                resPost.poolIds = Array.isArray(resPost.original.poolIds) ? [...resPost.original.poolIds] : [];
                 resPost._sources = null;
                 resPost._description = null;
                 resPost.flag = false;
-                resPost.flag_note = "";
+                resPost.flagNote = "";
             }
         }
     }));

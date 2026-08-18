@@ -277,14 +277,14 @@ export function applyBlacklistToCluster(cluster, evaluator) {
     const { unionTags, canonicalRating } = getClusterUnionTagsAndRating(cluster.posts);
     const { isBlacklisted, matchedRule } = evaluator.evaluate(unionTags, canonicalRating);
 
-    cluster.canonical_rating = canonicalRating;
-    cluster.is_blacklisted = isBlacklisted;
-    cluster.matched_rule = matchedRule;
+    cluster.canonicalRating = canonicalRating;
+    cluster.isBlacklisted = isBlacklisted;
+    cluster.matchedRule = matchedRule;
 }
 
 export class BlacklistManager {
     constructor() {
-        this.blacklistText = localStorage.getItem('e621_blacklist') || DEFAULT_BLACKLIST;
+        this.blacklistText = localStorage.getItem('e621Blacklist') || localStorage.getItem('e621_blacklist') || DEFAULT_BLACKLIST;
         this.isImportingBlacklist = false;
         this.showBlacklistModal = false;
     }
@@ -311,7 +311,7 @@ export class BlacklistManager {
      * @param {boolean} [silent=false]
      */
     async saveBlacklist(batches = null, silent = false) {
-        localStorage.setItem('e621_blacklist', this.blacklistText || '');
+        localStorage.setItem('e621Blacklist', this.blacklistText || '');
         this.showBlacklistModal = false;
 
         const evaluator = this.getEvaluator();
@@ -325,7 +325,7 @@ export class BlacklistManager {
             if (!batch.clusters) continue;
             for (const cluster of batch.clusters) {
                 applyBlacklistToCluster(cluster, evaluator);
-                cluster.collapsed = cluster.is_resolved || cluster.is_blacklisted;
+                cluster.collapsed = cluster.isResolved || cluster.isBlacklisted;
             }
         }
 

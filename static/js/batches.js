@@ -6,21 +6,17 @@ import { showToast } from './toasts.js';
 
 /**
  * Pure formatting function for ISO lease expiration string -> "MM:SS"
- * @param {number} nowTimestamp
- * @param {string|null|undefined} isoDateStr
+ * @param {number|string} nowTimestamp
+ * @param {string|null|undefined} [isoDateStr]
  * @returns {string}
  */
 export function getRemainingTimeString(nowTimestamp, isoDateStr) {
-    if (!isoDateStr) {
-        if (typeof nowTimestamp === 'string') {
-            isoDateStr = nowTimestamp;
-            nowTimestamp = Date.now();
-        } else {
-            return '';
-        }
-    }
-    const expiry = new Date(isoDateStr).getTime();
-    const diff = Math.max(0, Math.floor((expiry - nowTimestamp) / 1000));
+    let now = typeof nowTimestamp === 'number' ? nowTimestamp : Date.now();
+    let iso = typeof nowTimestamp === 'string' && !isoDateStr ? nowTimestamp : isoDateStr;
+    if (!iso) return '';
+
+    const expiry = new Date(iso).getTime();
+    const diff = Math.max(0, Math.floor((expiry - now) / 1000));
 
     if (diff <= 0) return '';
 
@@ -38,7 +34,7 @@ export function processCluster(c, forceReset = false) {
     applyBlacklistToCluster(c, getBlacklistEvaluator());
 
     if (forceReset || c.collapsed === undefined) {
-        c.collapsed = c.is_resolved || c.is_blacklisted;
+        c.collapsed = c.isResolved || c.isBlacklisted;
     }
 }
 
@@ -50,7 +46,7 @@ export function processCluster(c, forceReset = false) {
 export function getBatchStatusLabel(batch) {
     if (!batch) return 'AVAILABLE';
     if (batch.status === 'CLAIMED') {
-        return batch.is_leased_by_you ? 'CLAIMED BY YOU' : 'CLAIMED';
+        return batch.isLeasedByYou ? 'CLAIMED BY YOU' : 'CLAIMED';
     }
     return batch.status;
 }
@@ -91,7 +87,7 @@ export function getProgressPercent(resolved, total) {
  * @returns {number}
  */
 export function getProjectResolvedCount(project) {
-    return project?.resolved_clusters || 0;
+    return project?.resolvedClusters || 0;
 }
 
 /**
@@ -100,7 +96,7 @@ export function getProjectResolvedCount(project) {
  * @returns {number}
  */
 export function getProjectTotalCount(project) {
-    return project?.total_clusters || 0;
+    return project?.totalClusters || 0;
 }
 
 export class BatchManager {
@@ -115,9 +111,9 @@ export class BatchManager {
         this.activeLease = null;
         /** @type {number} */
         this.nowTimestamp = Date.now();
-        /** @type {NodeJS.Timeout|null} */
+        /** @type {ReturnType<typeof setInterval>|null} */
         this.pollInterval = null;
-        /** @type {NodeJS.Timeout|null} */
+        /** @type {ReturnType<typeof setInterval>|null} */
         this.timerInterval = null;
     }
 
@@ -146,8 +142,8 @@ export class BatchManager {
     checkLocalLeaseExpiration() {
         let needsReload = false;
 
-        if (this.activeLease && this.activeLease.leased_until) {
-            const expiry = new Date(this.activeLease.leased_until).getTime();
+        if (this.activeLease && this.activeLease.leasedUntil) {
+            const expiry = new Date(this.activeLease.leasedUntil).getTime();
             if (expiry <= this.nowTimestamp) {
                 this.activeLease = null;
                 needsReload = true;
@@ -155,12 +151,12 @@ export class BatchManager {
         }
 
         for (const batch of this.batches) {
-            if (batch.status === 'CLAIMED' && batch.leased_until) {
-                const expiry = new Date(batch.leased_until).getTime();
+            if (batch.status === 'CLAIMED' && batch.leasedUntil) {
+                const expiry = new Date(batch.leasedUntil).getTime();
                 if (expiry <= this.nowTimestamp) {
                     batch.status = 'AVAILABLE';
-                    batch.is_leased_by_you = false;
-                    batch.leased_until = null;
+                    batch.isLeasedByYou = false;
+                    batch.leasedUntil = null;
                     needsReload = true;
                 }
             }
@@ -186,7 +182,7 @@ export class BatchManager {
      * @param {string} projectId
      */
     selectProject(projects, projectId) {
-        this.activeProject = (projects || []).find(p => p.project_id === projectId) || null;
+        this.activeProject = (projects || []).find(p => p.projectId === projectId) || null;
         return this.reloadBatches();
     }
 
@@ -202,7 +198,7 @@ export class BatchManager {
         try {
             // 1. Fetch public batch data and dynamic leases in parallel
             const [batchesRes, leasesRes] = await Promise.all([
-                fetch(`/api/v1/projects/${this.activeProject.project_id}/batches`, {
+                fetch(`/api/v1/projects/${this.activeProject.projectId}/batches`, {
                     headers: { 'Accept': 'application/msgpack' }
                 }),
                 fetch('/api/v1/leases')
@@ -215,24 +211,26 @@ export class BatchManager {
             const activeLeases = leasesRes.ok ? /** @type {{ leases: Lease[] }} */ (await leasesRes.json()).leases || [] : [];
             const incomingBatches = batchesData.batches || [];
 
-            // 2. Index active leases by batch_id for O(1) lookups
+            // 2. Index active leases by batchId for O(1) lookups
+            /** @type {Map<number, Lease>} */
             const activeLeasesMap = new Map();
+            /** @type {Lease|null} */
             let myActiveLease = null;
 
             for (const lease of activeLeases) {
-                const expiry = new Date(lease.leased_until).getTime();
+                const expiry = new Date(lease.leasedUntil).getTime();
                 if (expiry <= this.nowTimestamp) continue; // Skip expired
 
-                activeLeasesMap.set(lease.batch_id, lease);
+                activeLeasesMap.set(lease.batchId, lease);
 
                 // Track current user's active lease for top banner
-                if (lease.project_id === this.activeProject.project_id && lease.is_leased_by_you) {
+                if (lease.projectId === this.activeProject.projectId && lease.isLeasedByYou) {
                     myActiveLease = {
-                        batch_id: lease.batch_id,
-                        batch_number: lease.batch_number,
-                        project_id: lease.project_id,
-                        leased_until: lease.leased_until,
-                        is_leased_by_you: true
+                        batchId: lease.batchId,
+                        batchNumber: lease.batchNumber,
+                        projectId: lease.projectId,
+                        leasedUntil: lease.leasedUntil,
+                        isLeasedByYou: true
                     };
                 }
             }
@@ -244,22 +242,22 @@ export class BatchManager {
              * @returns {void}
              */
             const syncBatchLeaseState = (batch) => {
-                const lease = activeLeasesMap.get(batch.batch_id);
+                const lease = activeLeasesMap.get(batch.batchId);
                 if (lease) {
-                    batch.leased_until = lease.leased_until;
-                    batch.is_leased_by_you = Boolean(lease.is_leased_by_you);
+                    batch.leasedUntil = lease.leasedUntil;
+                    batch.isLeasedByYou = Boolean(lease.isLeasedByYou);
                     if (batch.status !== 'COMPLETE') {
                         batch.status = 'CLAIMED';
                     }
-                } else if (this.activeLease && this.activeLease.batch_id === batch.batch_id && this.activeLease.is_leased_by_you) {
-                    batch.leased_until = this.activeLease.leased_until;
-                    batch.is_leased_by_you = true;
+                } else if (this.activeLease && this.activeLease.batchId === batch.batchId && this.activeLease.isLeasedByYou) {
+                    batch.leasedUntil = this.activeLease.leasedUntil;
+                    batch.isLeasedByYou = true;
                     if (batch.status !== 'COMPLETE') {
                         batch.status = 'CLAIMED';
                     }
                 } else {
-                    batch.leased_until = null;
-                    batch.is_leased_by_you = false;
+                    batch.leasedUntil = null;
+                    batch.isLeasedByYou = false;
                     if (batch.status === 'CLAIMED') {
                         batch.status = 'AVAILABLE';
                     }
@@ -282,7 +280,7 @@ export class BatchManager {
                 this.batches = incomingBatches;
             } else {
                 for (const newBatch of incomingBatches) {
-                    let existingBatch = this.batches.find(b => b.batch_id === newBatch.batch_id);
+                    let existingBatch = this.batches.find(b => b.batchId === newBatch.batchId);
 
                     if (!existingBatch) {
                         syncBatchLeaseState(newBatch);
@@ -300,8 +298,8 @@ export class BatchManager {
 
                     // Update core public fields from /batches
                     existingBatch.status = newBatch.status;
-                    existingBatch.resolved_count = newBatch.resolved_count;
-                    existingBatch.total_clusters = newBatch.total_clusters;
+                    existingBatch.resolvedCount = newBatch.resolvedCount;
+                    existingBatch.totalClusters = newBatch.totalClusters;
 
                     // Sync dynamic lease state from /leases
                     syncBatchLeaseState(existingBatch);
@@ -310,26 +308,26 @@ export class BatchManager {
                         existingBatch.clusters = [];
                     }
 
-                    const isCurrentlyInspecting = this.activeBatch && (this.activeBatch.batch_id === newBatch.batch_id);
+                    const isCurrentlyInspecting = this.activeBatch && (this.activeBatch.batchId === newBatch.batchId);
 
                     if (isCurrentlyInspecting && newBatch.clusters) {
                         for (let i = 0; i < newBatch.clusters.length; i++) {
                             const newCluster = newBatch.clusters[i];
-                            let existingCluster = existingBatch.clusters.find((c) => c.cluster_id === newCluster.cluster_id);
+                            let existingCluster = existingBatch.clusters.find((c) => c.clusterId === newCluster.clusterId);
 
                             if (existingCluster) {
                                 existingCluster.note = newCluster.note;
-                                existingCluster.is_resolved = newCluster.is_resolved;
-                                existingCluster.manual_resolution = newCluster.manual_resolution;
+                                existingCluster.isResolved = newCluster.isResolved;
+                                existingCluster.manualResolution = newCluster.manualResolution;
 
                                 // Reconcile posts in-place to retain object identity & tag cache
-                                if (refreshedClusterId === existingCluster.cluster_id) {
+                                if (refreshedClusterId === existingCluster.clusterId) {
                                     existingCluster.posts = newCluster.posts || [];
                                 } else if (newCluster.posts && Array.isArray(newCluster.posts)) {
-                                    const existingPostsMap = new Map((existingCluster.posts || []).map((p) => [p.post_id, p]));
+                                    const existingPostsMap = new Map((existingCluster.posts || []).map((p) => [p.postId, p]));
 
                                     existingCluster.posts = newCluster.posts.map((newPost) => {
-                                        const existingPost = existingPostsMap.get(newPost.post_id);
+                                        const existingPost = existingPostsMap.get(newPost.postId);
 
                                         if (existingPost) {
                                             const tagsChanged = JSON.stringify(existingPost.tags) !== JSON.stringify(newPost.tags);
@@ -348,7 +346,7 @@ export class BatchManager {
 
                                 processCluster(existingCluster, forceCollapseReset);
 
-                                if (refreshedClusterId && existingCluster.cluster_id === refreshedClusterId) {
+                                if (refreshedClusterId && existingCluster.clusterId === refreshedClusterId) {
                                     existingCluster.isRefreshing = false;
                                 }
                             } else {
@@ -368,7 +366,7 @@ export class BatchManager {
 
             // Restore activeBatch reference
             if (this.activeBatch) {
-                const found = this.batches.find(b => b.batch_id === this.activeBatch?.batch_id);
+                const found = this.batches.find(b => b.batchId === this.activeBatch?.batchId);
                 if (found) this.activeBatch = found;
             }
 
@@ -404,12 +402,12 @@ export class BatchManager {
      * @param {Lease} lease
      */
     async jumpToLeasedBatch(lease) {
-        const batch = this.batches.find(b => b.batch_id === lease.batch_id);
+        const batch = this.batches.find(b => b.batchId === lease.batchId);
         if (batch) {
             this.viewBatchDetail(batch);
         } else {
             try {
-                const res = await fetch(`/api/v1/projects/${lease.project_id}/batches`, {
+                const res = await fetch(`/api/v1/projects/${lease.projectId}/batches`, {
                     headers: { 'Accept': 'application/msgpack' }
                 });
                 if (!res.ok) return;
@@ -417,7 +415,7 @@ export class BatchManager {
 
                 const data = /** @type {{ batches: Batch[] }} */ (decode(buf));
                 this.batches = data.batches;
-                const found = this.batches.find(b => b.batch_id === lease.batch_id);
+                const found = this.batches.find(b => b.batchId === lease.batchId);
                 if (found) this.viewBatchDetail(found);
             } catch (err) {
                 console.error("[Batches] Error jumping to leased batch:", err);
@@ -447,7 +445,8 @@ export class BatchManager {
         batch.isClaiming = true;
 
         try {
-            const res = await fetch(`/api/v1/batches/${batch.batch_id}/claim`, { method: 'POST' });
+            const res = await fetch(`/api/v1/batches/${batch.batchId}/claim`, { method: 'POST' });
+            /** @type {ClaimBatchResponse} */
             const data = await res.json();
 
             if (!res.ok) {
@@ -456,19 +455,19 @@ export class BatchManager {
             }
 
             this.activeLease = {
-                batch_id: data.batch_id,
-                batch_number: batch.batch_number,
-                project_id: this.activeProject.project_id,
-                leased_until: data.leased_until,
-                is_leased_by_you: true
+                batchId: data.batchId,
+                batchNumber: batch.batchNumber,
+                projectId: this.activeProject.projectId,
+                leasedUntil: data.leasedUntil,
+                isLeasedByYou: true
             };
 
             batch.status = 'CLAIMED';
-            batch.is_leased_by_you = true;
-            batch.leased_until = data.leased_until;
+            batch.isLeasedByYou = true;
+            batch.leasedUntil = data.leasedUntil;
 
             await this.reloadBatches();
-            showToast(`Claimed Batch #${batch.batch_number}`, 'success');
+            showToast(`Claimed Batch #${batch.batchNumber}`, 'success');
         } catch (err) {
             console.error('[Leases] Error claiming batch:', err);
             showToast('Network error while claiming batch.', 'error');
@@ -482,7 +481,7 @@ export class BatchManager {
      * @param {number} batchId
      */
     async revokeLease(batchId) {
-        const batch = this.batches.find(b => b.batch_id === batchId) || this.activeBatch;
+        const batch = this.batches.find(b => b.batchId === batchId) || this.activeBatch;
         if (batch) batch.isRevoking = true;
 
         try {
@@ -497,8 +496,8 @@ export class BatchManager {
             this.activeLease = null;
             if (batch) {
                 batch.status = 'AVAILABLE';
-                batch.is_leased_by_you = false;
-                batch.leased_until = null;
+                batch.isLeasedByYou = false;
+                batch.leasedUntil = null;
             }
 
             await this.reloadBatches();
@@ -521,7 +520,7 @@ export class BatchManager {
         batch.isRefreshing = true;
 
         try {
-            const res = await fetch(`/api/v1/batches/${batch.batch_id}/refresh`, { method: 'POST' });
+            const res = await fetch(`/api/v1/batches/${batch.batchId}/refresh`, { method: 'POST' });
             const data = await res.json();
 
             if (!res.ok) {
@@ -530,7 +529,7 @@ export class BatchManager {
             }
 
             await this.reloadBatches(true);
-            showToast(`Refreshed Batch #${batch.batch_number}`, 'success', 2500);
+            showToast(`Refreshed Batch #${batch.batchNumber}`, 'success', 2500);
         } catch (err) {
             console.error("[BatchRefresh] Error refreshing batch:", err);
             showToast('Network error while refreshing batch.', 'error');

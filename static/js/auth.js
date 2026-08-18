@@ -23,7 +23,7 @@ export class AuthManager {
         };
 
         /** @type {E621User|null} */
-        this.e621User = JSON.parse(localStorage.getItem('e621_credentials') || 'null');
+        this.e621User = JSON.parse(localStorage.getItem('e621Credentials') || localStorage.getItem('e621_credentials') || 'null');
     }
 
     openLoginModal() {
@@ -58,7 +58,7 @@ export class AuthManager {
                 id: userData.id
             };
 
-            localStorage.setItem('e621_credentials', JSON.stringify(credentials));
+            localStorage.setItem('e621Credentials', JSON.stringify(credentials));
             this.e621User = credentials;
             this.showLoginModal = false;
 
@@ -76,6 +76,7 @@ export class AuthManager {
     }
 
     logout() {
+        localStorage.removeItem('e621Credentials');
         localStorage.removeItem('e621_credentials');
         this.e621User = null;
         this.loginForm.username = '';

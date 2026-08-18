@@ -40,10 +40,10 @@ export const alpineHelpers = {
             return postsArray.every(p => {
                 const item = typeof p === 'number' || typeof p === 'string' ? null : p;
                 if (!item) return true;
-                return item.image_width === post.image_width &&
-                    item.image_height === post.image_height &&
-                    item.image_format === post.image_format &&
-                    item.image_quality === post.image_quality;
+                return item.imageWidth === post.imageWidth &&
+                    item.imageHeight === post.imageHeight &&
+                    item.imageFormat === post.imageFormat &&
+                    item.imageQuality === post.imageQuality;
             });
         },
 
@@ -53,8 +53,8 @@ export const alpineHelpers = {
          * @returns 
          */
         formatSpecs(post) {
-            const quality = post.image_quality === 101 ? 'Lossless' : post.image_quality;
-            return `${post.image_width}x${post.image_height} ${post.image_format}: ${quality}`;
+            const quality = post.imageQuality === 101 ? 'Lossless' : post.imageQuality;
+            return `${post.imageWidth}x${post.imageHeight} ${post.imageFormat}: ${quality}`;
         }
     },
     tagpill: {
@@ -70,10 +70,10 @@ export const alpineHelpers = {
         getTagClasses(tag, post, mode = 'display', context = {}) {
             const { hoveredImplicationData, newTags, isLhs } = context;
             const tagName = tag.name;
-            const postId = post?.post_id;
+            const postId = post?.postId;
 
-            // Convert locked_tags array to a Set if it isn't one already for fast lookups
-            const lockedSet = new Set(post?.locked_tags || []);
+            // Convert lockedTags array to a Set if it isn't one already for fast lookups
+            const lockedSet = new Set(post?.lockedTags || []);
             const isLocked = lockedSet.has(tagName);
 
             // 1. LOCKED TAG HANDLING
@@ -160,7 +160,7 @@ export const alpineHelpers = {
          */
         getTagStyle(tag, post, hoveredImplicationData) {
             // If locked, maintain base category style unless explicitly overridden
-            if (hoveredImplicationData && hoveredImplicationData.postId === post?.post_id) {
+            if (hoveredImplicationData && hoveredImplicationData.postId === post?.postId) {
                 const hi = hoveredImplicationData;
                 const name = tag.name;
                 if (
@@ -182,11 +182,11 @@ export const alpineHelpers = {
          * Helper to check if a tag is locked for a given post.
          * 
          * @param {string} tagName - The name of the tag to test.
-         * @param {ClusterPost} [post] - The post containing potential locked_tags.
+         * @param {ClusterPost} [post] - The post containing potential lockedTags.
          * @returns {boolean} True if the tag is locked.
          */
         isTagLocked(tagName, post) {
-            return (post?.locked_tags || []).includes(tagName);
+            return (post?.lockedTags || []).includes(tagName);
         },
 
         /**
@@ -197,9 +197,10 @@ export const alpineHelpers = {
          * @returns {string} Formatted title tooltip string.
          */
         getTagTitle(tagName, post = null) {
-            const isLocked = post && (post.locked_tags || []).includes(tagName);
+            const isLocked = post && (post.lockedTags || []).includes(tagName);
+            /** @type {import('./tags.js').TagManager} */
             const tagStore = /** @type {import('./tags.js').TagManager} */ (Alpine.store('tags'));
-            const count = tagStore.tagInfoMap[tagName]?.tag_count ?? 0;
+            const count = tagStore.tagInfoMap[tagName]?.tagCount ?? 0;
             const lockNotice = isLocked ? ' [LOCKED - Cannot be removed]' : '';
             return `${tagName} (${count.toLocaleString()} posts)${lockNotice}`;
         }

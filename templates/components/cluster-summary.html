@@ -82,19 +82,19 @@
                                     <div
                                         class="w-full min-h-20 bg-gray-950 flex items-center justify-center overflow-hidden">
                                         <!-- DELETED Post Placeholder -->
-                                        <template x-if="post.original.is_deleted">
+                                        <template x-if="post.original.isDeleted">
                                             <span
                                                 class="bg-red-950 text-red-400 border border-red-800/60 px-2.5 py-1 rounded text-xs font-mono font-bold uppercase tracking-wider shadow">DELETED</span>
                                         </template>
 
                                         <!-- Valid Image -->
-                                        <template x-if="!post.original.is_deleted && post.original.fileUrl">
+                                        <template x-if="!post.original.isDeleted && post.original.fileUrl">
                                             <img :src="post.original.fileUrl" :alt="`Post #${postId}`"
                                                 class="max-h-40 max-w-full object-contain" />
                                         </template>
 
                                         <!-- Missing Image -->
-                                        <template x-if="!post.original.is_deleted && !post.original.fileUrl">
+                                        <template x-if="!post.original.isDeleted && !post.original.fileUrl">
                                             <span class="text-gray-600 text-xs font-mono text-center">No Image</span>
                                         </template>
                                     </div>
@@ -148,15 +148,15 @@
                                             <template x-if="isCanonical(graph, postId)">
                                                 <div class="flex items-center gap-1.5">
                                                     <!-- Active Parent (Original or Modified) -->
-                                                    <template x-if="post.parent_id">
+                                                    <template x-if="post.parentId">
                                                         <div class="flex items-center gap-1 h-6">
-                                                            <a :href="`https://e621.net/posts/${post.parent_id}`"
+                                                            <a :href="`https://e621.net/posts/${post.parentId}`"
                                                                 target="_blank"
-                                                                :class="post.parent_id === post.original?.parent_id ? 'bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border-gray-700' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
+                                                                :class="post.parentId === post.original?.parentId ? 'bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border-gray-700' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
                                                                 class="border px-1.5 py-0.5 rounded text-[11px] font-mono transition">
                                                                 <span
-                                                                    x-text="post.parent_id === post.original?.parent_id ? '' : '+ '"></span>#<span
-                                                                    x-text="post.parent_id"></span>
+                                                                    x-text="post.parentId === post.original?.parentId ? '' : '+ '"></span>#<span
+                                                                    x-text="post.parentId"></span>
                                                             </a>
 
                                                             <button @click="removeHeadParent(graph)"
@@ -167,7 +167,7 @@
 
                                                             <!-- Reset button if replacing an existing original parent -->
                                                             <template
-                                                                x-if="post.original?.parent_id && post.parent_id !== post.original.parent_id">
+                                                                x-if="post.original?.parentId && post.parentId !== post.original.parentId">
                                                                 <button @click="resetHeadParent(graph)"
                                                                     title="Reset to original parent"
                                                                     class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
@@ -178,11 +178,11 @@
                                                     </template>
 
                                                     <!-- Removed Original Parent (Red Strikethrough & Reset outside the box) -->
-                                                    <template x-if="!post.parent_id && post.original?.parent_id">
+                                                    <template x-if="!post.parentId && post.original?.parentId">
                                                         <div class="flex items-center gap-1.5 h-6">
                                                             <span
                                                                 class="line-through text-red-300 bg-red-950/20 px-1.5 py-0.5 rounded border border-red-900/40 opacity-85 text-[11px] font-mono">#<span
-                                                                    x-text="post.original.parent_id"></span></span>
+                                                                    x-text="post.original.parentId"></span></span>
                                                             <button @click="resetHeadParent(graph)"
                                                                 title="Restore original parent"
                                                                 class="text-[10px] text-amber-400 hover:text-amber-300 hover:underline font-mono cursor-pointer">
@@ -192,7 +192,7 @@
                                                     </template>
 
                                                     <!-- No Parent Fallback (when original was null and none added) -->
-                                                    <template x-if="!post.parent_id && !post.original?.parent_id">
+                                                    <template x-if="!post.parentId && !post.original?.parentId">
                                                         <span
                                                             class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
@@ -202,23 +202,23 @@
                                             <!-- Inferior Post Parent Display -->
                                             <template x-if="!isCanonical(graph, postId) && graph.head">
                                                 <div class="flex items-center gap-1.5">
-                                                    <template x-if="!post.parent_id">
+                                                    <template x-if="!post.parentId">
                                                         <span
                                                             class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
-                                                    <template x-if="post.parent_id">
+                                                    <template x-if="post.parentId">
                                                         <div class="h-6 flex items-center">
                                                             <!-- Already in superior post: plain text, no controls -->
-                                                            <template x-if="headHasParent(graph, post.parent_id)">
+                                                            <template x-if="headHasParent(graph, post.parentId)">
                                                                 <span class="text-gray-400 font-mono text-[11px]">#<span
-                                                                        x-text="post.parent_id"></span></span>
+                                                                        x-text="post.parentId"></span></span>
                                                             </template>
                                                             <!-- Not in superior post: + #<id> button -->
-                                                            <template x-if="!headHasParent(graph, post.parent_id)">
-                                                                <button @click="copyParentToHead(graph, post.parent_id)"
+                                                            <template x-if="!headHasParent(graph, post.parentId)">
+                                                                <button @click="copyParentToHead(graph, post.parentId)"
                                                                     title="Transfer parent to superior post"
                                                                     class="bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 text-[11px] px-1.5 py-0.5 rounded transition font-mono cursor-pointer">
-                                                                    + #<span x-text="post.parent_id"></span>
+                                                                    + #<span x-text="post.parentId"></span>
                                                                 </button>
                                                             </template>
                                                         </div>
@@ -236,23 +236,23 @@
                                                 <div class="flex items-center gap-1">
                                                     <!-- No pools fallback -->
                                                     <template
-                                                        x-if="(!post.pool_ids || post.pool_ids.length === 0) && (!post._removedPools || post._removedPools.length === 0)">
+                                                        x-if="(!post.poolIds || post.poolIds.length === 0) && (!post._removedPools || post._removedPools.length === 0)">
                                                         <span
                                                             class="text-gray-600 italic font-sans text-[11px]">(None)</span>
                                                     </template>
 
                                                     <!-- Active Pools on Superior Post -->
-                                                    <template x-if="post.pool_ids && post.pool_ids.length > 0">
+                                                    <template x-if="post.poolIds && post.poolIds.length > 0">
                                                         <div class="flex flex-wrap items-center gap-1">
-                                                            <template x-for="poolId in post.pool_ids" :key="poolId">
+                                                            <template x-for="poolId in post.poolIds" :key="poolId">
                                                                 <div class="flex items-center gap-1 h-6">
                                                                     <!-- Original pool (standard blue badge) vs Moved-over pool (green badge) -->
                                                                     <a :href="`https://e621.net/pools/${poolId}`"
                                                                         target="_blank"
-                                                                        :class="post.original?.pool_ids?.includes(poolId) ? 'bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border-gray-800' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
+                                                                        :class="post.original?.poolIds?.includes(poolId) ? 'bg-gray-900 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border-gray-800' : 'bg-green-950/80 hover:bg-green-900/80 text-green-300 hover:text-green-200 border-green-700/80 font-medium'"
                                                                         class="border text-[11px] px-1.5 py-0.5 rounded transition">
                                                                         <span
-                                                                            x-text="post.original?.pool_ids?.includes(poolId) ? '' : '+ '"></span>Pool
+                                                                            x-text="post.original?.poolIds?.includes(poolId) ? '' : '+ '"></span>Pool
                                                                         #<span x-text="poolId"></span>
                                                                     </a>
 
@@ -301,7 +301,7 @@
                                                         :key="poolId">
                                                         <div class="h-6 flex items-center">
                                                             <button
-                                                                @click="copyPoolToHead(graph, poolId, post.original.post_id)"
+                                                                @click="copyPoolToHead(graph, poolId, post.original.postId)"
                                                                 title="Add superior post to pool"
                                                                 class="bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 border border-gray-700 text-[11px] px-1.5 py-0.5 rounded transition font-mono whitespace-nowrap cursor-pointer">
                                                                 ↑ Pool #<span x-text="poolId"></span>
@@ -356,7 +356,7 @@
                                             <!-- Controls for Flagged Posts (Transfer to Superior Post) -->
                                             <template
                                                 x-if="!isCanonical(graph, postId) && graph.head && post.description">
-                                                <button @click="copyDescriptionToHead(graph, post.original.post_id)"
+                                                <button @click="copyDescriptionToHead(graph, post.original.postId)"
                                                     :disabled="resMgr.getPost(graph.head)?.description === post.description"
                                                     title="Transfer description to superior post"
                                                     class="text-[10px] bg-gray-800 hover:bg-gray-700 text-blue-300 hover:text-blue-200 disabled:opacity-40 disabled:cursor-not-allowed border border-gray-700 rounded px-1.5 py-0.5 transition flex items-center gap-1 font-mono cursor-pointer">
@@ -437,7 +437,7 @@
                                                         </div>
 
                                                         <button @click="restoreSourceToHead(graph, src)"
-                                                            title="Restore source to superior post"
+                                                             title="Restore source to superior post"
                                                             class="w-5 h-5 flex items-center justify-center rounded text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/60 border border-transparent hover:border-emerald-800/80 transition-colors shrink-0 cursor-pointer">
                                                             <svg class="w-3 h-3 fill-current transition-transform duration-300 transform rotate-45"
                                                                 viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
@@ -459,10 +459,10 @@
                                     <template
                                         x-if="graph.type === 'unrelated' || isCanonical(graph, postId) || graph.type === 'variant'">
                                         <button @click="applyChanges(postId)"
-                                            :disabled="post.is_applied || isSubmitting(postId) || !hasChangesToApply(post) || (warnings && warnings.isBlocked(graphIdx, { graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) }))"
-                                            :title="post.is_applied ? 'Changes have been successfully applied to e621.' : (!hasChangesToApply(post) ? 'No pending changes to apply for this post.' : ((warnings && warnings.isBlocked(graphIdx, { graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) })) ? 'Clear or dismiss warnings before applying changes.' : ''))"
+                                            :disabled="post.isApplied || isSubmitting(postId) || !hasChangesToApply(post) || (warnings && warnings.isBlocked(graphIdx, { graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) }))"
+                                            :title="post.isApplied ? 'Changes have been successfully applied to e621.' : (!hasChangesToApply(post) ? 'No pending changes to apply for this post.' : ((warnings && warnings.isBlocked(graphIdx, { graph: graph, getUncopiedMetadataDetails: (g) => getUncopiedMetadataDetails(g), hasUncopiedMetadata: (g) => hasUncopiedMetadata(g) })) ? 'Clear or dismiss warnings before applying changes.' : ''))"
                                             class="w-full md:w-28 font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1.5"
-                                            :class="post.is_applied
+                                            :class="post.isApplied
                                                     ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-700/50 cursor-default'
                                                     : (isSubmitting(postId)
                                                         ? 'bg-blue-800 text-blue-200 cursor-wait opacity-80 border border-blue-600'
@@ -483,18 +483,18 @@
                                                 <span style="font-variant-emoji: text;">✓</span>
                                             </template>
                                             <span
-                                                x-text="post.is_applied ? 'Applied' : (isSubmitting(postId) ? 'Applying...' : 'Apply')"></span>
+                                                x-text="post.isApplied ? 'Applied' : (isSubmitting(postId) ? 'Applying...' : 'Apply')"></span>
                                         </button>
                                     </template>
 
                                     <template x-if="graph.type === 'duplicate' && !isCanonical(graph, postId)">
                                         <button @click="submitFlag(postId, graph.head)"
-                                            :disabled="post.is_flagged || post.original?.is_flagged || post.original?.is_deleted || isSubmitting(postId) || !$store.auth?.e621User"
-                                            :title="(post.is_flagged || post.original?.is_flagged) ? 'Post has been successfully flagged as inferior on e621.' : (post.original?.is_deleted ? 'Post is already deleted.' : (!$store.auth?.e621User ? 'Log in with e621 credentials to submit flags.' : ''))"
+                                            :disabled="post.isFlagged || post.original?.isFlagged || post.original?.isDeleted || isSubmitting(postId) || !$store.auth?.e621User"
+                                            :title="(post.isFlagged || post.original?.isFlagged) ? 'Post has been successfully flagged as inferior on e621.' : (post.original?.isDeleted ? 'Post is already deleted.' : (!$store.auth?.e621User ? 'Log in with e621 credentials to submit flags.' : ''))"
                                             class="w-full md:w-28 font-semibold text-xs px-3 py-2 rounded shadow transition flex items-center justify-center gap-1.5"
-                                            :class="(post.is_flagged || post.original?.is_flagged)
+                                            :class="(post.isFlagged || post.original?.isFlagged)
                                                     ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-700/50 cursor-default'
-                                                    : ((post.original?.is_deleted || !$store.auth?.e621User)
+                                                    : ((post.original?.isDeleted || !$store.auth?.e621User)
                                                         ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60'
                                                         : (isSubmitting(postId)
                                                             ? 'bg-amber-800 text-amber-200 cursor-wait opacity-80 border border-amber-600'
@@ -511,10 +511,10 @@
                                             </template>
                                             <template x-if="!isSubmitting(postId)">
                                                 <span style="font-variant-emoji: text;"
-                                                    x-text="(post.is_flagged || post.original?.is_flagged) ? '✓' : '🚩'"></span>
+                                                    x-text="(post.isFlagged || post.original?.isFlagged) ? '✓' : '🚩'"></span>
                                             </template>
                                             <span
-                                                x-text="(post.is_flagged || post.original?.is_flagged) ? 'Flagged' : (isSubmitting(postId) ? 'Flagging...' : 'Flag')"></span>
+                                                x-text="(post.isFlagged || post.original?.isFlagged) ? 'Flagged' : (isSubmitting(postId) ? 'Flagging...' : 'Flag')"></span>
                                         </button>
                                     </template>
                                 </div>

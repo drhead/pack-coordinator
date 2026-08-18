@@ -15,8 +15,66 @@ from app.db import get_db
 router = APIRouter()
 
 
+class Project(msgspec.Struct, rename="camel", kw_only=True):
+    project_id: str
+    title: str
+    description: str | None = None
+    instructions_html: str | None = None
+    resolve_on_parenting: bool = False
+    resolve_on_pools: bool = False
+    total_clusters: int = 0
+    resolved_clusters: int = 0
+
+
+class ProjectsResponse(msgspec.Struct, rename="camel", kw_only=True):
+    projects: list[Project]
+
+
+class ClusterPost(msgspec.Struct, rename="camel", kw_only=True):
+    post_id: int
+    cluster_id: int
+    rating: str = "s"
+    parent_id: int | None = None
+    pool_ids: list[int] = msgspec.field(default_factory=list[int])
+    tags: list[str] = msgspec.field(default_factory=list[str])
+    is_flagged: bool = False
+    is_deleted: bool = False
+    image_width: int | None = None
+    image_height: int | None = None
+    image_format: str | None = None
+    image_quality: int | None = None
+
+
+class Cluster(msgspec.Struct, rename="camel", kw_only=True):
+    cluster_id: int
+    cluster_index: int
+    note: str | None = None
+    is_resolved: bool
+    manual_resolution: bool
+    posts: list[ClusterPost]
+
+
+class Batch(msgspec.Struct, rename="camel", kw_only=True):
+    batch_id: int
+    project_id: str
+    batch_number: int
+    status: str
+    resolved_count: int
+    total_clusters: int
+    clusters: list[Cluster]
+
+
+class ProjectBatchesResponse(msgspec.Struct, rename="camel", kw_only=True):
+    project_id: str
+    batches: list[Batch]
+
+
+msgpack_encoder = msgspec.msgpack.Encoder()
+json_encoder = msgspec.json.Encoder()
+
+
 @router.get("/api/v1/projects")
-async def get_projects() -> dict[str, list[dict[str, Any]]]:
+async def get_projects() -> Response:
     pool = get_db()
     async with pool.acquire() as conn:
         rows = await conn.fetch(
@@ -31,48 +89,23 @@ async def get_projects() -> dict[str, list[dict[str, Any]]]:
             GROUP BY p.project_id;
             """
         )
-        return {"projects": [dict(r) for r in rows]}
-
-
-class ClusterPost(msgspec.Struct, kw_only=True):
-    post_id: int
-    cluster_id: int
-    rating: str = "s"
-    parent_id: int | None = None
-    pool_ids: list[int] = msgspec.field(default_factory=list[int])
-    tags: list[str] = msgspec.field(default_factory=list[str])
-    is_flagged: bool = False
-    is_deleted: bool = False
-    image_width: int | None = None
-    image_height: int | None = None
-    image_format: str | None = None
-    image_quality: int | None = None
-
-class Cluster(msgspec.Struct, kw_only=True):
-    cluster_id: int
-    cluster_index: int
-    note: str | None = None
-    is_resolved: bool
-    manual_resolution: bool
-    posts: list[ClusterPost]
-
-
-class Batch(msgspec.Struct, kw_only=True):
-    batch_id: int
-    project_id: str
-    batch_number: int
-    status: str
-    resolved_count: int
-    total_clusters: int
-    clusters: list[Cluster]
-
-
-class ProjectBatchesResponse(msgspec.Struct, kw_only=True):
-    project_id: str
-    batches: list[Batch]
-
-
-msgpack_encoder = msgspec.msgpack.Encoder()
+        projects = [
+            Project(
+                project_id=r["project_id"],
+                title=r["title"],
+                description=r["description"],
+                instructions_html=r["instructions_html"],
+                resolve_on_parenting=bool(r["resolve_on_parenting"]),
+                resolve_on_pools=bool(r["resolve_on_pools"]),
+                total_clusters=int(r["total_clusters"] or 0),
+                resolved_clusters=int(r["resolved_clusters"] or 0),
+            )
+            for r in rows
+        ]
+        return Response(
+            content=json_encoder.encode(ProjectsResponse(projects=projects)),
+            media_type="application/json",
+        )
 
 
 def parse_cluster_post(row: asyncpg.Record) -> ClusterPost:

@@ -19,10 +19,10 @@ const CATEGORY_MAP = {
 /**
  * @typedef {Object} TagInfo
  * @property {string[]} implies
- * @property {string[]} implied_by
+ * @property {string[]} impliedBy
  * @property {TagCategory} category
- * @property {number} tag_count
- * @property {string} [alias_to]
+ * @property {number} tagCount
+ * @property {string} [aliasTo]
  */
 
 /**
@@ -34,7 +34,9 @@ const CATEGORY_MAP = {
  * @property {number} category
  * @property {number} count
  * @property {string[]} implies
- * @property {string[]} implied_by
+ * @property {string[]} [impliedBy]
+ * @property {string[]} [implied_by]
+ * @property {string|null} [aliasTo]
  * @property {string|null} [alias_to]
  */
 
@@ -83,11 +85,12 @@ async function getCachedTagBuffer() {
             const tx = db.transaction('cache', 'readonly');
             const store = tx.objectStore('cache');
 
-            const metaReq = store.get('cache_timestamp');
+            const metaReq = store.get('cacheTimestamp');
+            const legacyMetaReq = store.get('cache_timestamp');
             const dataReq = store.get('tagBundleBuffer');
 
             tx.oncomplete = () => {
-                const timestamp = metaReq.result;
+                const timestamp = metaReq.result || legacyMetaReq.result;
                 const buffer = dataReq.result;
                 const validCutoff = getLatestValidCacheCutoff();
 
@@ -127,7 +130,7 @@ async function setCachedTagBuffer(buffer) {
                     resolve();
                 };
 
-                store.put(Date.now(), 'cache_timestamp');
+                store.put(Date.now(), 'cacheTimestamp');
                 store.put(buffer, 'tagBundleBuffer');
             } catch (err) {
                 console.warn('[TagManager] Error starting IndexedDB transaction:', err);
@@ -227,10 +230,10 @@ export class TagManager {
                 const [tag, entry] = entries[i];
                 parsedMap[tag] = {
                     category: CATEGORY_MAP[entry.category] || 'GENERAL',
-                    tag_count: entry.count ?? 0,
+                    tagCount: entry.count ?? 0,
                     implies: entry.implies ?? [],
-                    implied_by: entry.implied_by ?? [],
-                    alias_to: entry.alias_to ?? undefined
+                    impliedBy: entry.impliedBy ?? entry.implied_by ?? [],
+                    aliasTo: entry.aliasTo ?? entry.alias_to ?? undefined
                 };
 
                 // Yield to main event loop every 30,000 items to prevent UI lockup
@@ -270,8 +273,8 @@ export class TagManager {
         let depth = 0;
         while (depth < 5) {
             const info = this.tagInfoMap[current];
-            if (info && info.alias_to) {
-                current = info.alias_to;
+            if (info && info.aliasTo) {
+                current = info.aliasTo;
                 depth++;
             } else {
                 break;
@@ -324,7 +327,7 @@ export class TagManager {
             const isAliased = key !== targetTag;
 
             const category = targetInfo ? targetInfo.category : 'GENERAL';
-            const count = targetInfo ? targetInfo.tag_count : 0;
+            const count = targetInfo ? targetInfo.tagCount : 0;
 
             /** @type {TagSearchResult} */
             const candidate = {
@@ -598,10 +601,10 @@ export class TagManager {
     isImpliedTag(tagName, flatTags) {
         if (!tagName) return false;
         const implData = this.tagInfoMap[tagName];
-        if (!implData || !implData.implied_by || implData.implied_by.length === 0) return false;
+        if (!implData || !implData.impliedBy || implData.impliedBy.length === 0) return false;
 
         const allPostTags = new Set(flatTags);
-        return implData.implied_by.some((implicator) => allPostTags.has(implicator));
+        return implData.impliedBy.some((implicator) => allPostTags.has(implicator));
     }
 
     /**
@@ -615,7 +618,7 @@ export class TagManager {
         const allPostTags = new Set(flatTags);
 
         const directImplied = (this.tagInfoMap[tagName]?.implies || []).filter(t => allPostTags.has(t));
-        const directImplicators = (this.tagInfoMap[tagName]?.implied_by || []).filter(t => allPostTags.has(t));
+        const directImplicators = (this.tagInfoMap[tagName]?.impliedBy || []).filter(t => allPostTags.has(t));
 
         /** @type {string[]} */
         const indirectImplied = [];
@@ -643,7 +646,7 @@ export class TagManager {
         while (queueImplicators.length > 0) {
             const current = queueImplicators.shift();
             if (!current) continue;
-            const parents = this.tagInfoMap[current]?.implied_by || [];
+            const parents = this.tagInfoMap[current]?.impliedBy || [];
             for (const parent of parents) {
                 if (allPostTags.has(parent) && !visitedImplicators.has(parent)) {
                     visitedImplicators.add(parent);

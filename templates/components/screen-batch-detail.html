@@ -1,4 +1,4 @@
-<div x-show="currentScreen === 'batch_detail'" class="space-y-6">
+<div x-show="currentScreen === 'batchDetail'" class="space-y-6">
 
     <!-- Detail Header Bar & Action Control Buttons -->
     <div
@@ -14,21 +14,21 @@
             <div>
                 <div class="flex flex-wrap items-center gap-2 mb-0.5">
                     <h2 class="text-xl font-bold text-gray-100 leading-none"
-                        x-text="`Batch ${$store.batches.activeBatch?.batch_number}`"></h2>
+                        x-text="`Batch ${$store.batches.activeBatch?.batchNumber}`"></h2>
                     <span class="px-2 py-0.5 rounded text-[11px] font-bold leading-none inline-flex items-center"
                         :class="getBatchStatusClass($store.batches.activeBatch)"
                         x-text="getBatchStatusLabel($store.batches.activeBatch)"></span>
 
                     <!-- Batch Lease Expiry Tag -->
                     <template
-                        x-if="$store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.leased_until">
+                        x-if="$store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.leasedUntil">
                         <span
                             class="text-[11px] font-mono text-amber-400 font-bold bg-amber-950/80 border border-amber-800/60 px-2 py-0.5 rounded leading-none inline-flex items-center"
-                            x-text="`Expires in: ${$store.batches.getRemainingTime($store.batches.activeBatch.leased_until)}`"></span>
+                            x-text="`Expires in: ${$store.batches.getRemainingTime($store.batches.activeBatch.leasedUntil)}`"></span>
                     </template>
                 </div>
                 <p class="text-xs text-gray-400"
-                    x-text="`Progress: ${$store.batches.activeBatch?.resolved_count} of ${$store.batches.activeBatch?.total_clusters} clusters resolved`">
+                    x-text="`Progress: ${$store.batches.activeBatch?.resolvedCount} of ${$store.batches.activeBatch?.totalClusters} clusters resolved`">
                 </p>
             </div>
         </div>
@@ -65,10 +65,10 @@
             </template>
 
             <template
-                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.is_leased_by_you">
+                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.isLeasedByYou">
                 <button
                     class="min-w-45 bg-amber-600 hover:bg-amber-500 text-white text-xs px-4 py-2 rounded font-semibold transition text-center flex items-center justify-center cursor-pointer"
-                    @click="$store.batches.revokeLease($store.batches.activeBatch.batch_id)">
+                    @click="$store.batches.revokeLease($store.batches.activeBatch.batchId)">
                     Release Batch
                 </button>
             </template>
@@ -84,7 +84,7 @@
             </template>
 
             <template
-                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && !$store.batches.activeBatch?.is_leased_by_you">
+                x-if="!$store.batches.activeBatch?.isClaiming && !$store.batches.activeBatch?.isRevoking && $store.batches.activeBatch?.status === 'CLAIMED' && !$store.batches.activeBatch?.isLeasedByYou">
                 <button disabled
                     class="min-w-45 bg-gray-800 text-gray-500 text-xs px-4 py-2 rounded font-semibold border border-gray-700 cursor-not-allowed text-center flex items-center justify-center">
                     Claimed by Another User
@@ -97,12 +97,12 @@
     <div
         class="bg-blue-950/30 border border-blue-800/40 rounded-lg p-4 text-xs text-blue-200/90 leading-relaxed space-y-2">
         <h4 class="font-bold text-blue-300 uppercase tracking-wider text-[11px]">Project Instructions</h4>
-        <div x-html="$store.batches.activeProject?.instructions_html"></div>
+        <div x-html="$store.batches.activeProject?.instructionsHtml"></div>
     </div>
 
     <!-- Batch Clusters List Container -->
     <div class="space-y-4">
-        <template x-for="cluster in $store.batches.activeBatch?.clusters" :key="cluster.cluster_id">
+        <template x-for="cluster in $store.batches.activeBatch?.clusters" :key="cluster.clusterId">
             <load src="/templates/components/cluster-card.html" />
         </template>
     </div>

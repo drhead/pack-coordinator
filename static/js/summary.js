@@ -58,13 +58,13 @@ document.addEventListener('alpine:init', () => {
                             if (posts.length === 0) return true;
 
                             const allResolved = posts.every(post => {
-                                const isCanonicalPost = ctx.graph.head ? Number(post.original?.post_id) === Number(ctx.graph.head) : false;
+                                const isCanonicalPost = ctx.graph.head ? Number(post.original?.postId) === Number(ctx.graph.head) : false;
                                 const isApplyButton = ctx.graph.type === 'unrelated' || isCanonicalPost || ctx.graph.type === 'variant';
 
                                 if (isApplyButton) {
-                                    return Boolean(post.is_applied);
+                                    return Boolean(post.isApplied);
                                 } else {
-                                    return Boolean(post.is_flagged || post.original?.is_flagged || post.original?.is_deleted || post.flag);
+                                    return Boolean(post.isFlagged || post.original?.isFlagged || post.original?.isDeleted || post.flag);
                                 }
                             });
 
@@ -132,17 +132,17 @@ document.addEventListener('alpine:init', () => {
                     details.push('Sources');
                 }
 
-                // Pools (Check against current headPost.pool_ids)
-                const headPools = new Set(headPost.pool_ids || []);
-                const hasNewPools = otherPosts.some(p => (p.original?.pool_ids || p.pool_ids || []).some(id => !headPools.has(id)));
+                // Pools (Check against current headPost.poolIds)
+                const headPools = new Set(headPost.poolIds || []);
+                const hasNewPools = otherPosts.some(p => (p.original?.poolIds || p.poolIds || []).some(id => !headPools.has(id)));
                 if (hasNewPools) {
                     details.push('Pools');
                 }
 
-                // Parent (Check against current headPost.parent_id, ignoring self-referential parents pointing to superior post)
+                // Parent (Check against current headPost.parentId, ignoring self-referential parents pointing to superior post)
                 const hasParent = otherPosts.some(p => {
-                    const parentId = p.parent_id ?? p.original?.parent_id ?? null;
-                    return parentId && Number(parentId) !== Number(graph.head) && !headPost.parent_id;
+                    const parentId = p.parentId ?? p.original?.parentId ?? null;
+                    return parentId && Number(parentId) !== Number(graph.head) && !headPost.parentId;
                 });
                 if (hasParent) {
                     details.push('Parent Post');
@@ -270,34 +270,34 @@ document.addEventListener('alpine:init', () => {
                         showToast('Cannot transfer parent ID: Parent ID is the superior post itself.', 'warning');
                         return;
                     }
-                    headPost.parent_id = Number(parentId);
+                    headPost.parentId = Number(parentId);
                 }
             },
 
             resetHeadParent(graph) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (headPost) {
-                    headPost.parent_id = headPost.original.parent_id ?? null;
+                    headPost.parentId = headPost.original.parentId ?? null;
                 }
             },
 
             removeHeadParent(graph) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (headPost) {
-                    headPost.parent_id = null;
+                    headPost.parentId = null;
                 }
             },
 
             headHasParent(graph, parentId) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (!headPost) return false;
-                return Number(headPost.parent_id) === Number(parentId) || Number(parentId) === Number(graph.head);
+                return Number(headPost.parentId) === Number(parentId) || Number(parentId) === Number(graph.head);
             },
 
             isParentEdited(post) {
                 if (!post) return false;
-                const current = post.parent_id ?? null;
-                const original = post.original.parent_id ?? null;
+                const current = post.parentId ?? null;
+                const original = post.original.parentId ?? null;
                 return current !== original;
             },
 
@@ -307,9 +307,9 @@ document.addEventListener('alpine:init', () => {
                 if (!headPost || !poolId) return;
 
                 const pId = Number(poolId);
-                const currentPools = Array.isArray(headPost.pool_ids) ? headPost.pool_ids : [];
+                const currentPools = Array.isArray(headPost.poolIds) ? headPost.poolIds : [];
                 if (!currentPools.includes(pId)) {
-                    headPost.pool_ids = [...currentPools, pId];
+                    headPost.poolIds = [...currentPools, pId];
                 }
 
                 if (Array.isArray(headPost._removedPools)) {
@@ -322,7 +322,7 @@ document.addEventListener('alpine:init', () => {
                         pAny._poolSubstitutions = [];
                     }
                     const origId = Number(sourcePostId);
-                    const newId = Number(headPost.original?.post_id || graph.head);
+                    const newId = Number(headPost.original?.postId || graph.head);
                     const existingIdx = pAny._poolSubstitutions.findIndex((/** @type {any} */ s) => s.poolId === pId);
                     const subRecord = { poolId: pId, origId, newId };
                     if (existingIdx >= 0) {
@@ -338,8 +338,8 @@ document.addEventListener('alpine:init', () => {
                 if (!headPost || !poolId) return;
 
                 const pId = Number(poolId);
-                const currentPools = Array.isArray(headPost.pool_ids) ? headPost.pool_ids : [];
-                headPost.pool_ids = currentPools.filter(id => id !== pId);
+                const currentPools = Array.isArray(headPost.poolIds) ? headPost.poolIds : [];
+                headPost.poolIds = currentPools.filter(id => id !== pId);
 
                 const pAny = /** @type {any} */ (headPost);
                 if (Array.isArray(pAny._poolSubstitutions)) {
@@ -347,7 +347,7 @@ document.addEventListener('alpine:init', () => {
                 }
 
                 // Only track in _removedPools if it was an ORIGINAL pool on headPost
-                const wasOriginalHeadPool = Array.isArray(headPost.original?.pool_ids) && headPost.original.pool_ids.includes(pId);
+                const wasOriginalHeadPool = Array.isArray(headPost.original?.poolIds) && headPost.original.poolIds.includes(pId);
                 if (wasOriginalHeadPool) {
                     if (!Array.isArray(headPost._removedPools)) {
                         headPost._removedPools = [];
@@ -360,10 +360,10 @@ document.addEventListener('alpine:init', () => {
 
             getAvailableInferiorPools(graph, post) {
                 if (!post || !graph || !graph.head) return [];
-                const origPools = Array.isArray(post.original?.pool_ids) ? post.original.pool_ids : (post.pool_ids || []);
+                const origPools = Array.isArray(post.original?.poolIds) ? post.original.poolIds : (post.poolIds || []);
                 const headPost = this.resMgr.getPost(graph.head);
                 if (!headPost) return origPools;
-                const headPools = new Set(headPost.pool_ids || []);
+                const headPools = new Set(headPost.poolIds || []);
                 return origPools.filter(id => !headPools.has(Number(id)));
             },
 
@@ -374,21 +374,21 @@ document.addEventListener('alpine:init', () => {
             resetHeadPools(graph) {
                 const headPost = this.resMgr.getPost(graph.head);
                 if (headPost) {
-                    headPost.pool_ids = [...(headPost.original.pool_ids || [])];
+                    headPost.poolIds = [...(headPost.original.poolIds || [])];
                     headPost._removedPools = [];
                 }
             },
 
             headHasPool(graph, poolId) {
                 const headPost = this.resMgr.getPost(graph.head);
-                if (!headPost || !Array.isArray(headPost.pool_ids)) return false;
-                return headPost.pool_ids.includes(Number(poolId));
+                if (!headPost || !Array.isArray(headPost.poolIds)) return false;
+                return headPost.poolIds.includes(Number(poolId));
             },
 
             isPoolsEdited(post) {
                 if (!post) return false;
-                const current = (post.pool_ids || []).sort().join(',');
-                const original = (post.original.pool_ids || []).sort().join(',');
+                const current = (post.poolIds || []).sort().join(',');
+                const original = (post.original.poolIds || []).sort().join(',');
                 const removedCount = (post._removedPools || []).length;
                 return current !== original || removedCount > 0;
             },
@@ -399,7 +399,7 @@ document.addEventListener('alpine:init', () => {
              * @returns {string[]}
              */
             getAddedTags(post) {
-                if (!post || post.is_applied) return [];
+                if (!post || post.isApplied) return [];
                 return post.tags.filter(t => !post.original.tags?.includes(t));
             },
 
@@ -409,7 +409,7 @@ document.addEventListener('alpine:init', () => {
              * @returns {string[]}
              */
             getRemovedTags(post) {
-                if (!post || post.is_applied || !Array.isArray(post.original.tags)) return [];
+                if (!post || post.isApplied || !Array.isArray(post.original.tags)) return [];
                 return post.original.tags.filter(t => !post.tags.includes(t));
             },
 
@@ -453,8 +453,8 @@ document.addEventListener('alpine:init', () => {
                 if (post.rating !== null && post.rating !== original.rating) return true;
 
                 // 5. Parent ID diff
-                const origParent = original.parent_id ?? null;
-                const currentParent = post.parent_id ?? null;
+                const origParent = original.parentId ?? null;
+                const currentParent = post.parentId ?? null;
                 if (origParent !== currentParent) return true;
 
                 // 6. Pool substitutions
@@ -469,7 +469,7 @@ document.addEventListener('alpine:init', () => {
              */
             async applyChanges(postId) {
                 const post = this.resMgr.getPost(postId);
-                if (!post || this.isSubmitting(postId) || post.is_applied) return;
+                if (!post || this.isSubmitting(postId) || post.isApplied) return;
 
                 if (!getE621User()) {
                     showToast('You must be logged in to apply changes.', 'error');
@@ -481,12 +481,13 @@ document.addEventListener('alpine:init', () => {
                 // Construct dynamic edit_reason including active project title if available
                 const batchesStore = /** @type {any} */ (window.Alpine?.store('batches'));
                 const activeProject = batchesStore?.activeProject;
-                const projectName = activeProject?.title || activeProject?.name || activeProject?.project_id;
+                const projectName = activeProject?.title || activeProject?.name || activeProject?.projectId;
                 const editReason = projectName
                     ? `Edited from P.A.C.K. Editor, part of "${projectName}" project.`
                     : 'Edited from P.A.C.K. Editor.';
 
                 // Construct debug payload object for silent console logging
+                /** @type {Partial<ClusterPost>} */
                 const original = post.original || {};
                 /** @type {Record<string, any>} */
                 const edits = {};
@@ -515,8 +516,8 @@ document.addEventListener('alpine:init', () => {
                     if (original.rating) edits.old_rating = original.rating;
                     edits.rating = post.rating;
                 }
-                const origParent = original.parent_id ?? null;
-                const currentParent = post.parent_id ?? null;
+                const origParent = original.parentId ?? null;
+                const currentParent = post.parentId ?? null;
                 if (origParent !== currentParent) {
                     if (origParent !== null && String(origParent).trim() !== '') {
                         edits.old_parent_id = origParent;
@@ -563,7 +564,7 @@ document.addEventListener('alpine:init', () => {
             async submitFlag(postId, superiorPostId) {
                 const post = this.resMgr.getPost(postId);
                 const pAny = /** @type {any} */ (post);
-                if (!post || this.isSubmitting(postId) || pAny.is_flagged || post.original?.is_flagged) return;
+                if (!post || this.isSubmitting(postId) || pAny.isFlagged || post.original?.isFlagged) return;
 
                 if (!getE621User()) {
                     showToast('You must be logged in to submit flags.', 'error');
@@ -586,7 +587,7 @@ document.addEventListener('alpine:init', () => {
                 console.log('[LIVE API] Sending flagResolutionPostInferior:', {
                     postId: Number(postId),
                     superiorPostId: Number(headId),
-                    flagNote: post.flag_note
+                    flagNote: post.flagNote
                 });
 
                 try {
@@ -595,7 +596,7 @@ document.addEventListener('alpine:init', () => {
                         pAny.markFlagged();
                     } else {
                         post.flag = true;
-                        if (post.original) post.original.is_flagged = true;
+                        if (post.original) post.original.isFlagged = true;
                     }
                     console.log('Successfully submitted inferior flag to e621:', response);
                     showToast(`Successfully submitted inferior flag for post #${postId}!`, 'success');

@@ -289,23 +289,23 @@
                                 :class="$store.tags.getRatingBadgeClass(getEffectiveLhsRating())"
                                 x-text="$store.tags.getRatingLabel(getEffectiveLhsRating())"></span>
 
-                            <a :href="`https://e621.net/posts/${lhsPost.post_id}`" target="_blank"
+                            <a :href="`https://e621.net/posts/${lhsPost.postId}`" target="_blank"
                                 class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
-                                <span x-text="`#${lhsPost.post_id}`"></span>
+                                <span x-text="`#${lhsPost.postId}`"></span>
                                 <span class="text-gray-600 text-xs">&nearr;</span>
                             </a>
 
-                            <template x-if="lhsPost.parent_id">
-                                <a :href="`https://e621.net/posts/${lhsPost.parent_id}`" target="_blank"
+                            <template x-if="lhsPost.parentId">
+                                <a :href="`https://e621.net/posts/${lhsPost.parentId}`" target="_blank"
                                     class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
-                                    Parent #<span x-text="lhsPost.parent_id"></span>
+                                    Parent #<span x-text="lhsPost.parentId"></span>
                                 </a>
                             </template>
 
                             <!-- Pools Badges -->
-                            <template x-if="lhsPost.pool_ids && lhsPost.pool_ids.length > 0">
+                            <template x-if="lhsPost.poolIds && lhsPost.poolIds.length > 0">
                                 <div class="flex items-center space-x-1 font-mono">
-                                    <template x-for="poolId in lhsPost.pool_ids" :key="poolId">
+                                    <template x-for="poolId in lhsPost.poolIds" :key="poolId">
                                         <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
                                             class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
                                             Pool #<span x-text="poolId"></span>
@@ -317,11 +317,11 @@
 
                         <!-- Right Details: Flag Status, Dimensions Info -->
                         <div class="flex items-center space-x-2">
-                            <template x-if="lhsPost.is_deleted">
+                            <template x-if="lhsPost.isDeleted">
                                 <span
                                     class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
                             </template>
-                            <template x-if="!lhsPost.is_deleted && lhsPost.is_flagged">
+                            <template x-if="!lhsPost.isDeleted && lhsPost.isFlagged">
                                 <span
                                     class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                             </template>
@@ -346,7 +346,7 @@
                                         :style="tagpill.getTagStyle(tag, lhsPost, hoveredImplicationData)"
                                         :title="tagpill.getTagTitle(tag.name, lhsPost)"
                                         @click="if (!tagpill.isTagLocked(tag.name, lhsPost)) removeTagWithImplicators(tag)"
-                                        @mouseenter="if (!tagpill.isTagLocked(tag.name, lhsPost)) hoveredImplicationData = getImplicationChain(lhsPost.post_id, tag.name, lhsTags)"
+                                        @mouseenter="if (!tagpill.isTagLocked(tag.name, lhsPost)) hoveredImplicationData = getImplicationChain(lhsPost.postId, tag.name, lhsTags)"
                                         @mouseleave="hoveredImplicationData = null">
 
                                         <span x-text="tag.name"></span>
@@ -478,23 +478,23 @@
                                         x-text="$store.tags.getRatingLabel(rhsPosts[0].rating)"></span>
                                 </template>
 
-                                <a :href="`https://e621.net/posts/${rhsPosts[0].post_id}`" target="_blank"
+                                <a :href="`https://e621.net/posts/${rhsPosts[0].postId}`" target="_blank"
                                     class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-1">
-                                    <span x-text="`#${rhsPosts[0].post_id}`"></span>
+                                    <span x-text="`#${rhsPosts[0].postId}`"></span>
                                     <span class="text-gray-600 text-xs">&nearr;</span>
                                 </a>
 
-                                <template x-if="rhsPosts[0].parent_id">
-                                    <a :href="`https://e621.net/posts/${rhsPosts[0].parent_id}`" target="_blank"
+                                <template x-if="rhsPosts[0].parentId">
+                                    <a :href="`https://e621.net/posts/${rhsPosts[0].parentId}`" target="_blank"
                                         class="bg-gray-900/80 hover:bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-800 text-xs px-1.5 py-0.5 rounded font-mono transition">
-                                        Parent #<span x-text="rhsPosts[0].parent_id"></span>
+                                        Parent #<span x-text="rhsPosts[0].parentId"></span>
                                     </a>
                                 </template>
 
                                 <!-- Pools Badges -->
-                                <template x-if="rhsPosts[0].pool_ids && rhsPosts[0].pool_ids.length > 0">
+                                <template x-if="rhsPosts[0].poolIds && rhsPosts[0].poolIds.length > 0">
                                     <div class="flex items-center space-x-1 font-mono">
-                                        <template x-for="poolId in rhsPosts[0].pool_ids" :key="poolId">
+                                        <template x-for="poolId in rhsPosts[0].poolIds" :key="poolId">
                                             <a :href="`https://e621.net/pools/${poolId}`" target="_blank"
                                                 class="bg-gray-900/80 hover:bg-gray-800 text-blue-400 hover:text-blue-300 border border-gray-800 text-xs px-1.5 py-0.5 rounded transition">
                                                 Pool #<span x-text="poolId"></span>
@@ -506,11 +506,11 @@
 
                             <!-- Right Details: Flag Status, Dimensions Info -->
                             <div class="flex items-center space-x-2">
-                                <template x-if="rhsPosts[0].is_deleted">
+                                <template x-if="rhsPosts[0].isDeleted">
                                     <span
                                         class="bg-red-950 text-red-400 border border-red-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">DELETED</span>
                                 </template>
-                                <template x-if="!rhsPosts[0].is_deleted && rhsPosts[0].is_flagged">
+                                <template x-if="!rhsPosts[0].isDeleted && rhsPosts[0].isFlagged">
                                     <span
                                         class="bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded text-[10px] font-bold">FLAGGED</span>
                                 </template>
@@ -526,7 +526,7 @@
                     <template x-if="rhsPosts.length > 1">
                         <div class="flex items-center justify-between">
                             <div class="flex flex-wrap items-center gap-3">
-                                <template x-for="post in rhsPosts" :key="post.post_id">
+                                <template x-for="post in rhsPosts" :key="post.postId">
                                     <div class="flex items-center space-x-1.5">
                                         <template x-if="post.rating">
                                             <span
@@ -534,9 +534,9 @@
                                                 :class="$store.tags.getRatingBadgeClass(post.rating)"
                                                 x-text="$store.tags.getRatingLabel(post.rating)"></span>
                                         </template>
-                                        <a :href="`https://e621.net/posts/${post.post_id}`" target="_blank"
+                                        <a :href="`https://e621.net/posts/${post.postId}`" target="_blank"
                                             class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm flex items-center space-x-0.5">
-                                            <span x-text="`#${post.post_id}`"></span>
+                                            <span x-text="`#${post.postId}`"></span>
                                             <span class="text-gray-600 text-xs">&nearr;</span>
                                         </a>
                                     </div>
@@ -562,7 +562,7 @@
                                     :style="tagpill.getTagStyle(tag, getRhsSourcePost(tag.name), hoveredImplicationData)"
                                     :title="tagpill.getTagTitle(tag.name)"
                                     @click="if (!isTagOnLhs(tag.name)) addTagWithImplications(tag.name)"
-                                    @mouseenter="hoveredImplicationData = getImplicationChain(getRhsSourcePost(tag.name)?.post_id, tag.name, getRhsSourcePost(tag.name))"
+                                    @mouseenter="hoveredImplicationData = getImplicationChain(getRhsSourcePost(tag.name)?.postId, tag.name, getRhsSourcePost(tag.name))"
                                     @mouseleave="hoveredImplicationData = null">
                                     <span x-text="tag.name"></span>
                                     <span x-show="isImpliedTag(tag.name, getRhsSourcePost(tag.name))"

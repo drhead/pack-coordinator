@@ -210,15 +210,15 @@ export function ComparisonManager(resMgr) {
             const pairB = this.currentPair?.b;
 
             const nativeW = Math.max(
-                pairA?.image_width || 0,
-                pairB?.image_width || 0,
-                post.image_width || 0,
+                pairA?.imageWidth || 0,
+                pairB?.imageWidth || 0,
+                post.imageWidth || 0,
                 1000
             );
             const nativeH = Math.max(
-                pairA?.image_height || 0,
-                pairB?.image_height || 0,
-                post.image_height || 0,
+                pairA?.imageHeight || 0,
+                pairB?.imageHeight || 0,
+                post.imageHeight || 0,
                 1000
             );
             const dpr = window.devicePixelRatio || 1;
@@ -249,8 +249,8 @@ export function ComparisonManager(resMgr) {
         getDiffLoupeStyle(postA, postB) {
             if (!this.enableLoupe || !postA?.fileUrl || !postB?.fileUrl) return { display: 'none' };
 
-            const nativeW = Math.max(postA.image_width || 0, postB.image_width || 0, 1000);
-            const nativeH = Math.max(postA.image_height || 0, postB.image_height || 0, 1000);
+            const nativeW = Math.max(postA.imageWidth || 0, postB.imageWidth || 0, 1000);
+            const nativeH = Math.max(postA.imageHeight || 0, postB.imageHeight || 0, 1000);
             const dpr = window.devicePixelRatio || 1;
 
             const bgW = nativeW * this.zoomLevel * dpr;
@@ -279,8 +279,8 @@ export function ComparisonManager(resMgr) {
             const pairA = this.currentPair?.a;
             const pairB = this.currentPair?.b;
             const nativeW = Math.max(
-                pairA?.image_width || 0,
-                pairB?.image_width || 0,
+                pairA?.imageWidth || 0,
+                pairB?.imageWidth || 0,
                 1000
             );
             const dpr = window.devicePixelRatio || 1;
@@ -302,8 +302,8 @@ export function ComparisonManager(resMgr) {
                 openImageModal({
                     src: /** @type {string} */ (singlePost.fileUrl),
                     mode: 'single',
-                    title: `Post #${singlePost.post_id}`,
-                    dimensions: `${singlePost.image_width || '?'}×${singlePost.image_height || '?'}`
+                    title: `Post #${singlePost.postId}`,
+                    dimensions: `${singlePost.imageWidth || '?'}×${singlePost.imageHeight || '?'}`
                 });
                 return;
             }
@@ -315,9 +315,9 @@ export function ComparisonManager(resMgr) {
                 src: this.currentPair.a.fileUrl,
                 srcB: this.currentPair.b.fileUrl,
                 mode: /** @type {'swipe' | 'diff' | 'blink'} */ (this.mode),
-                title: `#${this.currentPair.a.post_id}`,
-                titleB: `#${this.currentPair.b.post_id}`,
-                dimensions: `${this.currentPair.a.image_width || '?'}×${this.currentPair.a.image_height || '?'}`,
+                title: `#${this.currentPair.a.postId}`,
+                titleB: `#${this.currentPair.b.postId}`,
+                dimensions: `${this.currentPair.a.imageWidth || '?'}×${this.currentPair.a.imageHeight || '?'}`,
                 blinkSpeed: this.blinkSpeed
             });
         },
@@ -370,8 +370,8 @@ export function ComparisonManager(resMgr) {
                 // 1. Filter valid posts with IDs
                 const validPosts = [];
                 for (const post of this.resolutionManager.cluster.posts) {
-                    if (!post.post_id) {
-                        this.resolutionManager.markUnknown(post.post_id);
+                    if (!post.postId) {
+                        this.resolutionManager.markUnknown(post.postId);
                     } else {
                         validPosts.push(post);
                     }
@@ -382,17 +382,17 @@ export function ComparisonManager(resMgr) {
                     throw new Error('No valid posts available in this cluster.');
                 }
 
-                const activePosts = validPosts.filter(p => !p.is_deleted && !p.is_flagged);
+                const activePosts = validPosts.filter(p => !p.isDeleted && !p.isFlagged);
 
                 if (activePosts.length === 1) {
                     const superiorPost = activePosts[0];
                     for (const post of validPosts) {
-                        if (post.post_id !== superiorPost.post_id) {
-                            this.resolutionManager.addGraphEdge('duplicate', superiorPost.post_id, post.post_id, superiorPost.post_id);
+                        if (post.postId !== superiorPost.postId) {
+                            this.resolutionManager.addGraphEdge('duplicate', superiorPost.postId, post.postId, superiorPost.postId);
                         }
                     }
 
-                    showToast(`Single active post (#${superiorPost.post_id}) auto-selected as superior. Skipping comparison stage.`, 'info');
+                    showToast(`Single active post (#${superiorPost.postId}) auto-selected as superior. Skipping comparison stage.`, 'info');
                     this.proceedToReconciliation(rootData);
                     return;
                 }
@@ -462,8 +462,8 @@ export function ComparisonManager(resMgr) {
         setRelationship(type, rootData, superiorId = null) {
             if (!this.currentPair) return;
 
-            const idA = this.currentPair.a.post_id;
-            const idB = this.currentPair.b.post_id;
+            const idA = this.currentPair.a.postId;
+            const idB = this.currentPair.b.postId;
 
             // 1. Record relationship and head in ResolutionManager graph
             this.resolutionManager.addGraphEdge(type, idA, idB, superiorId);

@@ -3,9 +3,9 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from time import time
-from typing import Any
 
-from fastapi import BackgroundTasks, HTTPException, Request, APIRouter
+import msgspec
+from fastapi import BackgroundTasks, HTTPException, Request, Response, APIRouter
 
 from app.db import get_db
 from app.leases import clear_expired_leases, get_client_ip
@@ -14,8 +14,23 @@ from app.post_worker import refresh_posts_metadata, refresh_batch_posts
 router = APIRouter()
 
 
+class ClaimBatchResponse(msgspec.Struct, rename="camel", kw_only=True):
+    status: str
+    batch_id: int
+    leased_by_ip: str
+    leased_until: str
+
+
+class BatchActionResponse(msgspec.Struct, rename="camel", kw_only=True):
+    status: str
+    batch_id: int
+
+
+json_encoder = msgspec.json.Encoder()
+
+
 @router.post("/api/v1/batches/{batch_id}/claim")
-async def claim_batch(batch_id: int, request: Request) -> dict[str, Any]:
+async def claim_batch(batch_id: int, request: Request) -> Response:
     await clear_expired_leases()
     client_ip = get_client_ip(request)
     now = datetime.now(timezone.utc)
@@ -79,18 +94,19 @@ async def claim_batch(batch_id: int, request: Request) -> dict[str, Any]:
                 batch_id,
             )
 
-    return {
-        "status": "success",
-        "batch_id": batch_id,
-        "leased_by_ip": client_ip,
-        "leased_until": expires_at.isoformat(),
-    }
+    resp = ClaimBatchResponse(
+        status="success",
+        batch_id=batch_id,
+        leased_by_ip=client_ip,
+        leased_until=expires_at.isoformat(),
+    )
+    return Response(content=json_encoder.encode(resp), media_type="application/json")
 
 
 @router.post("/api/v1/batches/{batch_id}/revoke")
 async def revoke_batch_lease(
     batch_id: int, request: Request, background_tasks: BackgroundTasks
-) -> dict[str, Any]:
+) -> Response:
     client_ip = get_client_ip(request)
     now_dt = datetime.now(timezone.utc)
 
@@ -133,7 +149,8 @@ async def revoke_batch_lease(
                     batch_id,
                 )
 
-    return {"status": "success", "batch_id": batch_id}
+    resp = BatchActionResponse(status="success", batch_id=batch_id)
+    return Response(content=json_encoder.encode(resp), media_type="application/json")
 
 
 batch_rate_limits: dict[str, list[float]] = defaultdict(list)
@@ -155,7 +172,7 @@ def check_batch_rate_limit(client_ip: str) -> bool:
 
 
 @router.post("/api/v1/batches/{batch_id}/refresh")
-async def refresh_batch(batch_id: int, request: Request) -> dict[str, Any]:
+async def refresh_batch(batch_id: int, request: Request) -> Response:
     client_ip = get_client_ip(request)
     if not check_batch_rate_limit(client_ip):
         raise HTTPException(
@@ -183,4 +200,5 @@ async def refresh_batch(batch_id: int, request: Request) -> dict[str, Any]:
 
     await refresh_posts_metadata(post_ids)
 
-    return {"status": "success", "batch_id": batch_id}
+    resp = BatchActionResponse(status="success", batch_id=batch_id)
+    return Response(content=json_encoder.encode(resp), media_type="application/json")

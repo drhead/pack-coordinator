@@ -37,7 +37,7 @@ CATEGORY_MAP = {
 }
 
 
-class TagMetadata(msgspec.Struct):
+class TagMetadata(msgspec.Struct, rename="camel"):
     category: int
     count: int
     implied_by: list[str] = []

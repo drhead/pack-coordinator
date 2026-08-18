@@ -152,7 +152,7 @@ export function ensureClusterPostsInfo(clusterPosts) {
 
     // 1. Filter out posts that already have fileUrl defined (null indicates it was fetched but post is deleted/has no image URL)
     const missingPosts = clusterPosts.filter(post =>
-        post.fileUrl === undefined && post.post_id
+        post.fileUrl === undefined && post.postId
     );
     if (missingPosts.length === 0) return Promise.resolve();
 
@@ -162,7 +162,7 @@ export function ensureClusterPostsInfo(clusterPosts) {
     const idsToFetch = [];
 
     for (const post of missingPosts) {
-        const numId = Number(post.post_id);
+        const numId = Number(post.postId);
         if (!isNaN(numId)) {
             missingMap.set(numId, post);
             idsToFetch.push(numId);
@@ -190,9 +190,12 @@ export function ensureClusterPostsInfo(clusterPosts) {
                     targetPost.fileUrl = apiPost.file?.url || null;
                     targetPost.description = apiPost.description || '';
                     targetPost.sources = Array.isArray(apiPost.sources) ? apiPost.sources : [];
-                    targetPost.locked_tags = Array.isArray(apiPost.locked_tags) ? apiPost.locked_tags : [];
+                    targetPost.lockedTags = Array.isArray(apiPost.locked_tags) ? apiPost.locked_tags : [];
                     if (apiPost.flags?.deleted || apiPost.is_deleted) {
-                        targetPost.is_deleted = true;
+                        targetPost.isDeleted = true;
+                    }
+                    if (apiPost.flags?.flagged || apiPost.is_flagged) {
+                        targetPost.isFlagged = true;
                     }
                 }
             }
@@ -457,12 +460,12 @@ export async function substitutePoolPosts(poolId, substitutions) {
  * @returns {Promise<Object>} Response object from e621.
  */
 export async function flagResolutionPostInferior(resPost, superiorPostId) {
-    if (!resPost || !resPost.original?.post_id) {
+    if (!resPost || !resPost.original?.postId) {
         throw new Error('Invalid ResolutionPost provided for flagging.');
     }
 
-    const postId = Number(resPost.original.post_id);
-    return await _flagPostInferior(postId, superiorPostId, resPost.flag_note);
+    const postId = Number(resPost.original.postId);
+    return await _flagPostInferior(postId, superiorPostId, resPost.flagNote);
 }
 
 /**
@@ -473,12 +476,12 @@ export async function flagResolutionPostInferior(resPost, superiorPostId) {
  * @returns {Promise<Object|null>} Updated e621 response object, or `null` if no changes were detected.
  */
 export async function applyResolutionPostEdits(resPost, editReason = 'Edited from P.A.C.K. Editor') {
-    if (!resPost || !resPost.original?.post_id) {
+    if (!resPost || !resPost.original?.postId) {
         throw new Error('Invalid ResolutionPost provided for edit submission.');
     }
 
     const original = resPost.original;
-    const postId = Number(original.post_id);
+    const postId = Number(original.postId);
     /** @type {Record<string, any>} */
     const edits = {};
 
@@ -516,8 +519,8 @@ export async function applyResolutionPostEdits(resPost, editReason = 'Edited fro
     }
 
     // 5. Parent ID Diff (Omit old_parent_id if blank)
-    const origParent = original.parent_id ?? null;
-    const currentParent = resPost.parent_id ?? null;
+    const origParent = original.parentId ?? null;
+    const currentParent = resPost.parentId ?? null;
     if (origParent !== currentParent) {
         if (origParent !== null && String(origParent).trim() !== '') {
             edits.old_parent_id = origParent;

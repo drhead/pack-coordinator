@@ -119,7 +119,7 @@ export function ReconciliationManager(manager) {
          * @returns {boolean}
          */
         isPostDeleted(postId) {
-            return !!this.getLocalClusterPost(postId)?.is_deleted;
+            return !!this.getLocalClusterPost(postId)?.isDeleted;
         },
 
         /**
@@ -127,7 +127,7 @@ export function ReconciliationManager(manager) {
          * @returns {boolean}
          */
         isPostFlagged(postId) {
-            return !!this.getLocalClusterPost(postId)?.is_flagged;
+            return !!this.getLocalClusterPost(postId)?.isFlagged;
         },
 
         get lhsPost() {
@@ -312,7 +312,7 @@ export function ReconciliationManager(manager) {
             openImageModal({
                 src: post.fileUrl,
                 mode: 'single',
-                title: `Post #${post.post_id}`,
+                title: `Post #${post.postId}`,
                 dimensions: this.getPostDimensions(post)
             });
         },
@@ -329,7 +329,7 @@ export function ReconciliationManager(manager) {
                 return { flatTags: target, post: null };
             }
 
-            const postId = target.post_id || target.original?.post_id;
+            const postId = target.postId || target.original?.postId;
             const localPost = postId ? this.getLocalClusterPost(postId) : null;
             const rawTags = target.tags || localPost?.tags || [];
 
@@ -369,7 +369,7 @@ export function ReconciliationManager(manager) {
          * @param {any} target
          */
         getImplicationChain(postId, tagName, target) {
-            const targetId = postId || target?.post_id || target?.original?.post_id || null;
+            const targetId = postId || target?.postId || target?.original?.postId || null;
             let flatTags = [];
 
             if (targetId && targetId === this.lhsPostId) {
@@ -386,8 +386,8 @@ export function ReconciliationManager(manager) {
          */
         getPostDimensions(post) {
             if (!post) return 'N/A';
-            const w = post.image_width;
-            const h = post.image_height;
+            const w = post.imageWidth;
+            const h = post.imageHeight;
             return (w && h) ? `${w}×${h}` : 'N/A';
         },
 
@@ -473,14 +473,14 @@ export function ReconciliationManager(manager) {
             // Find first active (undeleted & unflagged) post in the graph
             const activePostId = graphPostIds.find(pId => {
                 const post = this.getLocalClusterPost(pId);
-                return post && !post.is_deleted && !post.is_flagged;
+                return post && !post.isDeleted && !post.isFlagged;
             });
 
             // Retrieve superior post: validate existing graph.head or select remaining active post
             let superiorId = this.currentGraph.head;
             if (superiorId) {
                 const headPost = this.getLocalClusterPost(superiorId);
-                if (!headPost || headPost.is_deleted || headPost.is_flagged) {
+                if (!headPost || headPost.isDeleted || headPost.isFlagged) {
                     superiorId = activePostId || graphPostIds[0];
                 }
             } else {

@@ -3,19 +3,19 @@
 
     <!-- Projects Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <template x-for="project in projects" :key="project.project_id">
+        <template x-for="project in projects" :key="project.projectId">
             <!-- Project Card -->
             <div class="bg-gray-900 border border-gray-800 hover:border-blue-500/50 rounded-lg p-5 cursor-pointer transition group"
                 x-data="{
                      get resolved() { return getProjectResolvedCount(project) },
                      get total() { return getProjectTotalCount(project) },
                      get percent() { return getProgressPercent(this.resolved, this.total) }
-                 }" @click="selectProject(project.project_id)">
+                 }" @click="selectProject(project.projectId)">
 
                 <!-- Project Header -->
                 <div class="flex items-start justify-between mb-2">
                     <h3 class="font-bold text-lg text-blue-400 group-hover:text-blue-300" x-text="project.title"></h3>
-                    <span class="text-xs font-mono text-gray-500" x-text="project.project_id"></span>
+                    <span class="text-xs font-mono text-gray-500" x-text="project.projectId"></span>
                 </div>
 
                 <!-- Project Description -->

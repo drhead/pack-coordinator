@@ -30,7 +30,7 @@ document.addEventListener('alpine:init', () => {
         loadingText: 'Initializing...',
         loadingPercent: 0,
         showInstructionsModal: false,
-        isAgeVerified: !!localStorage.getItem('e621_age_verified'),
+        isAgeVerified: !!(localStorage.getItem('e621AgeVerified') || localStorage.getItem('e621_age_verified')),
 
         ...alpineHelpers,
         // Expose pure display helpers to template if accessed as methods
@@ -43,7 +43,7 @@ document.addEventListener('alpine:init', () => {
 
         async jumpToLeasedBatch(lease) {
             await /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).jumpToLeasedBatch(lease);
-            this.currentScreen = 'batch_detail';
+            this.currentScreen = 'batchDetail';
         },
 
         revokeLease(batchId) {
@@ -59,7 +59,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async confirmAge() {
-            localStorage.setItem('e621_age_verified', 'true');
+            localStorage.setItem('e621AgeVerified', 'true');
             this.isAgeVerified = true;
             await this.loadAppData();
         },
@@ -127,7 +127,7 @@ document.addEventListener('alpine:init', () => {
          */
         viewBatch(batch) {
             /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).viewBatchDetail(batch);
-            this.currentScreen = 'batch_detail';
+            this.currentScreen = 'batchDetail';
         },
     }));
 

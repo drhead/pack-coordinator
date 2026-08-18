@@ -51,7 +51,7 @@
                                 <div class="flex items-center space-x-2">
                                     <span>/</span>
                                     <span class="text-gray-200 font-mono"
-                                        x-text="`Batch ${$store.batches.activeBatch.batch_number}`"></span>
+                                        x-text="`Batch ${$store.batches.activeBatch.batchNumber}`"></span>
                                 </div>
                             </template>
                         </div>
@@ -112,14 +112,14 @@
                             <span class="text-amber-200">Claimed:</span>
                             <button class="text-amber-300 font-bold hover:underline cursor-pointer"
                                 @click="jumpToLeasedBatch($store.batches.activeLease)"
-                                x-text="`Batch #${$store.batches.activeLease.batch_number}`"></button>
-                            <template x-if="$store.batches.getRemainingTime($store.batches.activeLease.leased_until)">
+                                x-text="`Batch #${$store.batches.activeLease.batchNumber}`"></button>
+                            <template x-if="$store.batches.getRemainingTime($store.batches.activeLease.leasedUntil)">
                                 <span class="text-amber-400 font-semibold"
-                                    x-text="`(${$store.batches.getRemainingTime($store.batches.activeLease.leased_until)})`"></span>
+                                    x-text="`(${$store.batches.getRemainingTime($store.batches.activeLease.leasedUntil)})`"></span>
                             </template>
                             <button
                                 class="ml-1 h-5 px-2 bg-amber-900/80 hover:bg-amber-800 text-amber-200 rounded text-[10px] font-sans font-semibold transition cursor-pointer flex items-center justify-center"
-                                @click="revokeLease($store.batches.activeLease.batch_id)">
+                                @click="revokeLease($store.batches.activeLease.batchId)">
                                 Release
                             </button>
                         </div>
