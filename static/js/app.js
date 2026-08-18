@@ -129,6 +129,24 @@ document.addEventListener('alpine:init', () => {
             /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).viewBatchDetail(batch);
             this.currentScreen = 'batchDetail';
         },
+
+        /**
+         * Views batch detail, opens a specific cluster, and scrolls directly to it
+         * @param {Batch} batch
+         * @param {Cluster} [cluster]
+         */
+        viewCluster(batch, cluster) {
+            this.viewBatch(batch);
+            if (cluster) {
+                cluster.collapsed = false;
+                setTimeout(() => {
+                    const el = document.getElementById(`cluster-${cluster.clusterIndex}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 60);
+            }
+        },
     }));
 
 

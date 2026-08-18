@@ -1,22 +1,151 @@
-<div x-show="currentScreen === 'batches'" class="space-y-4">
+<div x-show="currentScreen === 'batches'" class="space-y-6">
 
-    <!-- Explorer Header -->
-    <div class="flex items-center justify-between">
+    <!-- Top Overview & Legend Card -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 shadow-lg space-y-4">
         <div>
-            <h2 class="text-xl font-bold text-gray-200" x-text="$store.batches.activeProject?.title"></h2>
-            <p class="text-xs text-gray-400">Click any batch row to inspect or work on it.</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-100"
+                x-text="$store.batches.activeProject?.title || 'Batches Explorer'"></h1>
+            <p class="text-xs text-gray-400 mt-1 max-w-3xl leading-relaxed"
+                x-text="$store.batches.activeProject?.description"></p>
         </div>
-        <div class="text-xs text-gray-400 font-mono" x-text="`Total Batches: ${$store.batches.batches.length}`"></div>
+
+        <!-- Visual Legend -->
+        <div class="border-t border-gray-800 pt-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center flex-wrap gap-2.5 text-gray-300 font-mono text-[11px]">
+                <span class="text-gray-500 uppercase tracking-wider font-semibold mr-1">Legend:</span>
+
+                <!-- Pending Cluster -->
+                <div
+                    class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 text-gray-300">
+                    <span>Pending</span>
+                </div>
+
+                <!-- Resolved Cluster -->
+                <div
+                    class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/80 text-emerald-300">
+                    <span>Resolved</span>
+                </div>
+
+                <!-- Blacklisted Cluster (Dimmed only) -->
+                <div
+                    class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 text-gray-400 opacity-45">
+                    <span>Blacklisted</span>
+                </div>
+
+                <span class="text-gray-600 px-0.5">&bull;</span>
+
+                <!-- Variant Subgraph (Empty container in legend) -->
+                <div class="flex items-center px-2 py-0.5 rounded" :class="$store.batches.styles.variantGroup">
+                    <span class="text-purple-300">Variants</span>
+                </div>
+
+                <!-- Duplicate Subgraph (Empty container in legend) -->
+                <div class="flex items-center px-2 py-0.5 rounded" :class="$store.batches.styles.duplicateGroup">
+                    <span class="text-amber-300">Duplicates</span>
+                </div>
+
+                <span class="text-gray-600 px-0.5">&bull;</span>
+
+                <!-- Active Post Dot (Unboxed) -->
+                <div class="flex items-center gap-1.5">
+                    <div :class="$store.batches.styles.dotActive"></div>
+                    <span class="text-gray-300">Active</span>
+                </div>
+
+                <!-- Flagged Post Dot (Unboxed) -->
+                <div class="flex items-center gap-1.5">
+                    <div :class="$store.batches.styles.dotFlagged"></div>
+                    <span class="text-gray-300">Flagged</span>
+                </div>
+
+                <!-- Deleted Post Dot (Unboxed) -->
+                <div class="flex items-center gap-1.5">
+                    <div :class="$store.batches.styles.dotDeleted"></div>
+                    <span class="text-gray-300">Deleted</span>
+                </div>
+            </div>
+
+            <div class="text-[11px] text-gray-500 font-mono">
+                Click a cluster to inspect directly
+            </div>
+        </div>
     </div>
 
-    <!-- Batches Table View -->
-    <div class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+    <!-- Filter & Stats Toolbar -->
+    <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-900 border border-gray-800 rounded-lg p-3">
+        <!-- Filter Tabs -->
+        <div class="flex items-center space-x-1 font-mono text-xs">
+            <button @click="$store.batches.setFilter('ALL')"
+                :class="$store.batches.filterStatus === 'ALL' ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'"
+                class="px-3 py-1.5 rounded transition cursor-pointer">
+                All (<span x-text="$store.batches.batches.length"></span>)
+            </button>
+            <button @click="$store.batches.setFilter('AVAILABLE')"
+                :class="$store.batches.filterStatus === 'AVAILABLE' ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'"
+                class="px-3 py-1.5 rounded transition cursor-pointer">
+                Available (<span x-text="$store.batches.batches.filter(b => b.status === 'AVAILABLE').length"></span>)
+            </button>
+            <button @click="$store.batches.setFilter('CLAIMED')"
+                :class="$store.batches.filterStatus === 'CLAIMED' ? 'bg-amber-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'"
+                class="px-3 py-1.5 rounded transition cursor-pointer">
+                Claimed (<span x-text="$store.batches.batches.filter(b => b.status === 'CLAIMED').length"></span>)
+            </button>
+            <button @click="$store.batches.setFilter('COMPLETE')"
+                :class="$store.batches.filterStatus === 'COMPLETE' ? 'bg-emerald-600 text-white font-bold' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'"
+                class="px-3 py-1.5 rounded transition cursor-pointer">
+                Complete (<span x-text="$store.batches.batches.filter(b => b.status === 'COMPLETE').length"></span>)
+            </button>
+        </div>
+
+        <!-- Project Total & Resolved Stats Badges (Replaces Search Bar) -->
+        <div class="flex items-center space-x-2.5 font-mono text-xs">
+            <div class="flex items-center space-x-1.5 bg-gray-950 border border-gray-800 px-3 py-1.5 rounded-md">
+                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Total Clusters:</span>
+                <span class="text-blue-400 font-bold"
+                    x-text="$store.batches.activeProject?.totalClusters?.toLocaleString() || 0"></span>
+            </div>
+            <div class="flex items-center space-x-1.5 bg-gray-950 border border-gray-800 px-3 py-1.5 rounded-md">
+                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Resolved:</span>
+                <span class="text-emerald-400 font-bold"
+                    x-text="`${$store.batches.activeProject?.resolvedClusters?.toLocaleString() || 0} (${$store.batches.getProgressPercent($store.batches.activeProject?.resolvedClusters || 0, $store.batches.activeProject?.totalClusters || 1)}%)`"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batches Explorer Table -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl">
         <table class="w-full text-left text-xs font-mono">
-            <thead class="bg-gray-950 text-gray-400 border-b border-gray-800 uppercase tracking-wider">
+            <thead class="bg-gray-950 text-gray-400 border-b border-gray-800 uppercase tracking-wider text-[11px]">
                 <tr>
-                    <th class="py-2 px-3 w-12 text-center">#</th>
-                    <th class="py-2 px-3 whitespace-nowrap">Status</th>
-                    <th class="py-2 px-3">Progress</th>
+                    <th class="py-2 px-3 w-16 text-center">#</th>
+                    <th class="py-2 px-4 w-36">Status</th>
+                    <th class="py-2 px-4">Cluster Topology & Hierarchy</th>
+                    <!-- Top Compact Pagination Controls replacing Header Action Label -->
+                    <th class="py-2 px-4 w-48 text-right whitespace-nowrap">
+                        <template x-if="$store.batches.filteredBatches.length > 0">
+                            <div
+                                class="inline-flex items-center space-x-1 font-mono text-[11px] normal-case tracking-normal">
+                                <button @click.stop="$store.batches.setPage($store.batches.currentPage - 1)"
+                                    :disabled="$store.batches.currentPage <= 1"
+                                    class="px-2 py-0.5 rounded bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-300 disabled:opacity-40 disabled:hover:bg-gray-900 cursor-pointer">
+                                    &laquo; Prev
+                                </button>
+                                <span class="text-gray-400 px-1">
+                                    <span class="text-gray-200 font-bold" x-text="$store.batches.currentPage"></span> /
+                                    <span x-text="$store.batches.totalPages"></span>
+                                </span>
+                                <button @click.stop="$store.batches.setPage($store.batches.currentPage + 1)"
+                                    :disabled="$store.batches.currentPage >= $store.batches.totalPages"
+                                    class="px-2 py-0.5 rounded bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-300 disabled:opacity-40 disabled:hover:bg-gray-900 cursor-pointer">
+                                    Next &raquo;
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="!$store.batches.filteredBatches.length">
+                            <span>Progress / Action</span>
+                        </template>
+                    </th>
                 </tr>
             </thead>
 
@@ -27,21 +156,24 @@
                         <tr>
                             <!-- Skeleton Number -->
                             <td class="py-3 px-3 text-center">
-                                <div class="h-3 w-4 bg-gray-800 rounded mx-auto"></div>
+                                <div class="h-4 w-6 bg-gray-800 rounded mx-auto"></div>
                             </td>
                             <!-- Skeleton Status Badge -->
-                            <td class="py-3 px-3">
-                                <div class="h-4 w-16 bg-gray-800 rounded"></div>
-                            </td>
-                            <!-- Skeleton Progress Boxes -->
                             <td class="py-3 px-4">
-                                <div class="flex items-center space-x-1.5">
-                                    <div class="w-2.5 h-2.5 rounded-sm bg-gray-800"></div>
-                                    <div class="w-2.5 h-2.5 rounded-sm bg-gray-800"></div>
-                                    <div class="w-2.5 h-2.5 rounded-sm bg-gray-800"></div>
-                                    <div class="w-2.5 h-2.5 rounded-sm bg-gray-800"></div>
-                                    <div class="w-2.5 h-2.5 rounded-sm bg-gray-800"></div>
+                                <div class="h-5 w-20 bg-gray-800 rounded"></div>
+                            </td>
+                            <!-- Skeleton Topology Blocks -->
+                            <td class="py-3 px-4">
+                                <div class="flex items-center space-x-2">
+                                    <div class="h-7 w-12 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    <div class="h-7 w-16 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    <div class="h-7 w-10 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    <div class="h-7 w-14 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
                                 </div>
+                            </td>
+                            <!-- Skeleton Action -->
+                            <td class="py-3 px-4 text-right">
+                                <div class="h-5 w-24 bg-gray-800 rounded ml-auto"></div>
                             </td>
                         </tr>
                     </template>
@@ -51,39 +183,104 @@
             <!-- Actual Table Rows (Shown when batches exist) -->
             <template x-if="$store.batches.batches && $store.batches.batches.length > 0">
                 <tbody class="divide-y divide-gray-800/60">
-                    <template x-for="batch in $store.batches.batches" :key="batch.batchId">
+                    <template x-for="batch in $store.batches.paginatedBatches" :key="batch.batchId">
                         <!-- Batch Table Row -->
-                        <tr class="hover:bg-gray-900 cursor-pointer transition" @click="viewBatch(batch)">
+                        <tr class="hover:bg-gray-800/40 transition group cursor-pointer"
+                            :class="batch.status === 'CLAIMED' ? 'bg-amber-950/10 border-l-2 border-l-amber-500' : ''"
+                            @click="viewBatch(batch)">
 
                             <!-- Batch Number Column -->
-                            <td class="py-2 px-3 font-bold text-gray-300 text-center" x-text="batch.batchNumber"></td>
+                            <td class="py-3 px-3 font-bold text-gray-300 text-center group-hover:text-blue-400 transition"
+                                x-text="`#${batch.batchNumber}`"></td>
 
                             <!-- Batch Status & Expiry Column -->
-                            <td class="py-2 px-3 whitespace-nowrap">
+                            <td class="py-3 px-4 whitespace-nowrap">
                                 <div class="flex items-center space-x-2">
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                    <span class="px-2.5 py-1 rounded text-[10px] font-bold"
                                         :class="getBatchStatusClass(batch)" x-text="getBatchStatusLabel(batch)"></span>
 
                                     <!-- Countdown Timer on Claimed Batches -->
                                     <template x-if="batch.status === 'CLAIMED' && batch.leasedUntil">
-                                        <span class="text-[11px] text-amber-400 font-semibold"
+                                        <span class="text-[11px] text-amber-400 font-semibold font-mono"
                                             x-text="$store.batches.getRemainingTime(batch.leasedUntil)"></span>
                                     </template>
                                 </div>
                             </td>
 
-                            <!-- Batch Progress Column -->
-                            <td class="py-2.5 px-4">
-                                <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                            <!-- Cluster Topology & Hierarchy Column -->
+                            <td class="py-3 px-4">
+                                <div class="flex items-center flex-wrap gap-2">
                                     <template x-for="cluster in batch.clusters" :key="cluster.clusterId">
-                                        <div class="w-2.5 h-2.5 rounded-sm transition-all" :class="{
-                                                 'bg-green-500': cluster.isResolved,
-                                                 'bg-zinc-900 border border-gray-800': !cluster.isResolved && cluster.isBlacklisted,
-                                                 'bg-gray-800 border border-gray-700': !cluster.isResolved && !cluster.isBlacklisted
-                                             }"
-                                            :title="`Cluster #${cluster.clusterIndex}: ${cluster.isResolved ? 'Resolved' : cluster.isBlacklisted ? 'Blacklisted' : 'Pending'}`">
+                                        <!-- Layer 1: Cluster Outer Container (h-7 fixed height, dimmed if blacklisted, click jumps to cluster) -->
+                                        <div :class="$store.batches.getClusterStyle(cluster)"
+                                            :title="$store.batches.getClusterTooltip(cluster)"
+                                            class="hover:ring-1 hover:ring-blue-400/60 transition"
+                                            @click.stop="viewCluster(batch, cluster)">
+
+                                            <!-- 1. Variant Subgraphs (Layer 2, >= 2 items, Purple) -->
+                                            <template
+                                                x-for="(variant, vIdx) in (cluster.topology?.variantSubgraphs || [])"
+                                                :key="vIdx">
+                                                <div :class="$store.batches.styles.variantGroup"
+                                                    title="Variant Subgraph">
+                                                    <!-- Direct variant posts -->
+                                                    <template x-for="post in variant.posts" :key="post.postId">
+                                                        <span :class="$store.batches.getPostDotStyle(post)"
+                                                            :title="$store.batches.getPostTooltip(post)"></span>
+                                                    </template>
+
+                                                    <!-- Nested Duplicate Subgraphs inside Variant (Layer 3, >= 2 items, Amber) -->
+                                                    <template x-for="(dupSub, dIdx) in variant.duplicateSubgraphs"
+                                                        :key="dIdx">
+                                                        <div :class="$store.batches.styles.duplicateGroup"
+                                                            title="Duplicate Subgraph">
+                                                            <template x-for="post in dupSub.posts" :key="post.postId">
+                                                                <span :class="$store.batches.getPostDotStyle(post)"
+                                                                    :title="$store.batches.getPostTooltip(post)"></span>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- 2. Standalone Duplicate Subgraphs at Cluster Level (Layer 3, >= 2 items, Amber) -->
+                                            <template
+                                                x-for="(dupSub, dIdx) in (cluster.topology?.duplicateSubgraphs || [])"
+                                                :key="dIdx">
+                                                <div :class="$store.batches.styles.duplicateGroup"
+                                                    title="Duplicate Subgraph">
+                                                    <template x-for="post in dupSub.posts" :key="post.postId">
+                                                        <span :class="$store.batches.getPostDotStyle(post)"
+                                                            :title="$store.batches.getPostTooltip(post)"></span>
+                                                    </template>
+                                                </div>
+                                            </template>
+
+                                            <!-- 3. Standalone Post Dots (Individual unlinked posts) -->
+                                            <template x-for="post in (cluster.topology?.standalonePosts || [])"
+                                                :key="post.postId">
+                                                <span :class="$store.batches.getPostDotStyle(post)"
+                                                    :title="$store.batches.getPostTooltip(post)"></span>
+                                            </template>
                                         </div>
                                     </template>
+                                </div>
+                            </td>
+
+                            <!-- Batch Progress & Action Column -->
+                            <td class="py-3 px-4 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end space-x-3">
+                                    <div class="text-right">
+                                        <div :class="batch.status === 'COMPLETE' ? 'text-emerald-400 font-bold' : (batch.status === 'CLAIMED' ? 'text-amber-400 font-bold' : 'text-gray-300 font-bold')"
+                                            x-text="`${batch.resolvedCount} / ${batch.totalClusters} Resolved`"></div>
+                                        <div class="text-[10px] text-gray-400 font-mono"
+                                            x-text="`${$store.batches.getBatchTotalPosts(batch)} Posts`"></div>
+                                    </div>
+                                    <span class="px-3 py-1.5 rounded text-xs font-sans font-semibold transition"
+                                        :class="batch.status === 'CLAIMED' ? 'bg-amber-600 hover:bg-amber-500 text-white' : 'bg-gray-800 group-hover:bg-blue-600 text-gray-300 group-hover:text-white'">
+                                        <span
+                                            x-text="batch.status === 'CLAIMED' ? 'Work &rarr;' : 'Inspect &rarr;'"></span>
+                                    </span>
                                 </div>
                             </td>
                         </tr>
@@ -91,5 +288,44 @@
                 </tbody>
             </template>
         </table>
+
+        <!-- Bottom Pagination Bar -->
+        <template x-if="$store.batches.filteredBatches.length > 0">
+            <div
+                class="bg-gray-950 px-4 py-3 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-gray-400">
+                <div>
+                    Showing <span class="text-gray-200 font-bold"
+                        x-text="(($store.batches.currentPage - 1) * $store.batches.pageSize) + 1"></span>
+                    to <span class="text-gray-200 font-bold"
+                        x-text="Math.min($store.batches.currentPage * $store.batches.pageSize, $store.batches.filteredBatches.length)"></span>
+                    of <span class="text-gray-200 font-bold" x-text="$store.batches.filteredBatches.length"></span>
+                    batches
+                </div>
+
+                <div class="flex items-center space-x-1.5">
+                    <button @click="$store.batches.setPage($store.batches.currentPage - 1)"
+                        :disabled="$store.batches.currentPage <= 1"
+                        class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-300 disabled:opacity-40 disabled:hover:bg-gray-900 cursor-pointer">
+                        &laquo; Prev
+                    </button>
+
+                    <template x-for="p in $store.batches.totalPages" :key="p">
+                        <button
+                            x-show="p === 1 || p === $store.batches.totalPages || Math.abs(p - $store.batches.currentPage) <= 2"
+                            @click="$store.batches.setPage(p)"
+                            :class="p === $store.batches.currentPage ? 'bg-blue-600 text-white font-bold' : 'bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-300'"
+                            class="px-2.5 py-1 rounded cursor-pointer" x-text="p">
+                        </button>
+                    </template>
+
+                    <button @click="$store.batches.setPage($store.batches.currentPage + 1)"
+                        :disabled="$store.batches.currentPage >= $store.batches.totalPages"
+                        class="px-2.5 py-1 rounded bg-gray-900 border border-gray-800 hover:bg-gray-800 text-gray-300 disabled:opacity-40 disabled:hover:bg-gray-900 cursor-pointer">
+                        Next &raquo;
+                    </button>
+                </div>
+            </div>
+        </template>
     </div>
+
 </div>

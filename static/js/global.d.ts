@@ -76,6 +76,35 @@ declare global {
     relationship?: string | null;
   }
 
+  interface TopologyPost {
+    postId: number;
+    isDuplicate: boolean;
+    isFlagged: boolean;
+    isDeleted: boolean;
+    parentId: number | null;
+    poolIds: number[];
+    rating: PostRating | string;
+  }
+
+  interface DuplicateSubgraph {
+    canonicalPostId: number;
+    posts: TopologyPost[];
+  }
+
+  interface VariantSubgraph {
+    posts: TopologyPost[];
+    duplicateSubgraphs: DuplicateSubgraph[];
+  }
+
+  interface ClusterTopology {
+    variantSubgraphs: VariantSubgraph[];
+    duplicateSubgraphs: DuplicateSubgraph[];
+    standalonePosts: TopologyPost[];
+    totalPosts: number;
+    isBlacklisted: boolean;
+    isResolved: boolean;
+  }
+
   interface Cluster {
     clusterId: number;
     clusterIndex: number;
@@ -83,6 +112,7 @@ declare global {
     isResolved: boolean;
     manualResolution: boolean;
     posts: ClusterPost[];
+    topology?: ClusterTopology;
     collapsed?: boolean;
     isBlacklisted?: boolean;
     matchedRule?: string | null;
