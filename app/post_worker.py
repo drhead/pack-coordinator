@@ -21,6 +21,23 @@ CHUNK_LIMIT = 320
 logger = logging.getLogger("PostsWorker")
 
 
+def format_pg_text_array(elements: list[str]) -> str:
+    """Formats a list of strings into a valid, safe PostgreSQL text array literal.
+
+    Each element is wrapped in double quotes, with internal backslashes and double quotes escaped.
+    """
+    escaped = [
+        '"' + elem.replace('\\', '\\\\').replace('"', '\\"') + '"'
+        for elem in elements
+    ]
+    return "{" + ",".join(escaped) + "}"
+
+
+def format_pg_int_array(elements: list[int]) -> str:
+    """Formats a list of integers into a valid PostgreSQL integer array literal."""
+    return "{" + ",".join(str(x) for x in elements) + "}"
+
+
 class PostsResponse(msgspec.Struct):
     posts: list[PostData]
 
@@ -116,9 +133,9 @@ async def refresh_posts_metadata(
             if records_to_update:
                 parent_ids, pool_ids_list, tags_list, ratings, target_post_ids = zip(*records_to_update)
 
-                # Format Python lists into PostgreSQL array string literals
-                formatted_pool_ids = [f"{{{','.join(map(str, p))}}}" for p in pool_ids_list]
-                formatted_tags = [f"{{{','.join(t)}}}" for t in tags_list]  # Ensure tags with special chars are quoted if needed
+                # Format Python lists into safe PostgreSQL array string literals
+                formatted_pool_ids = [format_pg_int_array(p) for p in pool_ids_list]
+                formatted_tags = [format_pg_text_array(t) for t in tags_list]
 
                 async with pool.acquire() as conn:
                     await conn.execute(
