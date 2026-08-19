@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS posts (
     image_width INTEGER CHECK (image_width IS NULL OR image_width >= 0),
     image_height INTEGER CHECK (image_height IS NULL OR image_height >= 0),
     image_format TEXT,
-    image_quality INTEGER CHECK (image_quality IS NULL OR (image_quality >= 0 AND image_quality <= 101))
+    image_quality INTEGER CHECK (image_quality IS NULL OR (image_quality >= 0 AND image_quality <= 101)),
+    last_refreshed_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS cluster_posts (
@@ -74,6 +75,7 @@ CREATE INDEX IF NOT EXISTS idx_post_flags_lookup ON post_flags(post_id, is_resol
 -- GIN Indexes for high-performance array operations on posts
 CREATE INDEX IF NOT EXISTS idx_posts_pools_gin ON posts USING GIN (pool_ids);
 CREATE INDEX IF NOT EXISTS idx_posts_tags_gin ON posts USING GIN (tags);
+CREATE INDEX IF NOT EXISTS idx_posts_last_refreshed_at ON posts (last_refreshed_at ASC NULLS FIRST);
 
 CREATE INDEX IF NOT EXISTS idx_clusters_batch_index ON clusters(batch_id, cluster_index);
 CREATE INDEX IF NOT EXISTS idx_post_flags_pk_only ON post_flags(flag_id);
@@ -228,12 +230,30 @@ LEFT JOIN cluster_metrics m ON c.cluster_id = m.cluster_id;
 CREATE OR REPLACE FUNCTION fn_reevaluate_cluster_from_post_batch()
 RETURNS TRIGGER AS $$
 BEGIN
+    -- Fast early exit if no metadata columns were modified (e.g. only last_refreshed_at was updated)
+    IF NOT EXISTS (
+        SELECT 1
+        FROM new_table n
+        JOIN old_table o ON n.post_id = o.post_id
+        WHERE n.parent_id IS DISTINCT FROM o.parent_id
+           OR n.pool_ids IS DISTINCT FROM o.pool_ids
+           OR n.tags IS DISTINCT FROM o.tags
+           OR n.rating IS DISTINCT FROM o.rating
+    ) THEN
+        RETURN NULL;
+    END IF;
+
     UPDATE clusters
     SET is_resolved = v.computed_is_resolved
     FROM (
         SELECT DISTINCT cp.cluster_id
         FROM new_table n
+        JOIN old_table o ON n.post_id = o.post_id
         JOIN cluster_posts cp ON n.post_id = cp.post_id
+        WHERE n.parent_id IS DISTINCT FROM o.parent_id
+           OR n.pool_ids IS DISTINCT FROM o.pool_ids
+           OR n.tags IS DISTINCT FROM o.tags
+           OR n.rating IS DISTINCT FROM o.rating
     ) affected
     JOIN v_cluster_evaluations v ON affected.cluster_id = v.cluster_id
     WHERE clusters.cluster_id = affected.cluster_id
@@ -245,7 +265,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_reevaluate_cluster_on_post_change ON posts;
 CREATE TRIGGER trg_reevaluate_cluster_on_post_change
 AFTER UPDATE ON posts
-REFERENCING NEW TABLE AS new_table
+REFERENCING OLD TABLE AS old_table NEW TABLE AS new_table
 FOR EACH STATEMENT
 EXECUTE FUNCTION fn_reevaluate_cluster_from_post_batch();
 

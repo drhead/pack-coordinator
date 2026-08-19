@@ -596,14 +596,19 @@ export class BatchManager {
     async reloadBatches(silent = false, refreshedClusterId = null, forceCollapseReset = false) {
         if (!this.activeProject) return;
 
-        try {
-            // 1. Fetch public batch data and dynamic leases in parallel
-            const [batchesRes, leasesRes] = await Promise.all([
-                fetch(`/api/v1/projects/${this.activeProject.projectId}/batches`, {
-                    headers: { 'Accept': 'application/msgpack' }
-                }),
-                fetch('/api/v1/leases')
-            ]);
+        if (this._reloadPromise) {
+            return this._reloadPromise;
+        }
+
+        this._reloadPromise = (async () => {
+            try {
+                // 1. Fetch public batch data and dynamic leases in parallel
+                const [batchesRes, leasesRes] = await Promise.all([
+                    fetch(`/api/v1/projects/${this.activeProject.projectId}/batches`, {
+                        headers: { 'Accept': 'application/msgpack' }
+                    }),
+                    fetch('/api/v1/leases')
+                ]);
 
             if (!batchesRes.ok) return;
 
@@ -782,8 +787,13 @@ export class BatchManager {
         } catch (err) {
             if (silent) console.debug("[Polling] Sync failed:", err);
             else console.error("[Reload] Error loading batches:", err);
+        } finally {
+            this._reloadPromise = null;
         }
-    }
+    })();
+
+    return this._reloadPromise;
+}
 
     /**
      * Periodically polls for batch updates when document is active.

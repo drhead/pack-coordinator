@@ -9,7 +9,7 @@ from fastapi import BackgroundTasks, HTTPException, Request, Response, APIRouter
 
 from app.db import get_db
 from app.leases import clear_expired_leases, get_client_ip
-from app.post_worker import refresh_posts_metadata, refresh_batch_posts
+from app.post_worker import refresh_batch_posts, enqueue_post_ids, wait_for_next_refresh
 
 router = APIRouter()
 
@@ -24,6 +24,11 @@ class ClaimBatchResponse(msgspec.Struct, rename="camel", kw_only=True):
 class BatchActionResponse(msgspec.Struct, rename="camel", kw_only=True):
     status: str
     batch_id: int
+
+
+class PostActionResponse(msgspec.Struct, rename="camel", kw_only=True):
+    status: str
+    post_id: int
 
 
 json_encoder = msgspec.json.Encoder()
@@ -198,7 +203,25 @@ async def refresh_batch(batch_id: int, request: Request) -> Response:
             status_code=404, detail="Batch not found or contains no posts."
         )
 
-    await refresh_posts_metadata(post_ids)
+    enqueue_post_ids(post_ids)
+    await wait_for_next_refresh(timeout=10.0)
 
     resp = BatchActionResponse(status="success", batch_id=batch_id)
+    return Response(content=json_encoder.encode(resp), media_type="application/json")
+
+
+@router.post("/api/v1/posts/{post_id}/refresh")
+async def refresh_single_post(post_id: int) -> Response:
+    pool = get_db()
+    async with pool.acquire() as conn:
+        exists = await conn.fetchval(
+            "SELECT EXISTS(SELECT 1 FROM posts WHERE post_id = $1);", post_id
+        )
+    if not exists:
+        raise HTTPException(status_code=404, detail="Post not found.")
+
+    enqueue_post_ids(post_id)
+    await wait_for_next_refresh(timeout=10.0)
+
+    resp = PostActionResponse(status="success", post_id=post_id)
     return Response(content=json_encoder.encode(resp), media_type="application/json")

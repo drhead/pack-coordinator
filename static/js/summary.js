@@ -420,7 +420,8 @@ document.addEventListener('alpine:init', () => {
              */
             isDescriptionEdited(post) {
                 if (!post) return false;
-                return (post.description || '') !== (post.original.description || '');
+                const normalizeCrlf = (str) => (str ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '\r\n');
+                return normalizeCrlf(post.description) !== normalizeCrlf(post.original?.description);
             },
 
             /**
@@ -445,8 +446,9 @@ document.addEventListener('alpine:init', () => {
                 if (origSources.join('\r\n') !== currentSources.join('\r\n')) return true;
 
                 // 3. Description diff
-                const origDesc = original.description ?? '';
-                const currentDesc = post.description ?? '';
+                const normalizeCrlf = (str) => (str ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '\r\n');
+                const origDesc = normalizeCrlf(original.description);
+                const currentDesc = normalizeCrlf(post.description);
                 if (origDesc !== currentDesc) return true;
 
                 // 4. Rating diff
@@ -505,11 +507,10 @@ document.addEventListener('alpine:init', () => {
                     if (oldSourceStr) edits.old_source = oldSourceStr;
                     edits.source = currentSources.join('\r\n');
                 }
-                const origDesc = original.description ?? '';
-                const currentDesc = post.description ?? '';
+                const normalizeCrlf = (str) => (str ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '\r\n');
+                const origDesc = normalizeCrlf(original.description);
+                const currentDesc = normalizeCrlf(post.description);
                 if (origDesc !== currentDesc) {
-                    const oldDescStr = origDesc.trim();
-                    if (oldDescStr) edits.old_description = oldDescStr;
                     edits.description = currentDesc;
                 }
                 if (post.rating !== null && post.rating !== original.rating) {
@@ -545,6 +546,9 @@ document.addEventListener('alpine:init', () => {
 
                     // Update local post.original and mark as applied to eliminate green highlights instantly
                     post.markApplied(response);
+
+                    // Enqueue post for background refresh and silently refresh batch state
+                    this.triggerSilentPostRefresh(postId);
 
                     showToast(`Successfully applied updates for post #${postId} to e621!`, 'success');
                 } catch (err) {
@@ -599,6 +603,10 @@ document.addEventListener('alpine:init', () => {
                         if (post.original) post.original.isFlagged = true;
                     }
                     console.log('Successfully submitted inferior flag to e621:', response);
+
+                    // Enqueue post for background refresh and silently refresh batch state
+                    this.triggerSilentPostRefresh(postId);
+
                     showToast(`Successfully submitted inferior flag for post #${postId}!`, 'success');
                 } catch (err) {
                     console.error('Failed to submit inferior flag to e621:', err);
@@ -606,6 +614,23 @@ document.addEventListener('alpine:init', () => {
                     showToast(`Failed to flag post #${postId}: ${msg}`, 'error');
                 } finally {
                     this.submittingMap[postId] = false;
+                }
+            },
+
+            /**
+             * Silently enqueues a post for priority update on the backend and reloads batch state.
+             * Multiple simultaneous calls are coalesced so they don't trigger redundant batch reloads.
+             * @param {number} postId
+             */
+            async triggerSilentPostRefresh(postId) {
+                try {
+                    await fetch(`/api/v1/posts/${postId}/refresh`, { method: 'POST' });
+                    const batchesStore = /** @type {any} */ (window.Alpine?.store('batches'));
+                    if (batchesStore && typeof batchesStore.reloadBatches === 'function') {
+                        await batchesStore.reloadBatches(true);
+                    }
+                } catch (err) {
+                    console.warn(`[Summary] Silent post refresh for #${postId} failed:`, err);
                 }
             }
         };

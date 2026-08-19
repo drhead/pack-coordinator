@@ -122,16 +122,24 @@ ORDER BY c.batch_id ASC, c.cluster_index ASC, cp.post_id ASC;
 \echo 'SCENARIO 4: refresh_posts_metadata (320 posts)'
 \echo '=========================================='
 
+\echo '--- EXPLAIN ANALYZE: Stalest posts selection query ---'
+EXPLAIN (ANALYZE, BUFFERS, TIMING)
+SELECT post_id
+FROM posts
+ORDER BY last_refreshed_at ASC NULLS FIRST
+LIMIT 320;
+
+\echo ''
 \echo '--- EXPLAIN ANALYZE: Flag state verification query ---'
 EXPLAIN (ANALYZE, BUFFERS, TIMING)
 SELECT post_id, is_flagged, is_deleted
 FROM cluster_post_flags
 WHERE post_id = ANY(
-    (SELECT array_agg(post_id) FROM (SELECT post_id FROM posts LIMIT 320) t)::bigint[]
+    (SELECT array_agg(post_id) FROM (SELECT post_id FROM posts ORDER BY last_refreshed_at ASC NULLS FIRST LIMIT 320) t)::bigint[]
 );
 
 \echo ''
-\echo '--- EXPLAIN ANALYZE: Bulk UPDATE posts ---'
+\echo '--- EXPLAIN ANALYZE: Bulk UPDATE posts (Metadata) ---'
 BEGIN;
 EXPLAIN (ANALYZE, BUFFERS, TIMING)
 UPDATE posts p
@@ -152,5 +160,14 @@ AND (
     p.pool_ids IS DISTINCT FROM u.pool_ids::int[] OR
     p.tags IS DISTINCT FROM u.tags::text[] OR
     p.rating IS DISTINCT FROM u.rating
+);
+
+\echo ''
+\echo '--- EXPLAIN ANALYZE: Bulk UPDATE posts (last_refreshed_at only) ---'
+EXPLAIN (ANALYZE, BUFFERS, TIMING)
+UPDATE posts
+SET last_refreshed_at = CURRENT_TIMESTAMP
+WHERE post_id = ANY(
+    (SELECT array_agg(post_id) FROM (SELECT post_id FROM posts LIMIT 320) t)::bigint[]
 );
 COMMIT;

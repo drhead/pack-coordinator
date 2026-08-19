@@ -1,4 +1,4 @@
-"""Posts worker service migrated to async PostgreSQL."""
+"""Posts worker service with hybrid priority queue and stalest-first background refresh."""
 
 from typing import Any
 import logging
@@ -17,8 +17,11 @@ USER_AGENT = f"cleanup-coordinator_posts-worker/1.2 (by {settings.e621_username}
 
 POSTS_URL = "https://e621.net/posts.json"
 CHUNK_LIMIT = 320
+REFRESH_INTERVAL_SECONDS = 5.0
 
 logger = logging.getLogger("PostsWorker")
+
+_priority_queue: asyncio.Queue[int] = asyncio.Queue()
 
 
 def format_pg_text_array(elements: list[str]) -> str:
@@ -45,10 +48,57 @@ class PostsResponse(msgspec.Struct):
 post_decoder = msgspec.json.Decoder(type=PostsResponse)
 
 
+def enqueue_post_ids(post_ids: list[int] | set[int] | int) -> None:
+    """Enqueues post ID(s) into the high-priority in-memory queue."""
+    if isinstance(post_ids, int):
+        _priority_queue.put_nowait(post_ids)
+    else:
+        for pid in post_ids:
+            _priority_queue.put_nowait(pid)
+
+
+async def refresh_batch_posts(batch_id: int) -> None:
+    """Fetches all post IDs in a batch and enqueues them for priority refresh."""
+    try:
+        pool = get_db()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT DISTINCT cp.post_id FROM cluster_posts cp
+                JOIN clusters c ON cp.cluster_id = c.cluster_id
+                WHERE c.batch_id = $1;
+                """,
+                batch_id,
+            )
+            post_ids = [r["post_id"] for r in rows]
+
+        if post_ids:
+            enqueue_post_ids(post_ids)
+
+    except Exception as e:
+        logger.error(f"[PostsWorker] Error enqueuing batch #{batch_id}: {e}")
+
+
+async def get_stalest_post_ids(limit: int = CHUNK_LIMIT) -> list[int]:
+    """Retrieves up to `limit` stalest posts ordered by last_refreshed_at ASC NULLS FIRST."""
+    pool = get_db()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT post_id
+            FROM posts
+            ORDER BY last_refreshed_at ASC NULLS FIRST
+            LIMIT $1;
+            """,
+            limit,
+        )
+        return [r["post_id"] for r in rows]
+
+
 async def refresh_posts_metadata(
     post_ids: list[int], client: httpx.AsyncClient | None = None
 ) -> list[dict[str, Any]]:
-    """Fetches canonical post metadata from e621 in chunks and updates cluster_posts directly."""
+    """Fetches canonical post metadata from e621 in chunks and updates posts directly."""
     if not post_ids:
         return []
 
@@ -73,11 +123,22 @@ async def refresh_posts_metadata(
             )
 
             if response.status_code == 429:
-                print("[MetadataFetch] Hit 429 rate limit during bulk fetch!")
+                logger.warning("[PostsWorker] Hit 429 rate limit during bulk fetch!")
                 break
 
             response.raise_for_status()
             posts = post_decoder.decode(response.content).posts
+
+            # Update last_refreshed_at for all requested post IDs so missing/deleted posts don't stall the queue
+            async with pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    UPDATE posts
+                    SET last_refreshed_at = CURRENT_TIMESTAMP
+                    WHERE post_id = ANY($1::bigint[]);
+                    """,
+                    chunk,
+                )
 
             chunk_post_ids = [post.id for post in posts]
             local_states: dict[int, tuple[bool, bool]] = {}
@@ -103,13 +164,12 @@ async def refresh_posts_metadata(
             records_to_update: list[tuple[int | None, list[int], list[str], str, int]] = []
 
             for post in posts:
-                if post.id in local_states:
-                    local_flagged, local_deleted = local_states[post.id]
-                    if (
-                        local_flagged != post.flags.flagged
-                        or local_deleted != post.flags.deleted
-                    ):
-                        await refresh_post_flags(post.id, client)
+                local_flagged, local_deleted = local_states.get(post.id, (False, False))
+                if (
+                    local_flagged != post.flags.flagged
+                    or local_deleted != post.flags.deleted
+                ):
+                    await refresh_post_flags(post.id, client)
 
                 flat_tags = post.flat_tags()
                 parent_id = post.relationships.parent_id
@@ -168,7 +228,7 @@ async def refresh_posts_metadata(
                     )
 
     except Exception as e:
-        print(f"[MetadataFetch] Error during bulk fetch: {e}")
+        logger.error(f"[PostsWorker] Error during bulk fetch: {e}")
     finally:
         if should_close_client:
             await client.aclose()
@@ -176,111 +236,77 @@ async def refresh_posts_metadata(
     return updated_posts
 
 
-async def refresh_batch_posts(batch_id: int) -> None:
-    """Fetches fresh metadata for all posts in a batch and resets status."""
-    try:
-        pool = get_db()
-        async with pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT DISTINCT cp.post_id FROM cluster_posts cp
-                JOIN clusters c ON cp.cluster_id = c.cluster_id
-                WHERE c.batch_id = $1;
-                """,
-                batch_id,
-            )
-            post_ids = [r["post_id"] for r in rows]
-
-        await refresh_posts_metadata(post_ids)
-
-    except Exception as e:
-        print(f"[BatchRefresh] Error refreshing batch #{batch_id}: {e}")
+_tick_event: asyncio.Event = asyncio.Event()
 
 
-async def get_all_project_ids() -> list[str]:
-    """Retrieves all distinct project IDs from the database."""
-    pool = get_db()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch("SELECT DISTINCT project_id FROM batches;")
-        return [r["project_id"] for r in rows if r["project_id"]]
+def _notify_tick_completed() -> None:
+    """Wakes up any coroutines waiting for this refresh cycle and resets the event."""
+    global _tick_event
+    current = _tick_event
+    _tick_event = asyncio.Event()
+    current.set()
 
 
-async def get_project_post_ids(project_id: str) -> list[int]:
-    """Retrieves all distinct post IDs belonging to a project."""
-    query = """
-        SELECT DISTINCT cp.post_id
-        FROM cluster_posts cp
-        JOIN clusters c ON cp.cluster_id = c.cluster_id
-        JOIN batches b ON c.batch_id = b.batch_id
-        WHERE b.project_id = $1;
+async def wait_for_next_refresh(timeout: float = 10.0) -> bool:
+    """Waits until the post worker completes its next refresh cycle.
+
+    Returns True if a refresh cycle completed, or False if timeout elapsed.
     """
-    pool = get_db()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(query, project_id)
-        return [r["post_id"] for r in rows]
+    current = _tick_event
+    try:
+        await asyncio.wait_for(current.wait(), timeout=timeout)
+        return True
+    except asyncio.TimeoutError:
+        return False
 
 
-def calculate_project_interval(total_posts: int) -> int:
-    """Calculates refresh interval: max(300, 30 * (total_posts // 320)) seconds."""
-    return max(300, 30 * (total_posts // 320))
+async def post_worker_loop() -> None:
+    """Background worker loop managing the hybrid priority queue.
 
+    Every 5 seconds:
+    1. Pops up to CHUNK_LIMIT items from the high-priority in-memory queue.
+    2. If fewer than CHUNK_LIMIT items are queued, fills remaining capacity
+       with stalest posts from the database (ORDER BY last_refreshed_at ASC NULLS FIRST).
+    3. Refreshes metadata for all selected posts in a single unified operation.
+    4. Notifies any waiting endpoints that a refresh cycle completed.
+    """
+    logger.info("[PostsWorker] Starting 5-second hybrid priority queue worker loop...")
+    client = httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=30.0)
 
-async def project_refresh_loop(project_id: str) -> None:
-    """Independent worker loop for a single project."""
-    while True:
-        try:
-            post_ids = await get_project_post_ids(project_id)
-            total_posts = len(post_ids)
-            interval = calculate_project_interval(total_posts)
+    try:
+        while True:
+            try:
+                target_posts: set[int] = set()
 
-            if post_ids:
-                logger.info(
-                    f"[ProjectWorker] Starting metadata refresh for project '{project_id}' "
-                    f"({total_posts} posts, next run in {interval}s)"
-                )
-                await refresh_posts_metadata(post_ids)
-            else:
-                logger.info(
-                    f"[ProjectWorker] No posts found for project '{project_id}'. "
-                    f"Retrying in {interval}s"
-                )
+                # 1. Drain up to CHUNK_LIMIT items from in-memory queue
+                while len(target_posts) < CHUNK_LIMIT and not _priority_queue.empty():
+                    try:
+                        post_id = _priority_queue.get_nowait()
+                        target_posts.add(post_id)
+                    except asyncio.QueueEmpty:
+                        break
 
-        except asyncio.CancelledError:
-            logger.info(f"[ProjectWorker] Worker for project '{project_id}' stopping.")
-            break
-        except Exception as e:
-            logger.error(f"[ProjectWorker] Error refreshing project '{project_id}': {e}")
-            interval = 300  # Fallback interval on error
+                # 2. Fill remaining capacity with stalest posts from DB
+                if len(target_posts) < CHUNK_LIMIT:
+                    stale_post_ids = await get_stalest_post_ids(CHUNK_LIMIT)
+                    for pid in stale_post_ids:
+                        target_posts.add(pid)
+                        if len(target_posts) >= CHUNK_LIMIT:
+                            break
 
-        await asyncio.sleep(interval)
+                # 3. Refresh metadata if any posts were gathered
+                if target_posts:
+                    await refresh_posts_metadata(list(target_posts), client=client)
 
+            except asyncio.CancelledError:
+                logger.info("[PostsWorker] Worker loop received cancellation.")
+                raise
+            except Exception as e:
+                logger.error(f"[PostsWorker] Error in worker tick: {e}", exc_info=True)
+            finally:
+                _notify_tick_completed()
 
-class ProjectWorkerManager:
-    """Manages independent background worker tasks per project."""
+            await asyncio.sleep(REFRESH_INTERVAL_SECONDS)
 
-    def __init__(self) -> None:
-        self._tasks: dict[str, asyncio.Task[None]] = {}
-
-    async def sync_projects(self) -> None:
-        """Spawns worker tasks for new projects found in DB."""
-        active_projects = await get_all_project_ids()
-        for project_id in active_projects:
-            if project_id not in self._tasks or self._tasks[project_id].done():
-                logger.info(f"[ProjectWorker] Spawning worker for project '{project_id}'")
-                task = asyncio.create_task(
-                    project_refresh_loop(project_id),
-                    name=f"project_worker_{project_id}",
-                )
-                self._tasks[project_id] = task
-
-    async def stop_all(self) -> None:
-        """Cancels all active project worker tasks."""
-        for task in self._tasks.values():
-            task.cancel()
-
-        if self._tasks:
-            await asyncio.gather(*self._tasks.values(), return_exceptions=True)
-            self._tasks.clear()
-
-
-project_worker_manager = ProjectWorkerManager()
+    finally:
+        await client.aclose()

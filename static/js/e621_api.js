@@ -354,7 +354,6 @@ async function _flagPostInferior(postId, parentId, note = '') {
  * @param {string} [edits.source] New newline-delimited sources string.
  * @param {string} [edits.old_source] Previous newline-delimited sources string.
  * @param {string} [edits.description] New description string.
- * @param {string} [edits.old_description] Previous description string.
  * @param {string} [edits.rating] New rating ('s', 'q', 'e').
  * @param {string} [edits.old_rating] Previous rating.
  * @param {number|string} [edits.parent_id] New parent post ID.
@@ -379,7 +378,6 @@ async function _updatePost(postId, edits) {
         source: 'post[source]',
         old_source: 'post[old_source]',
         description: 'post[description]',
-        old_description: 'post[old_description]',
         rating: 'post[rating]',
         old_rating: 'post[old_rating]',
         parent_id: 'post[parent_id]',
@@ -514,12 +512,11 @@ export async function applyResolutionPostEdits(resPost, editReason = 'Edited fro
         edits.source = currentSources.join('\r\n');
     }
 
-    // 3. Description Diff (Omit old_description if blank)
-    const origDesc = original.description ?? '';
-    const currentDesc = resPost.description ?? '';
+    // 3. Description Diff (Use \r\n CRLF, e621 does not use old_description)
+    const normalizeCrlf = (str) => (str ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '\r\n');
+    const origDesc = normalizeCrlf(original.description);
+    const currentDesc = normalizeCrlf(resPost.description);
     if (origDesc !== currentDesc) {
-        const oldDescStr = origDesc.trim();
-        if (oldDescStr) edits.old_description = oldDescStr;
         edits.description = currentDesc;
     }
 
