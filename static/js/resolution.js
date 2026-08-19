@@ -200,6 +200,11 @@ document.addEventListener('alpine:init', () => {
         /** @type {Map<number, ResolutionPost>} */
         posts: new Map(),
 
+        /** @type {any} */
+        activeComparison: null,
+        /** @type {any} */
+        activeReconciliation: null,
+
         initializePosts() {
             if (!this.cluster || !Array.isArray(this.cluster.posts)) {
                 return;
@@ -558,6 +563,8 @@ document.addEventListener('alpine:init', () => {
          */
         resetClusterWork() {
             this.clearGraphs();
+            this.activeComparison = null;
+            this.activeReconciliation = null;
             for (const [, resPost] of this.posts.entries()) {
                 resPost.tags = Array.isArray(resPost.original.tags) ? [...resPost.original.tags] : [];
                 resPost.rating = null;

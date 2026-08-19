@@ -80,7 +80,9 @@
 
                                     <!-- 2. Image Viewport -->
                                     <div
-                                        class="w-full min-h-20 bg-gray-950 flex items-center justify-center overflow-hidden">
+                                        class="w-full min-h-20 bg-gray-950 flex items-center justify-center overflow-hidden cursor-pointer group"
+                                        @click="image.openModal(post)"
+                                        :title="post.original.isDeleted ? 'Deleted post' : 'Click to view full image in modal'">
                                         <!-- DELETED Post Placeholder -->
                                         <template x-if="post.original.isDeleted">
                                             <span
@@ -88,13 +90,13 @@
                                         </template>
 
                                         <!-- Valid Image -->
-                                        <template x-if="!post.original.isDeleted && post.original.fileUrl">
-                                            <img :src="post.original.fileUrl" :alt="`Post #${postId}`"
-                                                class="max-h-40 max-w-full object-contain" />
+                                        <template x-if="!post.original.isDeleted && (post.original.previewUrl || post.original.fileUrl)">
+                                            <img :src="post.original.previewUrl || post.original.fileUrl" :alt="`Post #${postId}`"
+                                                class="max-h-40 max-w-full object-contain group-hover:brightness-125 transition-[filter] duration-150" />
                                         </template>
 
                                         <!-- Missing Image -->
-                                        <template x-if="!post.original.isDeleted && !post.original.fileUrl">
+                                        <template x-if="!post.original.isDeleted && !post.original.previewUrl && !post.original.fileUrl">
                                             <span class="text-gray-600 text-xs font-mono text-center">No Image</span>
                                         </template>
                                     </div>

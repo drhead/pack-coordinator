@@ -174,6 +174,10 @@ export function ComparisonManager(resMgr) {
             this.isLoading = false;
             this.isHovering = false;
 
+            if (this.resolutionManager && this.resolutionManager.activeComparison === this) {
+                this.resolutionManager.activeComparison = null;
+            }
+
             if (globalActiveComparison === this) {
                 globalActiveComparison = null;
             }
@@ -457,6 +461,9 @@ export function ComparisonManager(resMgr) {
                     globalActiveComparison.isHovering = false;
                 }
                 globalActiveComparison = this;
+                if (this.resolutionManager) {
+                    this.resolutionManager.activeComparison = this;
+                }
 
                 // 1. Filter valid posts with IDs
                 const validPosts = [];

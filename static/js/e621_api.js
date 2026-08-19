@@ -140,8 +140,8 @@ export async function fetchCurrentUserProfile(credentials) {
 }
 
 /**
- * Ensures a list of ClusterPost objects have their e621 metadata (fileUrl, description, sources) populated.
- * Posts that already have `fileUrl` set are skipped to avoid redundant API queries.
+ * Ensures a list of ClusterPost objects have their e621 metadata (fileUrl, previewUrl, description, sources) populated.
+ * Posts that already have `fileUrl` and `previewUrl` set are skipped to avoid redundant API queries.
  * Modifies post objects in-place.
  * 
  * @param {Array<ClusterPost>} clusterPosts
@@ -150,9 +150,9 @@ export async function fetchCurrentUserProfile(credentials) {
 export function ensureClusterPostsInfo(clusterPosts) {
     if (!clusterPosts || clusterPosts.length === 0) return Promise.resolve();
 
-    // 1. Filter out posts that already have fileUrl defined (null indicates it was fetched but post is deleted/has no image URL)
+    // 1. Filter out posts that already have fileUrl and previewUrl defined (null indicates it was fetched but post is deleted/has no image URL)
     const missingPosts = clusterPosts.filter(post =>
-        post.fileUrl === undefined && post.postId
+        (post.fileUrl === undefined || post.previewUrl === undefined) && post.postId
     );
     if (missingPosts.length === 0) return Promise.resolve();
 
@@ -188,6 +188,7 @@ export function ensureClusterPostsInfo(clusterPosts) {
                 if (targetPost) {
                     // Assign properties directly in-place; set fileUrl to apiPost.file?.url or null if deleted/missing
                     targetPost.fileUrl = apiPost.file?.url || null;
+                    targetPost.previewUrl = apiPost.preview?.alt || apiPost.preview?.url || null;
                     targetPost.description = apiPost.description || '';
                     targetPost.sources = Array.isArray(apiPost.sources) ? apiPost.sources : [];
                     targetPost.lockedTags = Array.isArray(apiPost.locked_tags) ? apiPost.locked_tags : [];
@@ -201,14 +202,24 @@ export function ensureClusterPostsInfo(clusterPosts) {
             }
 
             // For any requested post IDs that e621 API did not return or returned without URL,
-            // set fileUrl to null so we don't re-query them.
+            // set fileUrl and previewUrl to null so we don't re-query them.
             for (const id of idsToFetch) {
                 const targetPost = missingMap.get(id);
-                if (targetPost && targetPost.fileUrl === undefined) {
-                    targetPost.fileUrl = null;
+                if (targetPost) {
+                    if (targetPost.fileUrl === undefined) {
+                        targetPost.fileUrl = null;
+                    }
+                    if (targetPost.previewUrl === undefined) {
+                        targetPost.previewUrl = null;
+                    }
                 }
             }
         });
+}
+
+if (typeof window !== 'undefined') {
+    // @ts-ignore
+    window.ensureClusterPostsInfo = ensureClusterPostsInfo;
 }
 
 /**

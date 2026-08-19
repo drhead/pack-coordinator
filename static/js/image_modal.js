@@ -74,6 +74,11 @@ export function openImageModal({
     }
 }
 
+if (typeof window !== 'undefined') {
+    // @ts-ignore
+    window.openImageModal = openImageModal;
+}
+
 /**
  * Alpine component factory for the Image Modal.
  * @returns {ImageModalInstance}

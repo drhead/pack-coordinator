@@ -26,9 +26,28 @@
  * @property {boolean} [isLhs]
  */
 
+import { openImageModal } from './image_modal.js';
+
 export const alpineHelpers = {
     // Image & Media utilities
     image: {
+        /**
+         * Opens post in expanded image modal.
+         * @param {ClusterPost|ResolutionPost|any} post
+         */
+        openModal(post) {
+            if (!post) return;
+            const target = /** @type {ClusterPost} */ ((post && typeof post === 'object' && 'original' in post) ? (/** @type {any} */ (post)).original : post);
+            const src = target.fileUrl || target.previewUrl;
+            if (!src) return;
+            openImageModal({
+                src,
+                mode: 'single',
+                title: `#${target.postId}`,
+                dimensions: (target.imageWidth && target.imageHeight) ? `${target.imageWidth}×${target.imageHeight}` : ''
+            });
+        },
+
         /** 
          * @param {ClusterPost[]|ResolutionPost[]|Iterable<any>} posts
          * @param {ClusterPost|ResolutionPost} post
@@ -36,7 +55,7 @@ export const alpineHelpers = {
         isUniform(posts, post) {
             if (!posts || !post) return true;
             const target = /** @type {ClusterPost} */ ((post && typeof post === 'object' && 'original' in post) ? (/** @type {any} */ (post)).original : post);
-            const postsArray = Array.isArray(posts) ? posts : Array.from(/** @type {any} */ (posts) || []);
+            const postsArray = Array.isArray(posts) ? posts : Array.from(/** @type {any} */(posts) || []);
             if (postsArray.length === 0) return true;
             return postsArray.every(p => {
                 const item = /** @type {ClusterPost} */ ((p && typeof p === 'object' && 'original' in p) ? (/** @type {any} */ (p)).original : (typeof p === 'object' ? p : null));
@@ -68,7 +87,7 @@ export const alpineHelpers = {
             const height = target.imageHeight;
             const format = target.imageFormat || '';
             const rawQuality = target.imageQuality;
-            const qualityText = rawQuality === 101 ? 'Lossless' : (rawQuality !== undefined && rawQuality !== null ? rawQuality : '');
+            const qualityText = rawQuality === 101 ? 'LL' : (rawQuality !== undefined && rawQuality !== null ? rawQuality : '');
 
             const hasDimensions = typeof width === 'number' && typeof height === 'number';
             const resolutionText = hasDimensions ? `${width}x${height}` : '';

@@ -426,6 +426,9 @@ export function ReconciliationManager(manager) {
                 globalActiveReconciliation.closeReconciliation();
             }
             globalActiveReconciliation = this;
+            if (this.resolutionManager) {
+                this.resolutionManager.activeReconciliation = this;
+            }
             this.isLoading = true;
             this.isSummary = false;
             this.initWarnings();
@@ -637,6 +640,10 @@ export function ReconciliationManager(manager) {
         closeReconciliation() {
             this.isActive = false;
             this.isLoading = false;
+
+            if (this.resolutionManager && this.resolutionManager.activeReconciliation === this) {
+                this.resolutionManager.activeReconciliation = null;
+            }
 
             if (globalActiveReconciliation === this) {
                 globalActiveReconciliation = null;

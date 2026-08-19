@@ -5,6 +5,7 @@ declare global {
     Alpine: AlpineType;
     ComparisonManager?: any;
     ReconciliationManager?: any;
+    ensureClusterPostsInfo?: (posts: ClusterPost[]) => Promise<void>;
   }
 
   var Alpine: AlpineType;
@@ -62,7 +63,8 @@ declare global {
     imageHeight: number;
     imageFormat: string;
     imageQuality: number;
-    fileUrl?: string;
+    fileUrl?: string | null;
+    previewUrl?: string | null;
     description?: string;
     sources?: string[];
     lockedTags?: string[];
@@ -183,6 +185,8 @@ declare global {
     graphs: ResolutionGraph[];
     relations: Map<string, GraphRelation>;
     posts: Map<number, ResolutionPost>;
+    activeComparison?: any;
+    activeReconciliation?: any;
 
     /** Lifecycle hook called automatically by Alpine */
     init(): Promise<void>;

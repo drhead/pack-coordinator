@@ -18,6 +18,9 @@ import { tagManager } from './tags.js';
 import { ImageModalComponent } from './image_modal.js';
 import { ComparisonManager } from './comparison.js';
 import { ReconciliationManager } from './reconciliation.js';
+import { ensureClusterPostsInfo } from './e621_api.js';
+
+window.ensureClusterPostsInfo = ensureClusterPostsInfo;
 
 document.addEventListener('alpine:init', () => {
     Alpine.store('batches', batchManager);
