@@ -59,13 +59,26 @@ export function ComparisonManager(resMgr) {
 
         // Single View States
         swipePos: 50,
+        diffMultiplier: 1.0,
         blinkShowB: false,
         /** @type {ReturnType<typeof setInterval> | null} */
         blinkInterval: null,
-        blinkSpeed: 350,
+        blinkRate: 3, // in Hz (1 - 6 Hz)
+        blinkSpeed: 333,
 
-        /** @type {{a: ClusterPost, b: ClusterPost} | null} */
-        currentPair: null,
+        /**
+         * Checks if the aspect ratio between pair items differs by more than 5%.
+         * @returns {boolean}
+         */
+        hasMismatchedAspectRatio() {
+            if (!this.currentPair?.a || !this.currentPair?.b) return false;
+            const { imageWidth: wA, imageHeight: hA } = this.currentPair.a;
+            const { imageWidth: wB, imageHeight: hB } = this.currentPair.b;
+            if (!wA || !hA || !wB || !hB) return false;
+            const arA = wA / hA;
+            const arB = wB / hB;
+            return Math.abs(arA - arB) / Math.min(arA, arB) > 0.05;
+        },
 
         /**
          * Gets the number of collapsibles (description and/or sources) for a post item.
@@ -123,6 +136,9 @@ export function ComparisonManager(resMgr) {
          * @param {'side-by-side' | 'swipe' | 'diff' | 'blink'} newMode
          */
         setMode(newMode) {
+            if (newMode !== 'side-by-side' && this.hasMismatchedAspectRatio()) {
+                return;
+            }
             this.isHovering = false;
             this.mode = newMode;
             if (newMode === 'blink') {
@@ -135,9 +151,10 @@ export function ComparisonManager(resMgr) {
         startBlink() {
             this.stopBlink();
             this.blinkShowB = false;
+            const intervalMs = Math.max(50, Math.round(1000 / (this.blinkRate || 3)));
             this.blinkInterval = setInterval(() => {
                 this.blinkShowB = !this.blinkShowB;
-            }, this.blinkSpeed);
+            }, intervalMs);
         },
 
         stopBlink() {
@@ -267,7 +284,8 @@ export function ComparisonManager(resMgr) {
                 backgroundColor: '#000000',
                 backgroundSize: `${bgW}px ${bgH}px, ${bgW}px ${bgH}px`,
                 backgroundPosition: `${bgLeft}px ${bgTop}px, ${bgLeft}px ${bgTop}px`,
-                imageRendering: this.zoomLevel > 1 ? 'pixelated' : 'auto'
+                imageRendering: this.zoomLevel > 1 ? 'pixelated' : 'auto',
+                filter: `brightness(${this.diffMultiplier})`
             };
         },
 
@@ -318,7 +336,7 @@ export function ComparisonManager(resMgr) {
                 title: `#${this.currentPair.a.postId}`,
                 titleB: `#${this.currentPair.b.postId}`,
                 dimensions: `${this.currentPair.a.imageWidth || '?'}×${this.currentPair.a.imageHeight || '?'}`,
-                blinkSpeed: this.blinkSpeed
+                blinkSpeed: Math.max(50, Math.round(1000 / (this.blinkRate || 3)))
             });
         },
 
@@ -341,6 +359,10 @@ export function ComparisonManager(resMgr) {
                 a: resPostA.original,
                 b: resPostB.original
             };
+
+            if (this.hasMismatchedAspectRatio() && this.mode !== 'side-by-side') {
+                this.setMode('side-by-side');
+            }
         },
 
         /**

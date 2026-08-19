@@ -26,8 +26,26 @@
             </div>
         </div>
 
-        <!-- Mode Selector -->
-        <div class="flex items-center gap-2">
+        <!-- Mode Selector & Dynamic Controls -->
+        <div class="flex items-center gap-3">
+            <!-- Diff Multiply Slider -->
+            <div x-show="mode === 'diff'"
+                class="flex items-center gap-2 text-xs text-gray-400 pr-2 border-r border-gray-800/80">
+                <span>Multiply:</span>
+                <input type="range" min="1" max="5" step="0.25" x-model.number="diffMultiplier"
+                    class="w-16 accent-blue-500 cursor-pointer">
+                <span class="font-mono w-7 text-right" x-text="`${diffMultiplier.toFixed(1)}x`"></span>
+            </div>
+
+            <!-- Blink Rate Slider -->
+            <div x-show="mode === 'blink'"
+                class="flex items-center gap-2 text-xs text-gray-400 pr-2 border-r border-gray-800/80">
+                <span>Rate:</span>
+                <input type="range" min="1" max="6" step="0.5" x-model.number="blinkRate" @input="startBlink()"
+                    class="w-16 accent-blue-500 cursor-pointer">
+                <span class="font-mono w-8 text-right" x-text="`${blinkRate}Hz`"></span>
+            </div>
+
             <div class="flex bg-gray-900 border border-gray-800 rounded-md p-0.5">
                 <button @click="setMode('side-by-side')"
                     class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
@@ -35,18 +53,24 @@
                     Side-by-Side
                 </button>
                 <button @click="setMode('swipe')"
+                    :disabled="hasMismatchedAspectRatio()"
+                    :title="hasMismatchedAspectRatio() ? 'Disabled: Aspect ratio difference exceeds 5%' : ''"
                     class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
-                    :class="mode === 'swipe' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                    :class="hasMismatchedAspectRatio() ? 'opacity-40 cursor-not-allowed text-gray-500' : (mode === 'swipe' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white')">
                     Swipe
                 </button>
                 <button @click="setMode('diff')"
+                    :disabled="hasMismatchedAspectRatio()"
+                    :title="hasMismatchedAspectRatio() ? 'Disabled: Aspect ratio difference exceeds 5%' : ''"
                     class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
-                    :class="mode === 'diff' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                    :class="hasMismatchedAspectRatio() ? 'opacity-40 cursor-not-allowed text-gray-500' : (mode === 'diff' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white')">
                     Diff
                 </button>
                 <button @click="setMode('blink')"
+                    :disabled="hasMismatchedAspectRatio()"
+                    :title="hasMismatchedAspectRatio() ? 'Disabled: Aspect ratio difference exceeds 5%' : ''"
                     class="text-xs px-2.5 py-1 rounded font-medium transition cursor-pointer"
-                    :class="mode === 'blink' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'">
+                    :class="hasMismatchedAspectRatio() ? 'opacity-40 cursor-not-allowed text-gray-500' : (mode === 'blink' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white')">
                     Blink
                 </button>
             </div>
@@ -63,7 +87,8 @@
 
             <div class="h-[60vh]">
                 <!-- 1. SIDE-BY-SIDE MODE -->
-                <div x-show="mode === 'side-by-side'" class="h-full grid grid-cols-1 md:grid-cols-2 grid-rows-1 gap-4 items-start">
+                <div x-show="mode === 'side-by-side'"
+                    class="h-full grid grid-cols-1 md:grid-cols-2 grid-rows-1 gap-4 items-start">
                     <template x-for="item in [currentPair.a, currentPair.b]" :key="item.postId">
                         <div class="border border-gray-800 rounded-lg bg-gray-950 flex flex-col relative max-h-full hover:z-20"
                             :style="{ height: getSbsCardHeight(item) }">
@@ -97,7 +122,7 @@
                                             </div>
                                         </template>
                                         <template x-if="item.fileUrl">
-                                            <img :src="item.fileUrl" class="max-h-full max-w-full object-contain block"
+                                            <img :src="item.fileUrl" class="h-full w-full object-contain block"
                                                 @mousemove="handleMouseMove($event, $el)"
                                                 @mouseenter="isHovering = true" @mouseleave="handleMouseLeave()">
                                         </template>
@@ -131,8 +156,7 @@
                                                 <span
                                                     class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▲</span>
                                             </summary>
-                                            <div
-                                                :style="!(item.sources && item.sources.length > 0) ? 'border-bottom-left-radius: 7px; border-bottom-right-radius: 7px;' : ''"
+                                            <div :style="!(item.sources && item.sources.length > 0) ? 'border-bottom-left-radius: 7px; border-bottom-right-radius: 7px;' : ''"
                                                 class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950/95"
                                                 x-text="item.description"></div>
                                         </details>
@@ -149,8 +173,7 @@
                                                 <span
                                                     class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▲</span>
                                             </summary>
-                                            <div
-                                                style="border-bottom-left-radius: 7px; border-bottom-right-radius: 7px;"
+                                            <div style="border-bottom-left-radius: 7px; border-bottom-right-radius: 7px;"
                                                 class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950/95">
                                                 <template x-for="(src, sIdx) in item.sources" :key="sIdx">
                                                     <a :href="src" target="_blank" rel="noopener noreferrer"
@@ -237,10 +260,10 @@
                             @mouseenter="isHovering = true" @mouseleave="handleMouseLeave()">
 
                             <img :src="currentPair.b.fileUrl"
-                                class="max-h-full max-w-full object-contain block pointer-events-none">
+                                class="h-full w-full object-contain block pointer-events-none">
 
                             <img :src="currentPair.a.fileUrl"
-                                class="absolute max-w-full max-h-full object-contain block pointer-events-none"
+                                class="absolute h-full w-full object-contain block pointer-events-none"
                                 :style="`clip-path: inset(0 ${100 - swipePos}% 0 0);`">
 
                             <div class="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] pointer-events-none"
@@ -259,7 +282,8 @@
                                     top: `calc(${relY * 100}% - ${loupeSize / 2}px)`,
                                     display: (enableLoupe && isHovering) ? 'block' : 'none'
                                 }">
-                                <div class="absolute inset-0 bg-no-repeat bg-gray-800" :style="getLoupeStyle(currentPair.b)"></div>
+                                <div class="absolute inset-0 bg-no-repeat bg-gray-800"
+                                    :style="getLoupeStyle(currentPair.b)"></div>
                                 <div class="absolute inset-0 bg-no-repeat bg-gray-800"
                                     :style="{ ...getLoupeStyle(currentPair.a), ...getSwipeLoupeClipStyle() }"></div>
                             </div>
@@ -271,11 +295,13 @@
                             @mousemove="handleMouseMove($event, $el)" @mouseenter="isHovering = true"
                             @mouseleave="handleMouseLeave()">
 
-                            <img :src="currentPair.a.fileUrl" class="max-h-full max-w-full object-contain block">
+                            <div class="relative h-full max-w-full min-h-0 flex items-center justify-center bg-black"
+                                :style="`filter: brightness(${diffMultiplier});`">
+                                <img :src="currentPair.a.fileUrl" class="h-full w-full object-contain block">
 
-                            <img :src="currentPair.b.fileUrl"
-                                class="absolute max-w-full max-h-full object-contain block"
-                                style="mix-blend-mode: difference;">
+                                <img :src="currentPair.b.fileUrl" class="absolute h-full w-full object-contain block"
+                                    style="mix-blend-mode: difference;">
+                            </div>
 
                             <load src="/templates/components/expand-image-button.html" />
 
@@ -297,7 +323,7 @@
                             @mouseleave="handleMouseLeave()">
 
                             <img :src="(blinkShowB ? currentPair.b : currentPair.a).fileUrl"
-                                class="max-h-full max-w-full object-contain block">
+                                class="h-full w-full object-contain block">
 
                             <load src="/templates/components/expand-image-button.html" />
 

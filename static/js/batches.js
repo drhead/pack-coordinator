@@ -377,7 +377,7 @@ export class BatchManager {
     getClusterStyle(cluster) {
         let base = cluster.isResolved ? this.styles.clusterResolved : this.styles.clusterPending;
         if (cluster.isBlacklisted) {
-            return `${base} opacity-45`;
+            return `${base} opacity-45 saturate-[0.75]`;
         }
         return base;
     }
