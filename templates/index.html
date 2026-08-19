@@ -19,7 +19,7 @@
     </style>
 </head>
 
-<body class="bg-gray-950 text-gray-100 min-h-screen font-sans" x-data="app" x-cloak>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans" :class="isScreenLoading ? 'overflow-hidden max-h-screen select-none' : ''" x-data="app" x-cloak>
 
     <!-- 18+ Age Gate Interstitial -->
     <load src="/templates/components/age-modal.html" />
@@ -35,19 +35,25 @@
                 <!-- Left Side: App Brand Title & Dynamic Breadcrumb Navigation -->
                 <div class="flex items-center space-x-3 flex-wrap gap-y-1">
                     <h1 class="text-lg font-bold text-blue-400 cursor-pointer hover:text-blue-300 transition inline-flex items-baseline"
-                        @click="currentScreen = 'projects'; $store.batches.activeProject = null; $store.batches.activeBatch = null;">
+                        @click="navigateToProjects()">
                         <span class="mr-0">P</span><span>.A.C.K.</span>
-                        <span class="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/60 font-semibold uppercase">0.3 Alpha</span>
+                        <span class="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/60 font-semibold uppercase" x-text="appVersion">0.4 Alpha</span>
                     </h1>
 
                     <!-- Breadcrumbs Container -->
-                    <template x-if="$store.batches.activeProject">
+                    <template x-if="currentScreen === 'about'">
+                        <div class="flex items-center space-x-2 text-sm text-gray-400 flex-wrap">
+                            <span>/</span>
+                            <span class="text-gray-200">About</span>
+                        </div>
+                    </template>
+                    <template x-if="currentScreen !== 'about' && $store.batches.activeProject && currentScreen !== 'projects'">
                         <div class="flex items-center space-x-2 text-sm text-gray-400 flex-wrap">
                             <span>/</span>
                             <button class="hover:text-white transition cursor-pointer"
-                                @click="currentScreen = 'batches'" x-text="$store.batches.activeProject.title"></button>
+                                @click="selectProject($store.batches.activeProject.projectId)" x-text="$store.batches.activeProject.title"></button>
 
-                            <template x-if="$store.batches.activeBatch">
+                            <template x-if="currentScreen === 'batchDetail' && $store.batches.activeBatch">
                                 <div class="flex items-center space-x-2">
                                     <span>/</span>
                                     <span class="text-gray-200 font-mono"
@@ -160,7 +166,7 @@
                         <span>GitHub</span>
                     </a>
                     <span class="text-gray-700">|</span>
-                    <button @click="currentScreen = 'about'"
+                    <button @click="navigateToAbout()"
                         class="hover:text-blue-400 text-gray-400 transition cursor-pointer">
                         About
                     </button>

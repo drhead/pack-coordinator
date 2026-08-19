@@ -34,6 +34,7 @@ document.addEventListener('alpine:init', () => {
         loadingPercent: 0,
         showInstructionsModal: false,
         isAgeVerified: !!(localStorage.getItem('e621AgeVerified') || localStorage.getItem('e621_age_verified')),
+        appVersion: import.meta.env.VITE_APP_VERSION || '0.4 Alpha',
 
         ...alpineHelpers,
         // Expose pure display helpers to template if accessed as methods
@@ -44,9 +45,26 @@ document.addEventListener('alpine:init', () => {
         getProjectTotalCount,
         getRemainingTimeString,
 
+        get isScreenLoading() {
+            if (this.isLoading) return true;
+            const store = /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches'));
+            if (!store) return false;
+            if (this.currentScreen === 'batches' && (!store.batches || store.batches.length === 0)) {
+                return true;
+            }
+            if (this.currentScreen === 'batchDetail' && !store.activeBatch) {
+                return true;
+            }
+            return false;
+        },
+
         async jumpToLeasedBatch(lease) {
-            await /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).jumpToLeasedBatch(lease);
-            this.currentScreen = 'batchDetail';
+            if (lease?.projectId && lease?.batchId) {
+                this.setRoute(`/projects/${lease.projectId}/batches/${lease.batchId}`);
+            } else {
+                await /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).jumpToLeasedBatch(lease);
+                this.currentScreen = 'batchDetail';
+            }
         },
 
         revokeLease(batchId) {
@@ -54,6 +72,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         async init() {
+            window.addEventListener('hashchange', () => {
+                this.handleRoute();
+            });
+
             if (!this.isAgeVerified) {
                 this.isLoading = false;
                 return;
@@ -112,7 +134,115 @@ document.addEventListener('alpine:init', () => {
                 console.error('[App] Failed to load initial data:', err);
             } finally {
                 this.isLoading = false;
+                await this.handleRoute();
             }
+        },
+
+        _routeSeq: 0,
+
+        /**
+         * Parses window.location.hash and syncs app screen & batch state
+         */
+        async handleRoute() {
+            if (this.isLoading) return;
+
+            const currentSeq = ++this._routeSeq;
+            window.scrollTo({ top: 0, behavior: 'instant' });
+
+            const rawHash = window.location.hash || '';
+            const cleanHash = rawHash.replace(/^#\/?/, '').trim();
+
+            if (!cleanHash || cleanHash === 'projects') {
+                this.currentScreen = 'projects';
+                const store = /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches'));
+                store.activeProject = null;
+                store.activeBatch = null;
+                return;
+            }
+
+            if (cleanHash === 'about') {
+                this.currentScreen = 'about';
+                return;
+            }
+
+            const parts = cleanHash.split('/').filter(Boolean);
+            if (parts[0] === 'projects' && parts[1]) {
+                const projectId = parts[1];
+                const projectExists = (this.projects || []).some(p => p.projectId === projectId);
+                if (!projectExists && this.projects.length > 0) {
+                    // Invalid/unknown project ID, redirect to projects screen
+                    this.setRoute('/projects');
+                    return;
+                }
+
+                const store = /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches'));
+
+                const isNewProject = !store.activeProject || store.activeProject.projectId !== projectId;
+                if (isNewProject) {
+                    // selectProject clears batches to [] and begins reloadBatches() in background
+                    store.selectProject(this.projects, projectId);
+                }
+
+                if (parts[2] === 'batches' && parts[3]) {
+                    const batchId = parts[3];
+                    this.currentScreen = 'batchDetail';
+
+                    let batch = store.batches.find(b => String(b.batchId) === String(batchId) || String(b.batchNumber) === String(batchId));
+                    if (batch) {
+                        store.viewBatchDetail(batch);
+                    } else {
+                        store.activeBatch = null;
+                        if (store._reloadPromise) {
+                            await store._reloadPromise;
+                        } else if (store.batches.length === 0) {
+                            await store.reloadBatches();
+                        }
+
+                        // Stale route check: if user navigated away while we were awaiting, abort
+                        if (currentSeq !== this._routeSeq) return;
+
+                        const found = store.batches.find(b => String(b.batchId) === String(batchId) || String(b.batchNumber) === String(batchId));
+                        if (found) {
+                            store.viewBatchDetail(found);
+                        } else {
+                            // Batch not found in project (e.g. invalid batch ID), redirect to batches explorer
+                            this.setRoute(`/projects/${projectId}`);
+                        }
+                    }
+                } else {
+                    store.activeBatch = null;
+                    this.currentScreen = 'batches';
+                }
+                return;
+            }
+
+            // Fallback to projects screen
+            this.currentScreen = 'projects';
+            const store = /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches'));
+            store.activeProject = null;
+            store.activeBatch = null;
+        },
+
+        /**
+         * Navigates to target route hash
+         * @param {string} route
+         */
+        setRoute(route) {
+            const normalized = route.startsWith('/') ? route : '/' + route;
+            const targetHash = '#' + normalized;
+            if (window.location.hash === targetHash) {
+                this.handleRoute();
+            } else {
+                window.location.hash = targetHash;
+            }
+        },
+
+        navigateToProjects() {
+            this.setRoute('/projects');
+        },
+
+        navigateToAbout() {
+            this.setRoute('/about');
         },
 
         /**
@@ -120,17 +250,22 @@ document.addEventListener('alpine:init', () => {
          * @param {string} projectId
          */
         selectProject(projectId) {
-            /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).selectProject(this.projects, projectId);
-            this.currentScreen = 'batches';
+            this.setRoute(`/projects/${projectId}`);
         },
 
         /**
-         * Views batch detail and switches screen
+         * Views batch detail and updates route
          * @param {Batch} batch
          */
         viewBatch(batch) {
-            /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches')).viewBatchDetail(batch);
-            this.currentScreen = 'batchDetail';
+            const store = /** @type {import('./batches.js').BatchManager} */ (Alpine.store('batches'));
+            const projId = store.activeProject?.projectId || (this.projects.length > 0 ? this.projects[0].projectId : null);
+            if (projId && batch?.batchId) {
+                this.setRoute(`/projects/${projId}/batches/${batch.batchId}`);
+            } else if (batch) {
+                store.viewBatchDetail(batch);
+                this.currentScreen = 'batchDetail';
+            }
         },
 
         /**
@@ -147,7 +282,7 @@ document.addEventListener('alpine:init', () => {
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                }, 60);
+                }, 80);
             }
         },
     }));

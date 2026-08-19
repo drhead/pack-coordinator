@@ -7,29 +7,39 @@
             <!-- Back to Explorer Navigation Button (Far Left) -->
             <button
                 class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-4 py-2 rounded font-medium border border-gray-700 transition flex items-center justify-center gap-1.5 cursor-pointer self-start sm:self-auto shrink-0"
-                @click="currentScreen = 'batches'">
+                @click="selectProject($store.batches.activeProject?.projectId)">
                 &larr; Back to Explorer
             </button>
 
             <div>
-                <div class="flex flex-wrap items-center gap-2 mb-0.5">
-                    <h2 class="text-xl font-bold text-gray-100 leading-none"
-                        x-text="`Batch ${$store.batches.activeBatch?.batchNumber}`"></h2>
-                    <span class="px-2 py-0.5 rounded text-[11px] font-bold leading-none inline-flex items-center"
-                        :class="getBatchStatusClass($store.batches.activeBatch)"
-                        x-text="getBatchStatusLabel($store.batches.activeBatch)"></span>
+                <template x-if="$store.batches.activeBatch">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                            <h2 class="text-xl font-bold text-gray-100 leading-none"
+                                x-text="`Batch ${$store.batches.activeBatch.batchNumber}`"></h2>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold leading-none inline-flex items-center"
+                                :class="getBatchStatusClass($store.batches.activeBatch)"
+                                x-text="getBatchStatusLabel($store.batches.activeBatch)"></span>
 
-                    <!-- Batch Lease Expiry Tag -->
-                    <template
-                        x-if="$store.batches.activeBatch?.status === 'CLAIMED' && $store.batches.activeBatch?.leasedUntil">
-                        <span
-                            class="text-[11px] font-mono text-amber-400 font-bold bg-amber-950/80 border border-amber-800/60 px-2 py-0.5 rounded leading-none inline-flex items-center"
-                            x-text="`Expires in: ${$store.batches.getRemainingTime($store.batches.activeBatch.leasedUntil)}`"></span>
-                    </template>
-                </div>
-                <p class="text-xs text-gray-400"
-                    x-text="`Progress: ${$store.batches.activeBatch?.resolvedCount} of ${$store.batches.activeBatch?.totalClusters} clusters resolved`">
-                </p>
+                            <!-- Batch Lease Expiry Tag -->
+                            <template
+                                x-if="$store.batches.activeBatch.status === 'CLAIMED' && $store.batches.activeBatch.leasedUntil">
+                                <span
+                                    class="text-[11px] font-mono text-amber-400 font-bold bg-amber-950/80 border border-amber-800/60 px-2 py-0.5 rounded leading-none inline-flex items-center"
+                                    x-text="`Expires in: ${$store.batches.getRemainingTime($store.batches.activeBatch.leasedUntil)}`"></span>
+                            </template>
+                        </div>
+                        <p class="text-xs text-gray-400"
+                            x-text="`Progress: ${$store.batches.activeBatch.resolvedCount} of ${$store.batches.activeBatch.totalClusters} clusters resolved`">
+                        </p>
+                    </div>
+                </template>
+                <template x-if="!$store.batches.activeBatch">
+                    <div class="space-y-1.5 animate-pulse">
+                        <div class="h-6 w-32 bg-gray-800 rounded"></div>
+                        <div class="h-4 w-48 bg-gray-800/70 rounded"></div>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -38,7 +48,7 @@
 
             <!-- Batch Refresh Data Button (Fixed width & height to prevent resizing) -->
             <button @click="$store.batches.refreshBatch($store.batches.activeBatch)"
-                :disabled="Boolean($store.batches.activeBatch?.isRefreshing)"
+                :disabled="Boolean(!$store.batches.activeBatch || $store.batches.activeBatch?.isRefreshing)"
                 class="min-w-38.75 bg-blue-950/40 hover:bg-blue-900/60 text-blue-400 hover:text-blue-300 text-xs px-4 py-2 rounded font-semibold border border-blue-800/60 transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 <template x-if="$store.batches.activeBatch?.isRefreshing">
                     <span class="animate-spin">↻</span>
@@ -100,11 +110,31 @@
         <div x-html="$store.batches.activeProject?.instructionsHtml"></div>
     </div>
 
+    <!-- Batch Clusters Skeleton Loader (Shown when activeBatch is null or loading) -->
+    <template x-if="!$store.batches.activeBatch">
+        <div class="space-y-4 animate-pulse">
+            <template x-for="i in 3" :key="i">
+                <div class="bg-gray-900 border border-gray-800 rounded-lg p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="h-5 w-44 bg-gray-800 rounded"></div>
+                        <div class="h-6 w-28 bg-gray-800 rounded"></div>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                        <div class="h-40 bg-gray-800/60 rounded-md border border-gray-800"></div>
+                        <div class="h-40 bg-gray-800/60 rounded-md border border-gray-800"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </template>
+
     <!-- Batch Clusters List Container -->
-    <div class="space-y-4">
-        <template x-for="cluster in $store.batches.activeBatch?.clusters" :key="cluster.clusterId">
-            <load src="/templates/components/cluster-card.html" />
-        </template>
-    </div>
+    <template x-if="$store.batches.activeBatch">
+        <div class="space-y-4">
+            <template x-for="cluster in $store.batches.activeBatch.clusters" :key="cluster.clusterId">
+                <load src="/templates/components/cluster-card.html" />
+            </template>
+        </div>
+    </template>
 
 </div>

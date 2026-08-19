@@ -578,8 +578,8 @@ export class BatchManager {
         const nextProject = (projects || []).find(p => p.projectId === projectId) || null;
         if (this.activeProject?.projectId !== nextProject?.projectId) {
             this.batches = [];
-            this.activeBatch = null;
         }
+        this.activeBatch = null;
         this.activeProject = nextProject;
         this.filterStatus = 'ALL';
         this.searchQuery = '';

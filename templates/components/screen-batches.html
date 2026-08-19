@@ -28,7 +28,7 @@
 
                 <!-- Blacklisted Cluster (Dimmed only) -->
                 <div
-                    class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 text-gray-400 opacity-45">
+                    class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-900 border border-gray-700/80 text-gray-400 opacity-45 saturate-50">
                     <span>Blacklisted</span>
                 </div>
 
@@ -152,27 +152,36 @@
             <!-- Skeleton Loader (Shown when batches array is empty) -->
             <template x-if="!$store.batches.batches || $store.batches.batches.length === 0">
                 <tbody class="divide-y divide-gray-800/60 animate-pulse">
-                    <template x-for="i in 5" :key="i">
+                    <template x-for="i in 16" :key="i">
                         <tr>
                             <!-- Skeleton Number -->
-                            <td class="py-3 px-3 text-center">
-                                <div class="h-4 w-6 bg-gray-800 rounded mx-auto"></div>
+                            <td class="py-3.5 px-3 text-center">
+                                <div class="h-4 w-7 bg-gray-800 rounded mx-auto"></div>
                             </td>
                             <!-- Skeleton Status Badge -->
-                            <td class="py-3 px-4">
+                            <td class="py-3.5 px-4">
                                 <div class="h-5 w-20 bg-gray-800 rounded"></div>
                             </td>
-                            <!-- Skeleton Topology Blocks -->
-                            <td class="py-3 px-4">
+                            <!-- Skeleton Topology Blocks (Varied widths and counts) -->
+                            <td class="py-3.5 px-4">
                                 <div class="flex items-center space-x-2">
-                                    <div class="h-7 w-12 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
-                                    <div class="h-7 w-16 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
-                                    <div class="h-7 w-10 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
-                                    <div class="h-7 w-14 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    <div class="h-7 rounded-md border border-gray-700/50 bg-gray-800/70"
+                                        :class="[i % 3 === 0 ? 'w-16' : (i % 3 === 1 ? 'w-12' : 'w-20')]"></div>
+                                    <div class="h-7 rounded-md border border-gray-700/50 bg-gray-800/70"
+                                        :class="[i % 2 === 0 ? 'w-14' : 'w-24']"></div>
+                                    <template x-if="i % 2 === 0">
+                                        <div class="h-7 w-10 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    </template>
+                                    <template x-if="i % 3 === 0">
+                                        <div class="h-7 w-16 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    </template>
+                                    <template x-if="i % 5 === 0">
+                                        <div class="h-7 w-12 bg-gray-800/70 rounded-md border border-gray-700/50"></div>
+                                    </template>
                                 </div>
                             </td>
                             <!-- Skeleton Action -->
-                            <td class="py-3 px-4 text-right">
+                            <td class="py-3.5 px-4 text-right">
                                 <div class="h-5 w-24 bg-gray-800 rounded ml-auto"></div>
                             </td>
                         </tr>

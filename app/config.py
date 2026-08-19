@@ -66,7 +66,7 @@ class Settings:
 
     @property
     def version(self) -> str:
-        return "0.3 Alpha"
+        return os.getenv("APP_VERSION", os.getenv("VITE_APP_VERSION", "0.4 Alpha"))
 
     @property
     def app_env(self) -> str:

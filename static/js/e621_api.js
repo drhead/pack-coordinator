@@ -89,12 +89,13 @@ async function rateLimitedFetch(input, init) {
  */
 function getApiHeaders(overrideAuth) {
     const appAuthor = import.meta.env.VITE_E621_APP_AUTHOR || 'anonymous';
+    const appVersion = import.meta.env.VITE_APP_VERSION || '0.4 Alpha';
     const envLabel = import.meta.env.VITE_APP_ENV || (import.meta.env.MODE === 'production' ? 'prod' : 'dev');
     const user = overrideAuth || getE621User();
 
     /** @type {Record<string, string>} */
     const headers = {
-        'User-Agent': `P.A.C.K. Editor (Frontend) (0.3 Alpha - ${envLabel}) (by ${appAuthor})`
+        'User-Agent': `P.A.C.K. Editor (Frontend) (${appVersion} - ${envLabel}) (by ${appAuthor})`
     };
 
     if (user?.username && user?.apiKey) {
