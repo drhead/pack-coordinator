@@ -51,6 +51,10 @@ export function ComparisonManager(resMgr) {
         enableLoupe: true,
         zoomLevel: 2,
         isHovering: false,
+        /** @type {ClusterPost | null} */
+        hoveredPost: null,
+        cursorX: 0,
+        cursorY: 0,
         relX: 0.5,
         relY: 0.5,
         loupeSize: 180,
@@ -191,57 +195,119 @@ export function ComparisonManager(resMgr) {
         /**
          * @param {MouseEvent} e
          * @param {HTMLElement | null} imgEl
+         * @param {ClusterPost | null} [post=null]
          */
-        handleMouseMove(e, imgEl) {
+        handleMouseMove(e, imgEl, post = null) {
             if (!imgEl) return;
             const rect = imgEl.getBoundingClientRect();
             this.containerWidth = rect.width;
             this.containerHeight = rect.height;
 
-            const x = (e.clientX - rect.left) / rect.width;
-            const y = (e.clientY - rect.top) / rect.height;
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
 
-            if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
-                this.relX = x;
-                this.relY = y;
-                this.isHovering = true;
+            this.cursorX = mouseX;
+            this.cursorY = mouseY;
+
+            const targetPost = post || this.currentPair?.a || null;
+            const nw = targetPost?.imageWidth || 0;
+            const nh = targetPost?.imageHeight || 0;
+
+            if (nw > 0 && nh > 0 && rect.width > 0 && rect.height > 0) {
+                const scale = Math.min(rect.width / nw, rect.height / nh);
+                const rw = nw * scale;
+                const rh = nh * scale;
+                const padX = (rect.width - rw) / 2;
+                const padY = (rect.height - rh) / 2;
+
+                const x = (mouseX - padX) / rw;
+                const y = (mouseY - padY) / rh;
+
+                if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                    this.relX = x;
+                    this.relY = y;
+                    this.hoveredPost = targetPost;
+                    this.isHovering = true;
+                } else {
+                    this.isHovering = false;
+                }
             } else {
-                this.isHovering = false;
+                const x = mouseX / rect.width;
+                const y = mouseY / rect.height;
+                if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+                    this.relX = x;
+                    this.relY = y;
+                    this.hoveredPost = targetPost;
+                    this.isHovering = true;
+                } else {
+                    this.isHovering = false;
+                }
             }
         },
 
         handleMouseLeave() {
             this.isHovering = false;
+            this.hoveredPost = null;
+        },
+
+        /**
+         * Computes reference base dimensions for native 1:1 scaling.
+         * In SBS mode, uses the active hovered post's native resolution so both sides scale to it.
+         * In overlay modes (Swipe, Diff, Blink), uses the smaller image's native resolution so layers align.
+         * @param {ClusterPost | null} [post=null]
+         * @returns {{ w: number, h: number }}
+         */
+        getBaseDimensions(post = null) {
+            const pairA = this.currentPair?.a;
+            const pairB = this.currentPair?.b;
+
+            if (this.mode === 'side-by-side') {
+                if (this.hasMismatchedAspectRatio()) {
+                    if (post?.imageWidth && post?.imageHeight) {
+                        return { w: post.imageWidth, h: post.imageHeight };
+                    }
+                } else {
+                    const refPost = this.hoveredPost || post || pairA || pairB;
+                    if (refPost?.imageWidth && refPost?.imageHeight) {
+                        return { w: refPost.imageWidth, h: refPost.imageHeight };
+                    }
+                }
+            } else if (pairA && pairB && !this.hasMismatchedAspectRatio()) {
+                const wA = pairA.imageWidth || 0;
+                const hA = pairA.imageHeight || 0;
+                const wB = pairB.imageWidth || 0;
+                const hB = pairB.imageHeight || 0;
+                const areaA = (wA && hA) ? (wA * hA) : 0;
+                const areaB = (wB && hB) ? (wB * hB) : 0;
+
+                if (areaA > 0 && areaB > 0) {
+                    return areaB < areaA ? { w: wB, h: hB } : { w: wA, h: hA };
+                }
+                if (wA && hA) return { w: wA, h: hA };
+                if (wB && hB) return { w: wB, h: hB };
+            }
+
+            if (post?.imageWidth && post?.imageHeight) {
+                return { w: post.imageWidth, h: post.imageHeight };
+            }
+
+            return {
+                w: post?.imageWidth || this.containerWidth || 1000,
+                h: post?.imageHeight || this.containerHeight || 1000
+            };
         },
 
         /**
          * Standard Single Post Loupe Style
-         * Scales based on larger image in the pair so loupe shows consistent FOV percentage across pairs with 1-4x upscale from native.
          * @param {ClusterPost | null} post
          * @returns {Record<string, string>}
          */
         getLoupeStyle(post) {
             if (!this.enableLoupe || !post || !post.fileUrl) return { display: 'none' };
 
-            const pairA = this.currentPair?.a;
-            const pairB = this.currentPair?.b;
-
-            const nativeW = Math.max(
-                pairA?.imageWidth || 0,
-                pairB?.imageWidth || 0,
-                post.imageWidth || 0,
-                1000
-            );
-            const nativeH = Math.max(
-                pairA?.imageHeight || 0,
-                pairB?.imageHeight || 0,
-                post.imageHeight || 0,
-                1000
-            );
-            const dpr = window.devicePixelRatio || 1;
-
-            const bgW = nativeW * this.zoomLevel * dpr;
-            const bgH = nativeH * this.zoomLevel * dpr;
+            const { w: baseW, h: baseH } = this.getBaseDimensions(post);
+            const bgW = baseW * this.zoomLevel;
+            const bgH = baseH * this.zoomLevel;
 
             const bgLeft = (this.loupeSize / 2) - (this.relX * bgW);
             const bgTop = (this.loupeSize / 2) - (this.relY * bgH);
@@ -253,12 +319,12 @@ export function ComparisonManager(resMgr) {
                 backgroundColor: '#1f2937',
                 backgroundSize: `${bgW}px ${bgH}px`,
                 backgroundPosition: `${bgLeft}px ${bgTop}px`,
-                imageRendering: this.zoomLevel > 1 ? 'pixelated' : 'auto'
+                imageRendering: (bgW > (post.imageWidth || 0) || this.zoomLevel > 1) ? 'pixelated' : 'auto'
             };
         },
 
         /**
-         * FIXED Diff Loupe Style: Black background prevents color inversion!
+         * Diff Loupe Style: Black background prevents color inversion
          * @param {ClusterPost | null} postA
          * @param {ClusterPost | null} postB
          * @returns {Record<string, string>}
@@ -266,12 +332,9 @@ export function ComparisonManager(resMgr) {
         getDiffLoupeStyle(postA, postB) {
             if (!this.enableLoupe || !postA?.fileUrl || !postB?.fileUrl) return { display: 'none' };
 
-            const nativeW = Math.max(postA.imageWidth || 0, postB.imageWidth || 0, 1000);
-            const nativeH = Math.max(postA.imageHeight || 0, postB.imageHeight || 0, 1000);
-            const dpr = window.devicePixelRatio || 1;
-
-            const bgW = nativeW * this.zoomLevel * dpr;
-            const bgH = nativeH * this.zoomLevel * dpr;
+            const { w: baseW, h: baseH } = this.getBaseDimensions(postA);
+            const bgW = baseW * this.zoomLevel;
+            const bgH = baseH * this.zoomLevel;
 
             const bgLeft = (this.loupeSize / 2) - (this.relX * bgW);
             const bgTop = (this.loupeSize / 2) - (this.relY * bgH);
@@ -294,17 +357,23 @@ export function ComparisonManager(resMgr) {
          * @returns {Record<string, string>}
          */
         getSwipeLoupeClipStyle() {
-            const pairA = this.currentPair?.a;
-            const pairB = this.currentPair?.b;
-            const nativeW = Math.max(
-                pairA?.imageWidth || 0,
-                pairB?.imageWidth || 0,
-                1000
-            );
-            const dpr = window.devicePixelRatio || 1;
-            const bgW = nativeW * this.zoomLevel * dpr;
+            const { w: baseW } = this.getBaseDimensions(this.currentPair?.a || null);
+            const bgW = baseW * this.zoomLevel;
 
-            const loupeLineX = (this.loupeSize / 2) + ((this.swipePos / 100) - this.relX) * bgW;
+            const targetPost = this.currentPair?.a || null;
+            const nw = targetPost?.imageWidth || 0;
+            const nh = targetPost?.imageHeight || 0;
+            let imageSwipeX = this.swipePos / 100;
+
+            if (nw > 0 && nh > 0 && this.containerWidth > 0 && this.containerHeight > 0) {
+                const scale = Math.min(this.containerWidth / nw, this.containerHeight / nh);
+                const rw = nw * scale;
+                const padX = (this.containerWidth - rw) / 2;
+                const swipePx = (this.swipePos / 100) * this.containerWidth;
+                imageSwipeX = (swipePx - padX) / rw;
+            }
+
+            const loupeLineX = (this.loupeSize / 2) + (imageSwipeX - this.relX) * bgW;
             const rightClip = Math.max(0, Math.min(this.loupeSize, this.loupeSize - loupeLineX));
             return {
                 clipPath: `inset(0 ${rightClip}px 0 0)`

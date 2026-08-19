@@ -122,7 +122,7 @@
                                         </template>
                                         <template x-if="item.fileUrl">
                                             <img :src="item.fileUrl" class="h-full w-full object-contain block"
-                                                @mousemove="handleMouseMove($event, $el)"
+                                                @mousemove="handleMouseMove($event, $el, item)"
                                                 @mouseenter="isHovering = true" @mouseleave="handleMouseLeave()">
                                         </template>
 
@@ -132,8 +132,8 @@
                                             class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-50 bg-no-repeat bg-gray-800"
                                             :class="!(enableLoupe && isHovering) ? 'hidden' : ''" :style="{
                                                 ...getLoupeStyle(item),
-                                                left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
-                                                top: `calc(${relY * 100}% - ${loupeSize / 2}px)`,
+                                                left: `${cursorX - loupeSize / 2}px`,
+                                                top: `${cursorY - loupeSize / 2}px`,
                                                 display: (enableLoupe && isHovering) ? 'block' : 'none'
                                             }">
                                         </div>
@@ -252,7 +252,7 @@
                         <!-- SWIPE MODE -->
                         <div x-show="mode === 'swipe'"
                             class="relative h-full max-w-full min-h-0 flex items-center justify-center cursor-ew-resize"
-                            @mousemove="handleSwipeMove($event, $el); handleMouseMove($event, $el)"
+                            @mousemove="handleSwipeMove($event, $el); handleMouseMove($event, $el, currentPair.a)"
                             @mouseenter="isHovering = true" @mouseleave="handleMouseLeave()">
 
                             <img :src="currentPair.b.fileUrl"
@@ -274,8 +274,8 @@
                                 :class="!(enableLoupe && isHovering) ? 'hidden' : ''" :style="{
                                     width: `${loupeSize}px`,
                                     height: `${loupeSize}px`,
-                                    left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
-                                    top: `calc(${relY * 100}% - ${loupeSize / 2}px)`,
+                                    left: `${cursorX - loupeSize / 2}px`,
+                                    top: `${cursorY - loupeSize / 2}px`,
                                     display: (enableLoupe && isHovering) ? 'block' : 'none'
                                 }">
                                 <div class="absolute inset-0 bg-no-repeat bg-gray-800"
@@ -288,7 +288,7 @@
                         <!-- DIFF MODE -->
                         <div x-show="mode === 'diff'"
                             class="relative h-full max-w-full min-h-0 flex items-center justify-center"
-                            @mousemove="handleMouseMove($event, $el)" @mouseenter="isHovering = true"
+                            @mousemove="handleMouseMove($event, $el, currentPair.a)" @mouseenter="isHovering = true"
                             @mouseleave="handleMouseLeave()">
 
                             <div class="relative h-full max-w-full min-h-0 flex items-center justify-center bg-black"
@@ -305,8 +305,8 @@
                                 class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-50 bg-no-repeat"
                                 :class="!(enableLoupe && isHovering) ? 'hidden' : ''" :style="{
                                     ...getDiffLoupeStyle(currentPair.a, currentPair.b),
-                                    left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
-                                    top: `calc(${relY * 100}% - ${loupeSize / 2}px)`,
+                                    left: `${cursorX - loupeSize / 2}px`,
+                                    top: `${cursorY - loupeSize / 2}px`,
                                     display: (enableLoupe && isHovering) ? 'block' : 'none'
                                 }">
                             </div>
@@ -315,7 +315,7 @@
                         <!-- BLINK MODE -->
                         <div x-show="mode === 'blink'"
                             class="relative h-full max-w-full min-h-0 flex items-center justify-center"
-                            @mousemove="handleMouseMove($event, $el)" @mouseenter="isHovering = true"
+                            @mousemove="handleMouseMove($event, $el, blinkShowB ? currentPair.b : currentPair.a)" @mouseenter="isHovering = true"
                             @mouseleave="handleMouseLeave()">
 
                             <img :src="(blinkShowB ? currentPair.b : currentPair.a).fileUrl"
@@ -327,8 +327,8 @@
                                 class="absolute pointer-events-none border-2 border-blue-500 rounded shadow-2xl z-50 bg-no-repeat bg-gray-800"
                                 :class="!(enableLoupe && isHovering) ? 'hidden' : ''" :style="{
                                     ...getLoupeStyle(blinkShowB ? currentPair.b : currentPair.a),
-                                    left: `calc(${relX * 100}% - ${loupeSize / 2}px)`,
-                                    top: `calc(${relY * 100}% - ${loupeSize / 2}px)`,
+                                    left: `${cursorX - loupeSize / 2}px`,
+                                    top: `${cursorY - loupeSize / 2}px`,
                                     display: (enableLoupe && isHovering) ? 'block' : 'none'
                                 }">
                             </div>
