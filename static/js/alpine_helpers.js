@@ -30,31 +30,119 @@ export const alpineHelpers = {
     // Image & Media utilities
     image: {
         /** 
-         * @param {ClusterPost[]} posts
-         * @param {ClusterPost} post
+         * @param {ClusterPost[]|ResolutionPost[]|Iterable<any>} posts
+         * @param {ClusterPost|ResolutionPost} post
          */
         isUniform(posts, post) {
             if (!posts || !post) return true;
+            const target = /** @type {ClusterPost} */ ((post && typeof post === 'object' && 'original' in post) ? (/** @type {any} */ (post)).original : post);
             const postsArray = Array.isArray(posts) ? posts : Array.from(/** @type {any} */ (posts) || []);
             if (postsArray.length === 0) return true;
             return postsArray.every(p => {
-                const item = typeof p === 'number' || typeof p === 'string' ? null : p;
+                const item = /** @type {ClusterPost} */ ((p && typeof p === 'object' && 'original' in p) ? (/** @type {any} */ (p)).original : (typeof p === 'object' ? p : null));
                 if (!item) return true;
-                return item.imageWidth === post.imageWidth &&
-                    item.imageHeight === post.imageHeight &&
-                    item.imageFormat === post.imageFormat &&
-                    item.imageQuality === post.imageQuality;
+                return item.imageWidth === target.imageWidth &&
+                    item.imageHeight === target.imageHeight &&
+                    item.imageFormat === target.imageFormat &&
+                    item.imageQuality === target.imageQuality;
             });
         },
 
         /**
+         * Formats the image specification string (resolution, format, quality)
+         * with context-aware comparative highlighting:
+         * - Best resolution / quality: highlighted green (text-emerald-400)
+         * - Worst resolution / quality: highlighted red (text-red-400)
+         * - Aspect ratio deviation > 5%: resolution highlighted yellow (text-yellow-400) for all posts
+         * - Uniform context: dimmed gray (text-gray-600)
+         * - Default / neutral: standard gray (text-gray-400)
          * 
-         * @param {ClusterPost} post 
-         * @returns 
+         * @param {ClusterPost|ResolutionPost|any} post 
+         * @param {ClusterPost[]|ResolutionPost[]|Iterable<any>|null} [context=null]
+         * @returns {string} HTML string representing the formatted spec line.
          */
-        formatSpecs(post) {
-            const quality = post.imageQuality === 101 ? 'Lossless' : post.imageQuality;
-            return `${post.imageWidth}x${post.imageHeight} ${post.imageFormat}: ${quality}`;
+        formatSpecs(post, context = null) {
+            if (!post) return '';
+            const target = /** @type {ClusterPost} */ ((post && typeof post === 'object' && 'original' in post) ? (/** @type {any} */ (post)).original : post);
+            const width = target.imageWidth;
+            const height = target.imageHeight;
+            const format = target.imageFormat || '';
+            const rawQuality = target.imageQuality;
+            const qualityText = rawQuality === 101 ? 'Lossless' : (rawQuality !== undefined && rawQuality !== null ? rawQuality : '');
+
+            const hasDimensions = typeof width === 'number' && typeof height === 'number';
+            const resolutionText = hasDimensions ? `${width}x${height}` : '';
+            const formatText = format ? (qualityText !== '' ? `${format}:` : format) : '';
+
+            const posts = context ? (Array.isArray(context) ? context : Array.from(context)) : [];
+            const validPosts = posts
+                .map(p => (p && typeof p === 'object' && 'original' in p ? p.original : p))
+                .filter(p => p && typeof p === 'object' && typeof p.imageWidth === 'number' && typeof p.imageHeight === 'number');
+
+            let resolutionClass = '';
+            let qualityClass = '';
+
+            if (validPosts.length >= 2) {
+                // 1. Aspect Ratio check (> 5% deviation)
+                const aspectRatios = validPosts
+                    .map(p => p.imageWidth / p.imageHeight)
+                    .filter(ar => isFinite(ar) && ar > 0);
+
+                let isArMismatched = false;
+                if (aspectRatios.length >= 2) {
+                    const minAR = Math.min(...aspectRatios);
+                    const maxAR = Math.max(...aspectRatios);
+                    if (minAR > 0 && (maxAR - minAR) / minAR > 0.05) {
+                        isArMismatched = true;
+                    }
+                }
+
+                if (isArMismatched) {
+                    resolutionClass = 'text-yellow-400';
+                } else if (hasDimensions) {
+                    const resolutions = validPosts.map(p => p.imageWidth * p.imageHeight);
+                    const minRes = Math.min(...resolutions);
+                    const maxRes = Math.max(...resolutions);
+                    if (minRes !== maxRes) {
+                        const targetRes = width * height;
+                        if (targetRes === maxRes) {
+                            resolutionClass = 'text-emerald-400';
+                        } else if (targetRes === minRes) {
+                            resolutionClass = 'text-red-400';
+                        }
+                    }
+                }
+
+                // 2. Quality check (Lossless 101 > 100 > ... > 0)
+                const validQualityPosts = validPosts.filter(p => typeof p.imageQuality === 'number');
+                if (validQualityPosts.length >= 2 && typeof rawQuality === 'number') {
+                    const qualities = validQualityPosts.map(p => p.imageQuality);
+                    const minQual = Math.min(...qualities);
+                    const maxQual = Math.max(...qualities);
+                    if (minQual !== maxQual) {
+                        if (rawQuality === maxQual) {
+                            qualityClass = 'text-emerald-400';
+                        } else if (rawQuality === minQual) {
+                            qualityClass = 'text-red-400';
+                        }
+                    }
+                }
+            }
+
+            const isAllUniform = validPosts.length > 0 && this.isUniform(validPosts, target);
+            const neutralClass = isAllUniform ? 'text-gray-600' : 'text-gray-400';
+
+            const resSpan = resolutionText
+                ? `<span class="${resolutionClass || neutralClass}">${resolutionText}</span>`
+                : '';
+            const fmtSpan = formatText
+                ? `<span class="${neutralClass}">${formatText}</span>`
+                : '';
+            const qualSpan = qualityText !== ''
+                ? `<span class="${qualityClass || neutralClass}">${qualityText}</span>`
+                : '';
+
+            return [resSpan, fmtSpan, qualSpan].filter(Boolean).join(' ');
         }
     },
     tagpill: {

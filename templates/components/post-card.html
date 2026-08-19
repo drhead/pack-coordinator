@@ -52,8 +52,7 @@
 
                 <!-- Dimensions & Format Info Label -->
                 <span class="font-mono text-[11px]"
-                    :class="image.isUniform(cluster.posts, post) ? 'text-gray-600' : 'text-gray-400'"
-                    x-text="image.formatSpecs(post)">
+                    x-html="image.formatSpecs(post, cluster.posts)">
                 </span>
             </div>
         </div>

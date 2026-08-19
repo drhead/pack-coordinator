@@ -99,8 +99,7 @@
                                     class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
                                     x-text="`#${item.postId}`"></a>
                                 <span class="font-mono text-[11px]"
-                                    :class="image.isUniform([currentPair.a, currentPair.b], item) ? 'text-gray-600' : 'text-gray-400'"
-                                    x-text="image.formatSpecs(item)">
+                                    x-html="image.formatSpecs(item, [currentPair.a, currentPair.b])">
                                 </span>
                             </div>
 
@@ -207,16 +206,14 @@
                                         class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
                                         x-text="`#${currentPair.a.postId}`"></a>
                                     <span class="font-mono text-[11px]"
-                                        :class="image.isUniform([currentPair.a, currentPair.b], currentPair.a) ? 'text-gray-600' : 'text-gray-400'"
-                                        x-text="image.formatSpecs(currentPair.a)">
+                                        x-html="image.formatSpecs(currentPair.a, [currentPair.a, currentPair.b])">
                                     </span>
                                 </div>
 
                                 <!-- Right Side: Info specs on left, #B on right (Swapped) -->
                                 <div class="flex items-center justify-between pl-3">
                                     <span class="font-mono text-[11px]"
-                                        :class="image.isUniform([currentPair.a, currentPair.b], currentPair.b) ? 'text-gray-600' : 'text-gray-400'"
-                                        x-text="image.formatSpecs(currentPair.b)">
+                                        x-html="image.formatSpecs(currentPair.b, [currentPair.a, currentPair.b])">
                                     </span>
                                     <a :href="`https://e621.net/posts/${currentPair.b.postId}`" target="_blank"
                                         class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
@@ -241,9 +238,8 @@
                                     target="_blank" class="font-bold text-blue-400 hover:text-blue-300 hover:underline"
                                     x-text="`#${(blinkShowB ? currentPair.b : currentPair.a).postId}`"></a>
                                 <!-- Right Side: Active Image Info Template -->
-                                <span class="text-[11px]"
-                                    :class="image.isUniform([currentPair.a, currentPair.b], blinkShowB ? currentPair.b : currentPair.a) ? 'text-gray-600' : 'text-gray-400'"
-                                    x-text="image.formatSpecs(blinkShowB ? currentPair.b : currentPair.a)">
+                                <span class="font-mono text-[11px]"
+                                    x-html="image.formatSpecs(blinkShowB ? currentPair.b : currentPair.a, [currentPair.a, currentPair.b])">
                                 </span>
                             </div>
                         </template>

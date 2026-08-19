@@ -327,8 +327,7 @@
                             </template>
 
                             <span class="font-mono text-[11px]"
-                                :class="image.isUniform(cluster.posts, lhsPost) ? 'text-gray-600' : 'text-gray-400'"
-                                x-text="image.formatSpecs(lhsPost)">
+                                x-html="image.formatSpecs(lhsPost, cluster.posts)">
                             </span>
                         </div>
                     </div>
@@ -516,8 +515,7 @@
                                 </template>
 
                                 <span class="font-mono text-[11px]"
-                                    :class="image.isUniform(cluster.posts, rhsPosts[0]) ? 'text-gray-600' : 'text-gray-400'"
-                                    x-text="image.formatSpecs(rhsPosts[0])">
+                                    x-html="image.formatSpecs(rhsPosts[0], cluster.posts)">
                                 </span>
                             </div>
                         </div>

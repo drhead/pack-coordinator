@@ -103,8 +103,7 @@
                                     <div
                                         class="bg-gray-900 border-t border-gray-800 px-2 py-1 text-[10px] text-gray-500 text-center font-mono">
                                         <span class="font-mono text-[10px]"
-                                            :class="image.isUniform(graph.posts, post.original) ? 'text-gray-600' : 'text-gray-400'"
-                                            x-text="image.formatSpecs(post.original)">
+                                            x-html="image.formatSpecs(post.original, graph.type === 'duplicate' ? Array.from(graph.posts).map(id => resMgr.getPost(id)?.original).filter(Boolean) : null)">
                                         </span>
                                     </div>
 
