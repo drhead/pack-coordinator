@@ -359,13 +359,23 @@
                             Duplicate / Inferior
                         </button>
 
-                        <button disabled title="No they aren't!"
-                            class="text-xs px-3 py-1.5 rounded-md font-semibold bg-gray-900/60 text-gray-600 border border-gray-800/60 cursor-not-allowed opacity-60 whitespace-nowrap">
+                        <button @click="setRelationship('variant', $data)"
+                            :disabled="$store.batches?.activeProject?.projectId === 'exact_duplicates'"
+                            :title="$store.batches?.activeProject?.projectId === 'exact_duplicates' ? 'Variants disabled for exact duplicates project' : 'Mark as Variants'"
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition shadow-sm whitespace-nowrap"
+                            :class="$store.batches?.activeProject?.projectId === 'exact_duplicates' 
+                                ? 'bg-gray-900/60 text-gray-600 border border-gray-800/60 cursor-not-allowed opacity-60' 
+                                : 'bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 border border-purple-800/80 active:scale-95 cursor-pointer'">
                             Variants
                         </button>
 
-                        <button disabled title="They are clearly related!"
-                            class="text-xs px-3 py-1.5 rounded-md font-semibold bg-gray-900/60 text-gray-600 border border-gray-800/60 cursor-not-allowed opacity-60 whitespace-nowrap">
+                        <button @click="setRelationship('unrelated', $data)"
+                            :disabled="$store.batches?.activeProject?.projectId === 'exact_duplicates'"
+                            :title="$store.batches?.activeProject?.projectId === 'exact_duplicates' ? 'Unrelated disabled for exact duplicates project' : 'Mark as Unrelated'"
+                            class="text-xs px-3 py-1.5 rounded-md font-semibold transition shadow-sm whitespace-nowrap"
+                            :class="$store.batches?.activeProject?.projectId === 'exact_duplicates' 
+                                ? 'bg-gray-900/60 text-gray-600 border border-gray-800/60 cursor-not-allowed opacity-60' 
+                                : 'bg-gray-800/80 hover:bg-gray-700/80 text-gray-300 border border-gray-700/80 active:scale-95 cursor-pointer'">
                             Unrelated
                         </button>
                     </div>
@@ -382,8 +392,13 @@
                     <!-- Left Half: Button centered under Left Image (25%) -->
                     <div class="flex justify-center">
                         <button
+                            :disabled="currentPair.a.isFlagged || currentPair.a.isDeleted"
+                            :title="currentPair.a.isFlagged || currentPair.a.isDeleted ? 'Cannot select flagged/deleted post as superior' : ''"
                             @click="setRelationship('duplicate', $data, currentPair.a.postId); showSuperiorPrompt = false"
-                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate cursor-pointer">
+                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition border active:scale-95 shadow-md truncate"
+                            :class="currentPair.a.isFlagged || currentPair.a.isDeleted 
+                                ? 'bg-gray-900/60 text-gray-600 border-gray-800/60 cursor-not-allowed opacity-50' 
+                                : 'bg-amber-600 hover:bg-amber-500 text-white border-amber-400 cursor-pointer'">
                             <span x-text="`#${currentPair.a.postId}`"></span>
                         </button>
                     </div>
@@ -391,8 +406,13 @@
                     <!-- Right Half: Button centered under Right Image (75%) -->
                     <div class="flex justify-center">
                         <button
+                            :disabled="currentPair.b.isFlagged || currentPair.b.isDeleted"
+                            :title="currentPair.b.isFlagged || currentPair.b.isDeleted ? 'Cannot select flagged/deleted post as superior' : ''"
                             @click="setRelationship('duplicate', $data, currentPair.b.postId); showSuperiorPrompt = false"
-                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 active:scale-95 shadow-md truncate cursor-pointer">
+                            class="w-48 text-xs px-3 py-1.5 rounded-md font-semibold transition border active:scale-95 shadow-md truncate"
+                            :class="currentPair.b.isFlagged || currentPair.b.isDeleted 
+                                ? 'bg-gray-900/60 text-gray-600 border-gray-800/60 cursor-not-allowed opacity-50' 
+                                : 'bg-amber-600 hover:bg-amber-500 text-white border-amber-400 cursor-pointer'">
                             <span x-text="`#${currentPair.b.postId}`"></span>
                         </button>
                     </div>

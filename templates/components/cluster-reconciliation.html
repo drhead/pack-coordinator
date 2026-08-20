@@ -1,22 +1,20 @@
 <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-4 space-y-4 text-gray-200 text-xs">
 
-    <!-- 1. TOP ROW: Duplicate Graph Selection Buttons -->
+    <!-- 1. TOP ROW: Multi-Type Graph Selection Tabs -->
     <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-2 border-b border-gray-800/80">
-        <template x-for="(graph, idx) in duplicateGraphs" :key="idx">
+        <template x-for="(graph, idx) in reconcileGraphs" :key="idx">
             <button @click="selectGraph(idx)"
                 class="text-xs px-3 py-1.5 rounded-md font-mono font-semibold transition border flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
-                :class="activeGraphIndex === idx 
-                        ? 'bg-amber-900/90 text-amber-200 border-amber-400 ring-1 ring-amber-400/50 shadow-md' 
-                        : 'bg-amber-950/40 text-amber-400/80 border-amber-900/60 hover:bg-amber-900/50 hover:text-amber-300'">
+                :class="getGraphTabClass(graph, idx)">
 
-                <!-- Graph Number Label -->
-                <span x-text="`#${idx + 1}`"></span>
+                <!-- Graph Label -->
+                <span x-text="getGraphTabLabel(graph, idx)"></span>
 
                 <!-- Dot indicator container -->
                 <div class="flex items-center gap-1 ml-0.5">
                     <template x-for="post in (graph.posts || graph.nodes || graph)" :key="post.id || post">
                         <span class="w-2 h-2 rounded-full transition-colors"
-                            :class="activeGraphIndex === idx ? 'bg-amber-300' : 'bg-amber-500/70'"></span>
+                            :class="activeGraphIndex === idx ? 'bg-white' : 'bg-gray-400/70'"></span>
                     </template>
                 </div>
 
@@ -43,8 +41,16 @@
                                         rel="noopener noreferrer"
                                         class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
                                         x-text="`#${selectedSuperiorId}`"></a>
-                                    <span
-                                        class="text-[9px] uppercase font-black bg-blue-800 px-1.5 py-0.5 rounded text-blue-200">SUPERIOR</span>
+                                    
+                                    <template x-if="currentGraph?.type === 'variant'">
+                                        <span class="text-[9px] uppercase font-black bg-purple-800 px-1.5 py-0.5 rounded text-purple-200">PARENT / HEAD</span>
+                                    </template>
+                                    <template x-if="currentGraph?.type === 'unrelated'">
+                                        <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-200">TARGET</span>
+                                    </template>
+                                    <template x-if="!currentGraph || currentGraph?.type === 'duplicate'">
+                                        <span class="text-[9px] uppercase font-black bg-blue-800 px-1.5 py-0.5 rounded text-blue-200">SUPERIOR</span>
+                                    </template>
                                 </div>
                                 <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank"
                                     rel="noopener noreferrer"
@@ -143,8 +149,17 @@
                                             class="text-[9px] uppercase font-black bg-amber-950 text-amber-400 border border-amber-800/50 px-1.5 py-0.5 rounded">FLAGGED</span>
                                     </template>
                                     <template x-if="!isPostDeleted(pId) && !isPostFlagged(pId)">
-                                        <span
-                                            class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">INFERIOR</span>
+                                        <div>
+                                            <template x-if="currentGraph?.type === 'variant'">
+                                                <span class="text-[9px] uppercase font-black bg-purple-950 text-purple-300 border border-purple-800/50 px-1.5 py-0.5 rounded">VARIANT</span>
+                                            </template>
+                                            <template x-if="currentGraph?.type === 'unrelated'">
+                                                <span class="text-[9px] uppercase font-black bg-gray-800 text-gray-400 border border-gray-700/50 px-1.5 py-0.5 rounded">REFERENCE</span>
+                                            </template>
+                                            <template x-if="!currentGraph || currentGraph?.type === 'duplicate'">
+                                                <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">INFERIOR</span>
+                                            </template>
+                                        </div>
                                     </template>
 
                                     <!-- Collapse indicator chevron (only if not deleted) -->

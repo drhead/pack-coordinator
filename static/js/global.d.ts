@@ -194,6 +194,9 @@ declare global {
     /** Fetches remote details and initializes internal post wrappers */
     initializePosts(): Promise<void>;
 
+    /** Preloads known duplicate and variant relations from existing cluster metadata */
+    preloadKnownRelations(): void;
+
     /** Ensures a default duplicate graph exists for the cluster */
     ensureDefaultDuplicateGraph(): void;
 
@@ -215,6 +218,9 @@ declare global {
     /** Signals a relation of a specific type between two post IDs */
     addGraphEdge(type: GraphType, a: number, b: number, superiorId: number | null): void;
 
+    /** Flattens a variant graph hierarchy so all children have parentId set to rootParentId */
+    flattenVariantHierarchy(variantGraph: ResolutionGraph, rootParentId: number): void;
+
     /**
      * Recalculates transitive connections (duplicates/variants) and replicates
      * unrelated links across connected components into `this.relations`.
@@ -226,6 +232,9 @@ declare global {
 
     /** Clears all recorded graphs and relations */
     clearGraphs(): void;
+
+    /** Clears working graph state and resets all post instances back to original values */
+    resetClusterWork(): void;
   }
 }
 

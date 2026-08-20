@@ -546,7 +546,12 @@ export function ComparisonManager(resMgr) {
             this.closeComparison();
             if (rootData) {
                 setTimeout(() => {
-                    rootData.activeView = 'reconcile';
+                    const hasVariants = this.resolutionManager?.graphs?.some(g => g.type === 'variant');
+                    if (hasVariants) {
+                        rootData.activeView = 'associate';
+                    } else {
+                        rootData.activeView = 'reconcile';
+                    }
                 }, 0);
             }
         },

@@ -189,7 +189,7 @@ async def fetch_all_new_flags(client: httpx.AsyncClient) -> None:
             current_before_id = batch[-1].id
 
         except Exception as e:
-            print(f"[FlagWorker] Error during poll cycle: {e}")
+            print(f"[FlagWorker] Error during poll cycle: {type(e).__name__}: {e or repr(e)}")
             break
 
 
@@ -207,6 +207,6 @@ async def flag_poller_loop() -> None:
                 print("[FlagWorker] Background worker stopping...")
                 break
             except Exception as e:
-                print(f"[FlagWorker] Unexpected error: {e}")
+                print(f"[FlagWorker] Unexpected error: {type(e).__name__}: {e or repr(e)}")
 
             await asyncio.sleep(30)

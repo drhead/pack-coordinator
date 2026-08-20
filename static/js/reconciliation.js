@@ -81,20 +81,28 @@ export function ReconciliationManager(manager) {
         _imageAlignObserver: null,
 
         /**
-         * Filter resolution graphs down to duplicate graphs only.
+         * Filter resolution graphs for reconciliation tabs (duplicates, variants, unrelated).
          * @returns {import('./resolution.js').ResolutionGraph[]}
          */
-        get duplicateGraphs() {
+        get reconcileGraphs() {
             if (!this.resolutionManager?.graphs) return [];
-            return this.resolutionManager.graphs.filter(g => g.type === 'duplicate');
+            return this.resolutionManager.graphs.filter(g => g.type === 'duplicate' || g.type === 'variant' || g.type === 'unrelated');
         },
 
         /**
-         * Get current active duplicate ResolutionGraph.
+         * Backward-compatible alias for duplicateGraphs.
+         * @returns {import('./resolution.js').ResolutionGraph[]}
+         */
+        get duplicateGraphs() {
+            return this.reconcileGraphs;
+        },
+
+        /**
+         * Get current active ResolutionGraph.
          * @returns {import('./resolution.js').ResolutionGraph|null}
          */
         get currentGraph() {
-            return this.duplicateGraphs[this.activeGraphIndex] || null;
+            return this.reconcileGraphs[this.activeGraphIndex] || null;
         },
 
         /**
@@ -440,6 +448,10 @@ export function ReconciliationManager(manager) {
                 }
 
                 if (this.duplicateGraphs.length === 0) {
+                    if ((this.resolutionManager?.graphs?.length || 0) > 0) {
+                        this.proceedToSummary(/** @type {any} */ (this.$data));
+                        return;
+                    }
                     throw new Error('No duplicate graphs found in ResolutionManager to reconcile.');
                 }
 
@@ -463,6 +475,45 @@ export function ReconciliationManager(manager) {
             if (idx < 0 || idx >= this.duplicateGraphs.length) return;
             this.activeGraphIndex = idx;
             this.setupCurrentGraph();
+        },
+
+        /**
+         * Dynamic tab style classes depending on graph type (Amber, Purple, Gray).
+         * @param {import('./resolution.js').ResolutionGraph} graph
+         * @param {number} idx
+         * @returns {string}
+         */
+        getGraphTabClass(graph, idx) {
+            const isActive = this.activeGraphIndex === idx;
+            const type = graph?.type || 'duplicate';
+
+            if (type === 'variant') {
+                return isActive
+                    ? 'bg-purple-900/90 text-purple-200 border-purple-400 ring-1 ring-purple-400/50 shadow-md'
+                    : 'bg-purple-950/40 text-purple-400/80 border-purple-900/60 hover:bg-purple-900/50 hover:text-purple-300';
+            }
+            if (type === 'unrelated') {
+                return isActive
+                    ? 'bg-gray-800 text-gray-100 border-gray-400 ring-1 ring-gray-400/50 shadow-md'
+                    : 'bg-gray-900/60 text-gray-400 border-gray-800 hover:bg-gray-800 hover:text-gray-200';
+            }
+            // Default: Duplicate (Amber)
+            return isActive
+                ? 'bg-amber-900/90 text-amber-200 border-amber-400 ring-1 ring-amber-400/50 shadow-md'
+                : 'bg-amber-950/40 text-amber-400/80 border-amber-900/60 hover:bg-amber-900/50 hover:text-amber-300';
+        },
+
+        /**
+         * Dynamic tab label depending on graph type.
+         * @param {import('./resolution.js').ResolutionGraph} graph
+         * @param {number} idx
+         * @returns {string}
+         */
+        getGraphTabLabel(graph, idx) {
+            const type = graph?.type || 'duplicate';
+            if (type === 'variant') return `Variant #${idx + 1}`;
+            if (type === 'unrelated') return `Unrelated #${idx + 1}`;
+            return `Dupe #${idx + 1}`;
         },
 
         /**
@@ -499,16 +550,17 @@ export function ReconciliationManager(manager) {
             this.isSummary = false;
             this.isArtistWarningDismissed = false;
 
-            // Automatically mark non-head posts for deletion/flagging
-            for (const pId of this.currentGraph.posts) {
-                const resPost = this.resolutionManager.getPost(pId);
-                if (resPost) {
-                    resPost.flag = (pId !== superiorId);
+            // Only mark non-head posts for deletion/flagging if graph is duplicate
+            if (this.currentGraph.type === 'duplicate') {
+                for (const pId of this.currentGraph.posts) {
+                    const resPost = this.resolutionManager.getPost(pId);
+                    if (resPost) {
+                        resPost.flag = (pId !== superiorId);
+                    }
                 }
+                // Collapse graph and update referencing variant graphs
+                this.resolutionManager.resolveDuplicateGraph(this.currentGraph);
             }
-
-            // Collapse graph and update referencing variant graphs
-            this.resolutionManager.resolveDuplicateGraph(this.currentGraph);
 
             // Re-align after Alpine re-renders the new graph content
             this.$nextTick(() => this.alignLhsImage());

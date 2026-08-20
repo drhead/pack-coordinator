@@ -1,0 +1,265 @@
+<div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-4 space-y-4 text-gray-200 text-xs">
+
+    <!-- 1. TOP ROW: Variant Graph Selection Tabs (If > 1 variant group) -->
+    <template x-if="variantGraphs.length > 1">
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-2 border-b border-gray-800/80">
+            <template x-for="(graph, idx) in variantGraphs" :key="idx">
+                <button @click="selectGraph(idx)"
+                    class="text-xs px-3 py-1.5 rounded-md font-medium transition border flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
+                    :class="activeGraphIndex === idx 
+                            ? 'bg-purple-900/90 text-purple-200 border-purple-400 ring-1 ring-purple-400/50 shadow-md' 
+                            : 'bg-purple-950/40 text-purple-400/80 border-purple-900/60 hover:bg-purple-900/50 hover:text-purple-300'">
+                    <span x-text="`Variant Set #${idx + 1}`"></span>
+                    <span
+                        class="text-[10px] px-1.5 py-0.2 bg-purple-950/80 border border-purple-800/80 rounded font-mono"
+                        x-text="`${(graph.posts || []).size || (graph.posts || []).length} posts`"></span>
+                </button>
+            </template>
+        </div>
+    </template>
+
+    <!-- 2. STRUCTURING VIEWPORT -->
+    <template x-if="currentGraph">
+        <div class="space-y-4">
+
+            <!-- MODE A: Standard Parent / Children Structuring View -->
+            <template x-if="!isPoolDelegated">
+                <div class="flex flex-col lg:flex-row gap-4 items-stretch">
+
+                    <!-- LHS: Parent Container (Centered, standard e621-green) -->
+                    <div
+                        class="w-full lg:w-56 shrink-0 border border-e621-green/40 bg-e621-green/5 rounded-lg p-3 space-y-3 flex flex-col justify-between shadow-md">
+                        <div class="space-y-2.5 flex-1 flex flex-col">
+                            <!-- Header Label -->
+                            <div class="flex items-center justify-between border-b border-e621-green/30 pb-2">
+                                <h3 class="font-semibold text-e621-green text-sm">Parent</h3>
+                                <template x-if="externalParentPost">
+                                    <span
+                                        class="bg-blue-950 text-blue-300 border border-blue-700/80 text-[10px] px-2 py-0.5 rounded font-semibold">
+                                        External
+                                    </span>
+                                </template>
+                            </div>
+
+                            <!-- Parent Card Viewport (Centered inside LHS container) -->
+                            <div class="flex-1 flex flex-col items-center justify-center">
+                                <template x-if="selectedParentId && getPost(selectedParentId)">
+                                    <div
+                                        class="w-44 border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col shadow-sm">
+                                        <!-- Card Header with Rating Badge -->
+                                        <div
+                                            class="bg-gray-900 px-2 py-1 flex items-center justify-between text-xs border-b border-gray-800">
+                                            <a :href="`https://e621.net/posts/${selectedParentId}`" target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
+                                                x-text="`#${selectedParentId}`"></a>
+                                            <template x-if="getPost(selectedParentId)?.rating">
+                                                <span
+                                                    class="w-4.5 h-4.5 inline-flex items-center justify-center rounded text-[11px] font-bold font-mono"
+                                                    :class="$store.tags.getRatingBadgeClass(getPost(selectedParentId)?.rating)"
+                                                    x-text="$store.tags.getRatingLabel(getPost(selectedParentId)?.rating)"></span>
+                                            </template>
+                                        </div>
+
+                                        <!-- Image Thumbnail Viewport (Exact match to children w-44 h-44) -->
+                                        <div class="relative w-44 h-44 bg-gray-950 flex items-center justify-center overflow-hidden cursor-pointer group select-none"
+                                            @click="openModal(getPost(selectedParentId))">
+                                            <img :src="getPost(selectedParentId)?.fileUrl || getPost(selectedParentId)?.previewUrl"
+                                                class="max-h-44 max-w-full object-contain">
+                                            <load src="/templates/components/expand-image-button.html" />
+                                        </div>
+
+                                        <!-- Description Snippet (If any) -->
+                                        <template
+                                            x-if="getPost(selectedParentId)?.description && getPost(selectedParentId)?.description.trim().length > 0">
+                                            <div class="px-2.5 py-1.5 bg-gray-900 border-t border-gray-800 text-[10px] text-gray-400 truncate"
+                                                :title="getPost(selectedParentId).description"
+                                                x-text="getPost(selectedParentId).description"></div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Post ID Input Box (At bottom of Parent LHS, no redundant top label) -->
+                        <div class="pt-2 border-t border-e621-green/30">
+                            <div class="flex items-center gap-1.5">
+                                <input type="text" x-model="externalParentInput"
+                                    @keydown.enter.prevent="fetchExternalParent()" placeholder="Post ID e.g. 1234567"
+                                    class="w-full text-xs bg-gray-950 border border-gray-700 rounded px-2.5 py-1.5 text-gray-200 focus:outline-none focus:border-e621-green font-mono placeholder:text-gray-500">
+                                <button type="button" @click="fetchExternalParent()" :disabled="isFetchingExternal"
+                                    class="cursor-pointer text-xs px-2.5 py-1.5 bg-e621-green/20 hover:bg-e621-green/30 text-e621-green border border-e621-green/50 rounded font-semibold transition shrink-0 flex items-center gap-1 disabled:opacity-50">
+                                    <template x-if="isFetchingExternal">
+                                        <span
+                                            class="w-3 h-3 border-2 border-e621-green/20 border-t-e621-green rounded-full animate-spin"></span>
+                                    </template>
+                                    <span>Fetch</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RHS: Children Container (Standard e621-yellow, left-aligned wrap) -->
+                    <div
+                        class="flex-1 min-w-0 border border-e621-yellow/30 bg-e621-yellow/5 rounded-lg p-3 space-y-3 flex flex-col justify-between shadow-md">
+                        <div class="space-y-2.5">
+                            <!-- Header Label -->
+                            <div class="flex items-center justify-between border-b border-e621-yellow/20 pb-2">
+                                <h3 class="font-semibold text-e621-yellow text-sm">
+                                    Children (<span x-text="childPostIds.length"></span>)
+                                </h3>
+                                <span class="text-[11px] text-gray-400">Click any thumbnail to set as Parent</span>
+                            </div>
+
+                            <!-- Left-Aligned Uniform Children Cards -->
+                            <div
+                                class="flex flex-wrap gap-3 items-start justify-start max-h-[70vh] overflow-y-auto pr-1">
+                                <template x-for="pId in childPostIds" :key="pId">
+                                    <div class="w-44 shrink-0 border border-gray-800 hover:border-e621-green/80 rounded-lg overflow-hidden bg-gray-950 flex flex-col cursor-pointer transition group shadow-sm hover:ring-1 hover:ring-e621-green/80"
+                                        @click="selectParent(pId)">
+                                        <!-- Header with Post ID link and Rating Badge -->
+                                        <div
+                                            class="bg-gray-900 px-2 py-1 flex items-center justify-between text-xs border-b border-gray-800">
+                                            <a :href="`https://e621.net/posts/${pId}`" target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="font-mono font-bold text-blue-400 group-hover:underline"
+                                                x-text="`#${pId}`" @click.stop></a>
+                                            <template x-if="getPost(pId)?.rating">
+                                                <span
+                                                    class="w-4.5 h-4.5 inline-flex items-center justify-center rounded text-[11px] font-bold font-mono"
+                                                    :class="$store.tags.getRatingBadgeClass(getPost(pId)?.rating)"
+                                                    x-text="$store.tags.getRatingLabel(getPost(pId)?.rating)"></span>
+                                            </template>
+                                        </div>
+
+                                        <!-- Fixed Thumbnail Viewport -->
+                                        <div
+                                            class="relative w-44 h-44 bg-gray-950 flex items-center justify-center overflow-hidden group-hover:brightness-105 transition">
+                                            <img :src="getPost(pId)?.fileUrl || getPost(pId)?.previewUrl"
+                                                class="max-h-44 max-w-full object-contain">
+                                            <div
+                                                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
+                                                <span
+                                                    class="bg-e621-green text-gray-950 text-[10px] font-bold px-2 py-1 rounded shadow">
+                                                    Make Parent
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Pool Delegation Helper Link -->
+                        <div class="pt-2 border-t border-e621-yellow/20 flex items-center justify-between">
+                            <span class="text-[11px] text-gray-400">Sequential comic or animation?</span>
+                            <button type="button" @click="startPoolPolling()"
+                                class="text-xs px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-purple-300 border border-purple-800/80 rounded font-medium transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                                <span>Manage as e621 Pool &rarr;</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </template>
+
+            <!-- MODE B: Delegated Pool Creation View (Replaces Parent/Children boxes entirely) -->
+            <template x-if="isPoolDelegated">
+                <div class="border border-purple-800/80 bg-purple-950/20 rounded-lg p-5 space-y-4 shadow-md">
+
+                    <!-- Standard Reusable Warning Banner -->
+                    <div x-data="{ scopeId: activeGraphIndex }" class="w-full">
+                        <load src="/templates/components/warning-banner.html" />
+                    </div>
+
+                    <!-- Explanatory Instructions -->
+                    <div
+                        class="space-y-2 text-xs text-gray-300 leading-relaxed bg-gray-950/60 border border-gray-800 rounded-md p-3.5">
+                        <p>
+                            To put these posts into a pool, copy the post IDs below, reorder them as needed, and fill
+                            out the <a href="https://e621.net/pools/new" target="_blank" rel="noopener noreferrer"
+                                class="text-blue-400 hover:text-blue-300 underline font-semibold">New Pool form on e621
+                                &nearr;</a>. Once created, click <strong>Check for Pool</strong> to verify and proceed.
+                        </p>
+                        <p class="text-gray-400">
+                            Please review the <a href="https://e621.net/wiki_pages/e621:pools" target="_blank"
+                                rel="noopener noreferrer"
+                                class="text-blue-400 hover:text-blue-300 underline font-semibold">e621 Pool
+                                Guidelines</a> to confirm that a pool is appropriate. Also check the artist's gallery
+                            for any missing pages or related sequence entries before submitting.
+                        </p>
+                    </div>
+
+                    <!-- Space-Delimited Post IDs Copy Box -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="text" readonly :value="copyablePoolIds"
+                                class="bg-gray-950 border border-purple-900/60 rounded px-3 py-2 text-purple-200 font-mono text-xs select-all flex-1 focus:outline-none focus:border-purple-500">
+
+                            <button type="button" @click="copyPoolSearchString()"
+                                class="px-3.5 py-2 bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-700/80 rounded font-semibold cursor-pointer transition flex items-center gap-1.5 shadow-sm">
+                                <span>Copy IDs</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Navigation Row -->
+                    <div class="pt-3 border-t border-purple-900/40 flex items-center justify-between">
+                        <button type="button" @click="cancelPoolDelegation()"
+                            class="text-xs px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 rounded font-medium transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                            <span>&larr; Manage as Parent/Children</span>
+                        </button>
+
+                        <button type="button" @click="checkForPool()" :disabled="isCheckingPool"
+                            class="text-xs px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            <template x-if="isCheckingPool">
+                                <span
+                                    class="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                            </template>
+                            <span x-text="isCheckingPool ? 'Checking Pool...' : 'Check for Pool'"></span>
+                        </button>
+                    </div>
+
+                </div>
+            </template>
+
+            <!-- 3. CONFIRMATION & ADVANCE ACTION BAR -->
+            <div
+                class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 relative min-h-15 flex items-center justify-between shadow-sm">
+                <!-- Center Instructions -->
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
+                    <template x-if="!isPoolDelegated">
+                        <span class="text-sm font-semibold text-amber-300 text-center">
+                            Does this parenting structure look right?
+                        </span>
+                    </template>
+                    <template x-if="isPoolDelegated && !poolVerified">
+                        <span class="text-sm font-semibold text-amber-300 text-center">
+                            Waiting for pool creation on e621 to proceed...
+                        </span>
+                    </template>
+                    <template x-if="isPoolDelegated && poolVerified">
+                        <span class="text-sm font-semibold text-emerald-300 text-center">
+                            ✓ Pool verified on e621! Click Continue to proceed.
+                        </span>
+                    </template>
+                </div>
+
+                <!-- Right Action Button -->
+                <div class="ml-auto flex items-center justify-end shrink-0 z-10">
+                    <button @click="confirmAssociation($data)" :disabled="isPoolDelegated && !poolVerified"
+                        :title="isPoolDelegated && !poolVerified ? 'Waiting for pool to be created on e621' : 'Confirm and continue to next stage'"
+                        class="text-xs px-4 py-1.5 rounded-md font-semibold transition shadow flex items-center gap-2"
+                        :class="isPoolDelegated && !poolVerified 
+                                ? 'bg-gray-800 text-gray-500 border border-gray-700/50 cursor-not-allowed opacity-60' 
+                                : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer'">
+                        <span>Confirm & Continue</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </template>
+
+</div>

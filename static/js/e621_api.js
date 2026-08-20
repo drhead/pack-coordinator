@@ -218,6 +218,50 @@ export function ensureClusterPostsInfo(clusterPosts) {
         });
 }
 
+/**
+ * Fetches a single post directly from e621 by ID and formats it as a ClusterPost.
+ * @param {number} postId
+ * @returns {Promise<ClusterPost>}
+ */
+export async function fetchE621Post(postId) {
+    const headers = getApiHeaders();
+    const res = await rateLimitedFetch(`https://e621.net/posts/${postId}.json`, { headers });
+    if (!res.ok) {
+        throw new Error(`e621 API error (${res.status}) fetching post #${postId}`);
+    }
+    const data = await res.json();
+    const apiPost = data.post || data;
+
+    // Collect tags from nested object or string
+    let tagList = [];
+    if (apiPost.tags && typeof apiPost.tags === 'object' && !Array.isArray(apiPost.tags)) {
+        tagList = Object.values(apiPost.tags).flat();
+    } else if (Array.isArray(apiPost.tags)) {
+        tagList = apiPost.tags;
+    } else if (typeof apiPost.tag_string === 'string') {
+        tagList = apiPost.tag_string.split(' ');
+    }
+
+    return {
+        postId: apiPost.id,
+        clusterId: 0,
+        rating: apiPost.rating || 's',
+        poolIds: apiPost.pools || apiPost.pool_ids || [],
+        parentId: apiPost.relationships?.parent_id ?? apiPost.parent_id ?? null,
+        isFlagged: Boolean(apiPost.flags?.flagged || apiPost.is_flagged),
+        isDeleted: Boolean(apiPost.flags?.deleted || apiPost.is_deleted),
+        tags: tagList,
+        imageWidth: apiPost.file?.width || apiPost.image_width || 0,
+        imageHeight: apiPost.file?.height || apiPost.image_height || 0,
+        imageFormat: apiPost.file?.ext || apiPost.file_ext || 'jpg',
+        imageQuality: 0,
+        fileUrl: apiPost.sample?.url || apiPost.file?.url || apiPost.preview?.url || null,
+        previewUrl: apiPost.preview?.url || apiPost.preview?.alt || null,
+        description: apiPost.description || '',
+        sources: Array.isArray(apiPost.sources) ? apiPost.sources : []
+    };
+}
+
 if (typeof window !== 'undefined') {
     // @ts-ignore
     window.ensureClusterPostsInfo = ensureClusterPostsInfo;

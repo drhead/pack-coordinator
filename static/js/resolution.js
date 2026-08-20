@@ -1,6 +1,7 @@
 import { ensureClusterPostsInfo } from './e621_api.js';
 
-import './summary.js'
+import './association.js';
+import './summary.js';
 
 /**
  * @typedef {'duplicate' | 'variant' | 'unrelated' | 'unknown'} GraphType
@@ -216,10 +217,156 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
+            if (this.graphs.length === 0) {
+                this.preloadKnownRelations();
+            }
+
             // Asynchronously fetch missing e621 metadata in background
             ensureClusterPostsInfo(this.cluster.posts).catch(err => {
                 console.warn('[ResolutionManager] Background metadata fetch warning:', err);
             });
+        },
+
+        /**
+         * Preloads graph relations (duplicates, variants via parenting/pools)
+         * based on pre-existing post flags and relationships.
+         */
+        preloadKnownRelations() {
+            if (!this.cluster || !Array.isArray(this.cluster.posts) || this.cluster.posts.length < 2) {
+                return;
+            }
+
+            const posts = this.cluster.posts;
+            const clusterPostIds = new Set(posts.map(p => p.postId));
+
+            // 0. Detect unknown posts (missing postId)
+            for (const p of posts) {
+                if (!p || !p.postId) {
+                    this.markUnknown(p?.postId || 0);
+                }
+            }
+
+            // 1. Identify Duplicate Subgraphs
+            /** @type {Map<number, ClusterPost[]>} */
+            const duplicatesByParent = new Map();
+            /** @type {Set<number>} */
+            const duplicateChildIds = new Set();
+
+            // Case A: Explicit parent-child link where child is flagged or deleted and parent is in cluster
+            for (const p of posts) {
+                if ((p.isFlagged || p.isDeleted) && p.parentId != null) {
+                    const parentId = Number(p.parentId);
+                    if (clusterPostIds.has(parentId)) {
+                        if (!duplicatesByParent.has(parentId)) {
+                            duplicatesByParent.set(parentId, []);
+                        }
+                        duplicatesByParent.get(parentId)?.push(p);
+                        duplicateChildIds.add(p.postId);
+                    }
+                }
+            }
+
+            // Case B: In a cluster with only 1 active post (or 2 posts where 1 is flagged/deleted),
+            // inferiors without explicit parenting are duplicates of the active post.
+            const activePosts = posts.filter(p => !p.isDeleted && !p.isFlagged);
+            const flaggedOrDeletedPosts = posts.filter(p => p.isDeleted || p.isFlagged);
+
+            if (activePosts.length === 1 && flaggedOrDeletedPosts.length > 0) {
+                const superior = activePosts[0];
+                for (const p of flaggedOrDeletedPosts) {
+                    if (!duplicateChildIds.has(p.postId)) {
+                        if (!duplicatesByParent.has(superior.postId)) {
+                            duplicatesByParent.set(superior.postId, []);
+                        }
+                        duplicatesByParent.get(superior.postId)?.push(p);
+                        duplicateChildIds.add(p.postId);
+                    }
+                }
+            }
+
+            // Ingest duplicate edges and preset resPost flags
+            for (const [parentId, dupList] of duplicatesByParent.entries()) {
+                for (const dp of dupList) {
+                    const resPost = this.posts.get(dp.postId);
+                    if (resPost) {
+                        resPost.flag = true;
+                    }
+                    this.addGraphEdge('duplicate', parentId, dp.postId, parentId);
+                }
+            }
+
+            // 2. Identify Variant Relationships
+            // A) Direct non-duplicate parent-child relations within cluster
+            for (const p of posts) {
+                if (p.parentId != null) {
+                    const parentId = Number(p.parentId);
+                    if (clusterPostIds.has(parentId) && !duplicateChildIds.has(p.postId)) {
+                        this.addGraphEdge('variant', p.postId, parentId);
+                    }
+                }
+            }
+
+            // B) Sibling posts sharing the same parentId (internal or external)
+            /** @type {Map<number, number[]>} */
+            const sharedParentMap = new Map();
+            for (const p of posts) {
+                if (p.parentId != null) {
+                    const pid = Number(p.parentId);
+                    let list = sharedParentMap.get(pid);
+                    if (!list) {
+                        list = [];
+                        sharedParentMap.set(pid, list);
+                    }
+                    list.push(p.postId);
+                }
+            }
+            for (const siblingIds of sharedParentMap.values()) {
+                for (let i = 0; i < siblingIds.length; i++) {
+                    for (let j = i + 1; j < siblingIds.length; j++) {
+                        const idA = siblingIds[i];
+                        const idB = siblingIds[j];
+                        if (!this.graphs.some(g => g.type === 'duplicate' && g.posts.has(idA) && g.posts.has(idB))) {
+                            this.addGraphEdge('variant', idA, idB);
+                        }
+                    }
+                }
+            }
+
+            // C) Shared pool memberships
+            /** @type {Map<number, number[]>} */
+            const poolMap = new Map();
+            for (const p of posts) {
+                for (const poolId of (p.poolIds || [])) {
+                    const poolNum = Number(poolId);
+                    let list = poolMap.get(poolNum);
+                    if (!list) {
+                        list = [];
+                        poolMap.set(poolNum, list);
+                    }
+                    list.push(p.postId);
+                }
+            }
+            for (const memberIds of poolMap.values()) {
+                for (let i = 0; i < memberIds.length; i++) {
+                    for (let j = i + 1; j < memberIds.length; j++) {
+                        const idA = memberIds[i];
+                        const idB = memberIds[j];
+                        if (!this.graphs.some(g => g.type === 'duplicate' && g.posts.has(idA) && g.posts.has(idB))) {
+                            this.addGraphEdge('variant', idA, idB);
+                        }
+                    }
+                }
+            }
+
+            // 3. Resolve Duplicate References in Variant Subgraphs
+            for (const g of [...this.graphs]) {
+                if (g.type === 'duplicate' && g.head) {
+                    this.resolveDuplicateGraph(g);
+                }
+            }
+
+            // 4. Derive Transitive Relations
+            this.recalculateDerivedRelations();
         },
 
         /**
@@ -231,8 +378,14 @@ document.addEventListener('alpine:init', () => {
             }
             const hasDuplicate = this.graphs.some(g => g.type === 'duplicate');
             if (!hasDuplicate) {
-                const postIds = this.cluster.posts.map(p => p.postId);
-                const activePost = this.cluster.posts.find(p => !p.isDeleted && !p.isFlagged);
+                const assignedPostIds = new Set();
+                for (const g of this.graphs) {
+                    for (const id of g.posts) assignedPostIds.add(id);
+                }
+                const unassignedPosts = this.cluster.posts.filter(p => !assignedPostIds.has(p.postId));
+                const targetPosts = unassignedPosts.length > 0 ? unassignedPosts : this.cluster.posts;
+                const postIds = targetPosts.map(p => p.postId);
+                const activePost = targetPosts.find(p => !p.isDeleted && !p.isFlagged);
                 const headId = activePost ? activePost.postId : postIds[0];
                 this.graphs.push({
                     type: 'duplicate',
@@ -338,6 +491,23 @@ document.addEventListener('alpine:init', () => {
 
             // Handle 'duplicate' or 'variant'
             if (type === 'duplicate' || type === 'variant') {
+                // Cross-pool guard: Do not allow variant links across disjoint non-empty pool sets
+                if (type === 'variant') {
+                    const postA = this.getPost(a)?.original || this.cluster?.posts?.find(p => p.postId === a);
+                    const postB = this.getPost(b)?.original || this.cluster?.posts?.find(p => p.postId === b);
+                    if (postA && postB) {
+                        const poolsA = Array.isArray(postA.poolIds) ? postA.poolIds : [];
+                        const poolsB = Array.isArray(postB.poolIds) ? postB.poolIds : [];
+                        if (poolsA.length > 0 && poolsB.length > 0) {
+                            const hasCommonPool = poolsA.some(id => poolsB.includes(id));
+                            if (!hasCommonPool) {
+                                console.warn(`[ResolutionManager] Blocked cross-pool variant link between #${a} and #${b}`);
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 // 1. Remove 'unrelated' graphs containing A or B
                 this.graphs = this.graphs.filter(g => {
                     if (g.type === 'unrelated') {
@@ -381,6 +551,30 @@ document.addEventListener('alpine:init', () => {
                     }
                     // Remove the merged graphB from graphs list
                     this.graphs = this.graphs.filter(g => g !== graphB);
+                }
+            }
+        },
+
+        /**
+         * Flattens a variant graph hierarchy so all child posts have parentId set to rootParentId.
+         * @param {ResolutionGraph} variantGraph
+         * @param {number} rootParentId
+         */
+        flattenVariantHierarchy(variantGraph, rootParentId) {
+            if (!variantGraph || variantGraph.type !== 'variant') return;
+            variantGraph.head = rootParentId;
+
+            const clusterPostIds = new Set((this.cluster?.posts || []).map(p => p.postId));
+            for (const postId of variantGraph.posts) {
+                const resPost = this.getPost(postId);
+                if (!resPost) continue;
+
+                if (postId === rootParentId) {
+                    if (resPost.parentId && clusterPostIds.has(Number(resPost.parentId))) {
+                        resPost.parentId = null;
+                    }
+                } else {
+                    resPost.parentId = rootParentId;
                 }
             }
         },
@@ -575,6 +769,7 @@ document.addEventListener('alpine:init', () => {
                 resPost.flag = false;
                 resPost.flagNote = "";
             }
+            this.preloadKnownRelations();
         }
     }));
 });

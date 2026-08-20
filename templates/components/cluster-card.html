@@ -305,7 +305,16 @@
                     </div>
                 </template>
 
-                <!-- Screen 2: Tag Reconciliation View Scope -->
+                <!-- Screen 2: Association / Structuring View Scope -->
+                <template x-if="activeView === 'associate'">
+                    <div x-data="AssociationManager(resMgr)" x-init="init()">
+                        <div class="space-y-3">
+                            <load src="/templates/components/cluster-association.html" />
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Screen 3: Tag Reconciliation View Scope -->
                 <template x-if="activeView === 'reconcile'">
                     <div x-data="ReconciliationManager(resMgr)" x-init="startReconciliation()">
                         <!-- Loading Spinner while ReconciliationManager initializes -->

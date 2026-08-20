@@ -618,19 +618,17 @@ document.addEventListener('alpine:init', () => {
             },
 
             /**
-             * Silently enqueues a post for priority update on the backend and reloads batch state.
-             * Multiple simultaneous calls are coalesced so they don't trigger redundant batch reloads.
-             * @param {number} postId
+             * Silently refreshes batch state after submitting post updates.
+             * @param {number} _postId
              */
-            async triggerSilentPostRefresh(postId) {
+            async triggerSilentPostRefresh(_postId) {
                 try {
-                    await fetch(`/api/v1/posts/${postId}/refresh`, { method: 'POST' });
                     const batchesStore = /** @type {any} */ (window.Alpine?.store('batches'));
-                    if (batchesStore && typeof batchesStore.reloadBatches === 'function') {
-                        await batchesStore.reloadBatches(true);
+                    if (batchesStore?.activeBatch && typeof batchesStore.refreshBatch === 'function') {
+                        await batchesStore.refreshBatch(batchesStore.activeBatch);
                     }
                 } catch (err) {
-                    console.warn(`[Summary] Silent post refresh for #${postId} failed:`, err);
+                    console.warn(`[Summary] Silent batch refresh failed:`, err);
                 }
             }
         };

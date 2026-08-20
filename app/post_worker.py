@@ -228,7 +228,7 @@ async def refresh_posts_metadata(
                     )
 
     except Exception as e:
-        logger.error(f"[PostsWorker] Error during bulk fetch: {e}")
+        logger.error(f"[PostsWorker] Error during bulk fetch: {type(e).__name__}: {e}", exc_info=True)
     finally:
         if should_close_client:
             await client.aclose()
