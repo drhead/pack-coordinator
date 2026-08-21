@@ -27,7 +27,7 @@ export function ReconciliationManager(manager) {
         isArtistWarningDismissed: false,
 
         /** @type {ResolutionManagerComponent} */
-        resolutionManager: manager,
+        resMgr: manager,
 
         warnings: new WarningsManager(),
 
@@ -82,9 +82,9 @@ export function ReconciliationManager(manager) {
          * @returns {import('./resolution.js').ResolutionGraph[]}
          */
         get reconcileGraphs() {
-            if (!this.resolutionManager?.graphs) return [];
-            const dups = this.resolutionManager.graphs.filter(g => g.type === 'duplicate');
-            const vars = this.resolutionManager.graphs.filter(g => g.type === 'variant');
+            if (!this.resMgr?.graphs) return [];
+            const dups = this.resMgr.graphs.filter(g => g.type === 'duplicate');
+            const vars = this.resMgr.graphs.filter(g => g.type === 'variant');
             return [...dups, ...vars];
         },
 
@@ -189,7 +189,7 @@ export function ReconciliationManager(manager) {
          */
         get lhsResolutionPost() {
             if (!this.lhsPostId) return undefined;
-            return this.resolutionManager.getPost(this.lhsPostId);
+            return this.resMgr?.getPost(this.lhsPostId);
         },
 
         /**
@@ -197,7 +197,41 @@ export function ReconciliationManager(manager) {
          * @returns {ClusterPost | null}
          */
         getLocalClusterPost(postId) {
-            return this.resolutionManager?.getPost?.(postId)?.original || null;
+            return this.resMgr?.getPost?.(postId)?.original || null;
+        },
+
+        /**
+         * Standardized card adapter for Kept Post (LHS) in reconciliation view.
+         */
+        get lhsCard() {
+            const self = this;
+            return {
+                mode: 'lhs',
+                get posts() { return self.lhsPost ? [self.lhsPost] : []; },
+                get effectiveRating() { return self.getEffectiveLhsRating(); },
+                get sortedTags() { return self.getSortedTags(self.lhsTags); },
+                get newTags() { return self.newTags; },
+                onTagClick: (t) => !alpineHelpers.tagpill.isTagLocked(t.name, self.lhsPost) && self.removeTagWithImplicators(t),
+                isImplied: (t) => self.isImpliedTag(t, self.lhsTags),
+                onTagHover: (t) => !alpineHelpers.tagpill.isTagLocked(t.name, self.lhsPost) && (self.hoveredImplicationData = self.getImplicationChain(self.lhsPost?.postId, t.name, self.lhsTags))
+            };
+        },
+
+        /**
+         * Standardized card adapter for Inferior Posts Union (RHS) in reconciliation view.
+         */
+        get rhsCard() {
+            const self = this;
+            return {
+                mode: 'rhs',
+                get posts() { return self.rhsPosts; },
+                get sortedTags() { return self.getSortedTags(self.allRhsUnionTagNames); },
+                onTagClick: (t) => !self.isTagOnLhs(t.name) && self.addTagWithImplications(t.name),
+                isTagOnLhs: (t) => self.isTagOnLhs(t),
+                isImplied: (t) => self.isImpliedTag(t, self.getRhsSourcePost(t)),
+                onTagHover: (t) => (self.hoveredImplicationData = self.getImplicationChain(self.getRhsSourcePost(t.name)?.postId, t.name, self.getRhsSourcePost(t.name))),
+                getTagPost: (t) => self.getRhsSourcePost(t.name)
+            };
         },
 
         /** @type {Record<number, boolean>} */
@@ -529,16 +563,16 @@ export function ReconciliationManager(manager) {
         },
 
         async startReconciliation() {
-            if (this.resolutionManager) {
-                this.resolutionManager.activeReconciliation = this;
+            if (this.resMgr) {
+                this.resMgr.activeReconciliation = this;
             }
             this.isLoading = true;
             this.isSummary = false;
             this.initWarnings();
 
             try {
-                if (this.resolutionManager) {
-                    this.resolutionManager.initializePosts();
+                if (this.resMgr) {
+                    this.resMgr.initializePosts();
                 }
 
                 if (this.reconcileSteps.length === 0) {
@@ -838,8 +872,8 @@ export function ReconciliationManager(manager) {
             this.isActive = false;
             this.isLoading = false;
 
-            if (this.resolutionManager && this.resolutionManager.activeReconciliation === this) {
-                this.resolutionManager.activeReconciliation = null;
+            if (this.resMgr && this.resMgr.activeReconciliation === this) {
+                this.resMgr.activeReconciliation = null;
             }
         },
 
