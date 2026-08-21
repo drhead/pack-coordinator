@@ -197,9 +197,6 @@ declare global {
     /** Preloads known duplicate and variant relations from existing cluster metadata */
     preloadKnownRelations(): void;
 
-    /** Ensures a default duplicate graph exists for the cluster */
-    ensureDefaultDuplicateGraph(): void;
-
     /** Retrieves a ResolutionPost instance by ID */
     getPost(postId: number): ResolutionPost | undefined;
 

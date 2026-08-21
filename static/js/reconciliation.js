@@ -63,7 +63,7 @@ export function ReconciliationManager(manager) {
             ]);
         },
 
-        activeGraphIndex: 0,
+        activeStepIndex: 0,
         activeRhsIndex: 0,
 
         /** @type {number|null} */
@@ -81,12 +81,14 @@ export function ReconciliationManager(manager) {
         _imageAlignObserver: null,
 
         /**
-         * Filter resolution graphs for reconciliation tabs (duplicates, variants, unrelated).
+         * Filter resolution graphs for reconciliation tabs (duplicates first, then variants).
          * @returns {import('./resolution.js').ResolutionGraph[]}
          */
         get reconcileGraphs() {
             if (!this.resolutionManager?.graphs) return [];
-            return this.resolutionManager.graphs.filter(g => g.type === 'duplicate' || g.type === 'variant' || g.type === 'unrelated');
+            const dups = this.resolutionManager.graphs.filter(g => g.type === 'duplicate');
+            const vars = this.resolutionManager.graphs.filter(g => g.type === 'variant');
+            return [...dups, ...vars];
         },
 
         /**
@@ -98,11 +100,90 @@ export function ReconciliationManager(manager) {
         },
 
         /**
+         * Constructs the sequence of reconciliation steps:
+         * - 1 step per duplicate graph (inferior posts -> superior post)
+         * - N steps per variant graph (other variants -> variant post, for each post)
+         * @returns {Array<{
+         *   graph: import('./resolution.js').ResolutionGraph,
+         *   graphIndex: number,
+         *   type: import('./resolution.js').GraphType,
+         *   targetId: number,
+         *   sourceIds: number[],
+         *   stepIndex: number,
+         *   postIndexInGraph: number,
+         *   totalPostsInGraph: number
+         * }>}
+         */
+        get reconcileSteps() {
+            /** @type {Array<{ graph: import('./resolution.js').ResolutionGraph, graphIndex: number, type: import('./resolution.js').GraphType, targetId: number, sourceIds: number[], stepIndex: number, postIndexInGraph: number, totalPostsInGraph: number }>} */
+            const steps = [];
+            const graphs = this.reconcileGraphs;
+            for (let gIdx = 0; gIdx < graphs.length; gIdx++) {
+                const graph = graphs[gIdx];
+                const postIds = Array.from(graph.posts);
+
+                if (graph.type === 'duplicate') {
+                    let superiorId = graph.head;
+                    if (!superiorId || !postIds.includes(superiorId)) {
+                        const activeId = postIds.find(pId => {
+                            const p = this.getLocalClusterPost(pId);
+                            return p && !p.isDeleted && !p.isFlagged;
+                        });
+                        superiorId = activeId || postIds[0];
+                        graph.head = superiorId;
+                    }
+                    const nonHeadIds = postIds.filter(id => id !== superiorId);
+                    steps.push({
+                        graph,
+                        graphIndex: gIdx,
+                        type: 'duplicate',
+                        targetId: superiorId,
+                        sourceIds: nonHeadIds,
+                        stepIndex: steps.length,
+                        postIndexInGraph: 0,
+                        totalPostsInGraph: 1
+                    });
+                } else if (graph.type === 'variant') {
+                    for (let pIdx = 0; pIdx < postIds.length; pIdx++) {
+                        const targetId = postIds[pIdx];
+                        const otherIds = postIds.filter(id => id !== targetId);
+                        steps.push({
+                            graph,
+                            graphIndex: gIdx,
+                            type: 'variant',
+                            targetId: targetId,
+                            sourceIds: otherIds,
+                            stepIndex: steps.length,
+                            postIndexInGraph: pIdx,
+                            totalPostsInGraph: postIds.length
+                        });
+                    }
+                }
+            }
+            return steps;
+        },
+
+        /**
+         * Get current active reconciliation step.
+         */
+        get currentStep() {
+            return this.reconcileSteps[this.activeStepIndex] || null;
+        },
+
+        /**
          * Get current active ResolutionGraph.
          * @returns {import('./resolution.js').ResolutionGraph|null}
          */
         get currentGraph() {
-            return this.reconcileGraphs[this.activeGraphIndex] || null;
+            return this.currentStep?.graph || null;
+        },
+
+        /**
+         * Get active graph index among reconcileGraphs.
+         * @returns {number}
+         */
+        get activeGraphIndex() {
+            return this.currentStep?.graphIndex ?? 0;
         },
 
         /**
@@ -110,7 +191,7 @@ export function ReconciliationManager(manager) {
          * @returns {ResolutionPost|undefined}
          */
         get lhsResolutionPost() {
-            if (!this.currentGraph || !this.lhsPostId) return undefined;
+            if (!this.lhsPostId) return undefined;
             return this.resolutionManager.getPost(this.lhsPostId);
         },
 
@@ -120,6 +201,25 @@ export function ReconciliationManager(manager) {
          */
         getLocalClusterPost(postId) {
             return this.resolutionManager?.getPost?.(postId)?.original || null;
+        },
+
+        /** @type {Record<number, boolean>} */
+        collapsedPostIds: {},
+
+        /**
+         * @param {number} postId
+         * @returns {boolean}
+         */
+        isPostCollapsed(postId) {
+            return !!this.collapsedPostIds[postId];
+        },
+
+        /**
+         * @param {number} postId
+         */
+        togglePostCollapse(postId) {
+            this.collapsedPostIds[postId] = !this.collapsedPostIds[postId];
+            this.$nextTick(() => this.alignLhsImage());
         },
 
         /**
@@ -195,12 +295,11 @@ export function ReconciliationManager(manager) {
         },
 
         /**
-         * Get remaining post IDs in current graph excluding the kept superior post.
+         * Get remaining source post IDs for the current step.
          * @returns {number[]}
          */
         get rhsPostIds() {
-            if (!this.currentGraph || !this.selectedSuperiorId) return [];
-            return Array.from(this.currentGraph.posts).filter(id => id !== this.selectedSuperiorId);
+            return this.currentStep?.sourceIds || [];
         },
 
         /**
@@ -212,22 +311,21 @@ export function ReconciliationManager(manager) {
         },
 
         /**
-         * Get all inferior post objects in current graph.
+         * Get all source post objects for current step.
          * @returns {ClusterPost[]}
          */
         get rhsPosts() {
-            if (!this.currentGraph || !this.selectedSuperiorId) return [];
             return this.rhsPostIds
                 .map(id => this.getLocalClusterPost(id))
                 .filter(/** @type {(p: ClusterPost|null) => p is ClusterPost} */ (p => p !== null));
         },
 
         /**
-         * Computes the set union of all tags across all inferior posts in current graph.
+         * Computes the set union of all tags across all source posts in current step.
          * @returns {string[]}
          */
         get allRhsUnionTagNames() {
-            if (!this.currentGraph || !this.selectedSuperiorId) return [];
+            if (!this.rhsPosts.length) return [];
             const tagSet = new Set();
             for (const post of this.rhsPosts) {
                 if (!post || !Array.isArray(post.tags)) continue;
@@ -239,7 +337,7 @@ export function ReconciliationManager(manager) {
         },
 
         /**
-         * Finds the inferior source post object that contains a specific tag name.
+         * Finds the inferior/source post object that contains a specific tag name.
          * @param {string} tagName
          * @returns {ClusterPost | null}
          */
@@ -253,7 +351,11 @@ export function ReconciliationManager(manager) {
          * @returns {string}
          */
         get nextButtonLabel() {
-            if (this.activeGraphIndex < this.duplicateGraphs.length - 1) {
+            if (this.activeStepIndex < this.reconcileSteps.length - 1) {
+                const nextStep = this.reconcileSteps[this.activeStepIndex + 1];
+                if (this.currentStep?.type === 'variant' && nextStep?.type === 'variant' && nextStep.graph === this.currentStep.graph) {
+                    return 'Next Post';
+                }
                 return 'Next Graph';
             }
             return 'Summary';
@@ -264,7 +366,7 @@ export function ReconciliationManager(manager) {
         },
 
         get hasRatingConflict() {
-            if (!this.currentGraph) return false;
+            if (!this.currentGraph || this.currentGraph.type !== 'duplicate') return false;
 
             const graphPosts = Array.from(this.currentGraph.posts)
                 .map(id => this.getLocalClusterPost(id))
@@ -278,7 +380,7 @@ export function ReconciliationManager(manager) {
         },
 
         get hasArtistMismatch() {
-            if (!this.currentGraph) return false;
+            if (!this.currentGraph || this.currentGraph.type !== 'duplicate') return false;
 
             const graphPosts = Array.from(this.currentGraph.posts)
                 .map(id => this.getLocalClusterPost(id))
@@ -444,19 +546,15 @@ export function ReconciliationManager(manager) {
             try {
                 if (this.resolutionManager) {
                     this.resolutionManager.initializePosts();
-                    this.resolutionManager.ensureDefaultDuplicateGraph();
                 }
 
-                if (this.duplicateGraphs.length === 0) {
-                    if ((this.resolutionManager?.graphs?.length || 0) > 0) {
-                        this.proceedToSummary(/** @type {any} */ (this.$data));
-                        return;
-                    }
-                    throw new Error('No duplicate graphs found in ResolutionManager to reconcile.');
+                if (this.reconcileSteps.length === 0) {
+                    this.proceedToSummary(/** @type {any} */ (this.$data));
+                    return;
                 }
 
-                this.activeGraphIndex = 0;
-                this.setupCurrentGraph();
+                this.activeStepIndex = 0;
+                this.setupCurrentStep();
                 this.isActive = true;
             } catch (err) {
                 console.error('[ReconciliationManager] Initiation error:', err);
@@ -469,16 +567,49 @@ export function ReconciliationManager(manager) {
         },
 
         /**
+         * Selects a specific reconciliation step by index.
          * @param {number} idx
          */
-        selectGraph(idx) {
-            if (idx < 0 || idx >= this.duplicateGraphs.length) return;
-            this.activeGraphIndex = idx;
-            this.setupCurrentGraph();
+        selectStep(idx) {
+            if (idx < 0 || idx >= this.reconcileSteps.length) return;
+            this.activeStepIndex = idx;
+            this.setupCurrentStep();
         },
 
         /**
-         * Dynamic tab style classes depending on graph type (Amber, Purple, Gray).
+         * Selects the first step of a graph by graph index.
+         * @param {number} gIdx
+         */
+        selectGraph(gIdx) {
+            if (gIdx < 0 || gIdx >= this.reconcileGraphs.length) return;
+            const targetGraph = this.reconcileGraphs[gIdx];
+            const stepIdx = this.reconcileSteps.findIndex(s => s.graph === targetGraph);
+            if (stepIdx !== -1) {
+                this.selectStep(stepIdx);
+            }
+        },
+
+        /**
+         * Selects a specific post within a graph (for manual image switching via tab dots).
+         * @param {import('./resolution.js').ResolutionGraph} graph
+         * @param {number} postId
+         */
+        selectGraphPost(graph, postId) {
+            const stepIdx = this.reconcileSteps.findIndex(
+                s => s.graph === graph && s.targetId === postId
+            );
+            if (stepIdx !== -1) {
+                this.selectStep(stepIdx);
+            } else {
+                const gIdx = this.reconcileGraphs.indexOf(graph);
+                if (gIdx !== -1) {
+                    this.selectGraph(gIdx);
+                }
+            }
+        },
+
+        /**
+         * Dynamic tab style classes depending on graph type (Amber for duplicate, Purple for variant).
          * @param {import('./resolution.js').ResolutionGraph} graph
          * @param {number} idx
          * @returns {string}
@@ -491,11 +622,6 @@ export function ReconciliationManager(manager) {
                 return isActive
                     ? 'bg-purple-900/90 text-purple-200 border-purple-400 ring-1 ring-purple-400/50 shadow-md'
                     : 'bg-purple-950/40 text-purple-400/80 border-purple-900/60 hover:bg-purple-900/50 hover:text-purple-300';
-            }
-            if (type === 'unrelated') {
-                return isActive
-                    ? 'bg-gray-800 text-gray-100 border-gray-400 ring-1 ring-gray-400/50 shadow-md'
-                    : 'bg-gray-900/60 text-gray-400 border-gray-800 hover:bg-gray-800 hover:text-gray-200';
             }
             // Default: Duplicate (Amber)
             return isActive
@@ -512,54 +638,35 @@ export function ReconciliationManager(manager) {
         getGraphTabLabel(graph, idx) {
             const type = graph?.type || 'duplicate';
             if (type === 'variant') return `Variant #${idx + 1}`;
-            if (type === 'unrelated') return `Unrelated #${idx + 1}`;
             return `Dupe #${idx + 1}`;
         },
 
         /**
-         * Automatically binds superior post from graph.head and prepares graph state.
+         * Prepares state for the current reconciliation step.
+         * Starts all RHS image cards but the lowest non-deleted one as collapsed.
          */
-        setupCurrentGraph() {
-            if (!this.currentGraph) return;
+        setupCurrentStep() {
+            const step = this.currentStep;
+            if (!step) return;
 
-            const graphPostIds = Array.from(this.currentGraph.posts);
-
-            // Find first active (undeleted & unflagged) post in the graph
-            const activePostId = graphPostIds.find(pId => {
-                const post = this.getLocalClusterPost(pId);
-                return post && !post.isDeleted && !post.isFlagged;
-            });
-
-            // Retrieve superior post: validate existing graph.head or select remaining active post
-            let superiorId = this.currentGraph.head;
-            if (superiorId) {
-                const headPost = this.getLocalClusterPost(superiorId);
-                if (!headPost || headPost.isDeleted || headPost.isFlagged) {
-                    superiorId = activePostId || graphPostIds[0];
-                }
-            } else {
-                superiorId = activePostId || graphPostIds[0];
-            }
-
-            this.currentGraph.head = superiorId;
-            this.selectedSuperiorId = superiorId;
-            this.lhsPostId = superiorId;
+            this.lhsPostId = step.targetId;
+            this.selectedSuperiorId = step.targetId;
             this.selectedParentId = null;
             this.customParentId = '';
-            this.activeRhsIndex = 0;
             this.isSummary = false;
             this.isArtistWarningDismissed = false;
 
-            // Only mark non-head posts for deletion/flagging if graph is duplicate
-            if (this.currentGraph.type === 'duplicate') {
-                for (const pId of this.currentGraph.posts) {
-                    const resPost = this.resolutionManager.getPost(pId);
-                    if (resPost) {
-                        resPost.flag = (pId !== superiorId);
+            // Start all RHS image cards but the lowest non-deleted one as collapsed
+            this.collapsedPostIds = {};
+            const rhsIds = step.sourceIds || [];
+            const nonDeletedRhsIds = rhsIds.filter(id => !this.isPostDeleted(id));
+            if (nonDeletedRhsIds.length > 1) {
+                const lowestId = nonDeletedRhsIds[nonDeletedRhsIds.length - 1];
+                for (const id of nonDeletedRhsIds) {
+                    if (id !== lowestId) {
+                        this.collapsedPostIds[id] = true;
                     }
                 }
-                // Collapse graph and update referencing variant graphs
-                this.resolutionManager.resolveDuplicateGraph(this.currentGraph);
             }
 
             // Re-align after Alpine re-renders the new graph content
@@ -567,8 +674,8 @@ export function ReconciliationManager(manager) {
         },
 
         /**
-         * Sets up a ResizeObserver on the RHS column to keep the LHS image
-         * viewport bottom-edge-aligned with the last RHS image viewport.
+         * Sets up a ResizeObserver on the RHS and LHS columns to keep the LHS image
+         * viewport bottom-edge-aligned with the lowest open RHS image viewport.
          * Called via x-init on the RHS column element.
          * @param {HTMLElement} rhsEl
          */
@@ -581,39 +688,84 @@ export function ReconciliationManager(manager) {
                 this.alignLhsImage();
             });
             this._imageAlignObserver.observe(rhsEl);
+            if (this.$refs?.lhsColumn) {
+                this._imageAlignObserver.observe(this.$refs.lhsColumn);
+                const lhsCard = this.$refs.lhsColumn.querySelector('[data-lhs-card]');
+                if (lhsCard) {
+                    this._imageAlignObserver.observe(lhsCard);
+                }
+            }
 
             // Initial alignment after first render
             this.$nextTick(() => this.alignLhsImage());
         },
 
         /**
-         * Aligns the LHS image viewport bottom edge with the last RHS image
-         * viewport bottom edge by computing padding-top on the LHS column.
-         *
-         * Uses incremental math: newPadding = max(0, currentPadding + (rhsBottom - lhsBottom)).
-         * The currentPadding cancels out algebraically, so this converges in one step
-         * regardless of existing padding state.
+         * Aligns the LHS image viewport with the lowest open RHS image viewport
+         * by computing a bidirectional bottom offset (margin-bottom on LHS or padding-bottom on RHS)
+         * within their bottom-justified flex containers.
          */
         alignLhsImage() {
             const lhsCol = this.$refs?.lhsColumn;
             const rhsCol = this.$refs?.rhsColumn;
             if (!lhsCol || !rhsCol) return;
 
+            const lhsCard = lhsCol.querySelector('[data-lhs-card]');
             const lhsViewport = lhsCol.querySelector('[data-image-viewport]');
-            const rhsViewports = rhsCol.querySelectorAll('[data-image-viewport]');
-
-            if (!lhsViewport || !rhsViewports.length) {
-                lhsCol.style.paddingTop = '0px';
+            if (!lhsCard || !lhsViewport) {
                 return;
             }
 
-            const lastRhsViewport = rhsViewports[rhsViewports.length - 1];
-            const lhsBottom = lhsViewport.getBoundingClientRect().bottom;
-            const rhsBottom = lastRhsViewport.getBoundingClientRect().bottom;
-            const currentPadding = parseFloat(lhsCol.style.paddingTop) || 0;
-            const newPadding = Math.max(0, currentPadding + (rhsBottom - lhsBottom));
+            if (this._imageAlignObserver && !lhsCard.__observed) {
+                this._imageAlignObserver.observe(lhsCard);
+                lhsCard.__observed = true;
+            }
 
-            lhsCol.style.paddingTop = newPadding + 'px';
+            // Reset any legacy top padding
+            lhsCol.style.paddingTop = '0px';
+
+            // Find all active/open RHS post IDs (not deleted and not collapsed)
+            const openRhsPostIds = (this.rhsPostIds || []).filter(pId => !this.isPostDeleted(pId) && !this.isPostCollapsed(pId));
+
+            // If no images on the right are open, everything unconditionally bottom aligns!
+            if (!openRhsPostIds.length) {
+                lhsCard.style.marginBottom = '0px';
+                rhsCol.style.paddingBottom = '0px';
+                return;
+            }
+
+            const lowestOpenPostId = openRhsPostIds[openRhsPostIds.length - 1];
+            const lowestRhsViewport = rhsCol.querySelector(`[data-post-viewport="${lowestOpenPostId}"]`);
+
+            if (!lowestRhsViewport) {
+                lhsCard.style.marginBottom = '0px';
+                rhsCol.style.paddingBottom = '0px';
+                return;
+            }
+
+            const currentRhsPadding = parseFloat(rhsCol.style.paddingBottom) || 0;
+            const rhsColRect = rhsCol.getBoundingClientRect();
+            const lowestRhsRect = lowestRhsViewport.getBoundingClientRect();
+            // Measure the unpadded natural trailing height below the lowest RHS viewport
+            const rhsTrailingHeight = Math.max(0, (rhsColRect.bottom - currentRhsPadding) - lowestRhsRect.bottom);
+
+            const lhsCardRect = lhsCard.getBoundingClientRect();
+            const lhsViewportRect = lhsViewport.getBoundingClientRect();
+            // Trailing height below the LHS viewport (e.g. open Description / Sources)
+            const lhsTrailingHeight = Math.max(0, lhsCardRect.bottom - lhsViewportRect.bottom);
+
+            if (rhsTrailingHeight >= lhsTrailingHeight) {
+                // RHS has more trailing content (e.g. collapsed cards below lowest open image)
+                const lhsOffset = rhsTrailingHeight - lhsTrailingHeight;
+                lhsCard.style.marginBottom = `${lhsOffset}px`;
+                rhsCol.style.paddingBottom = '0px';
+            } else {
+                // LHS has more trailing content (e.g. LHS description/sources are open)
+                // RHS column receives bottom padding so its content moves up to match the LHS image
+                const rhsOffset = lhsTrailingHeight - rhsTrailingHeight;
+                lhsCard.style.marginBottom = '0px';
+                rhsCol.style.paddingBottom = `${rhsOffset}px`;
+            }
         },
 
         /**
@@ -676,14 +828,14 @@ export function ReconciliationManager(manager) {
         },
 
         /**
-         * Advances reconciliation through RHS posts, duplicate graphs, or to Summary.
+         * Advances reconciliation through steps (duplicate graphs, variant post steps), or to Summary.
          * @param {RootData} rootData
          */
         advance(rootData) {
-            if (this.warnings.isBlocked(this.activeGraphIndex, this)) return;
+            if (this.warnings.isBlocked(this.activeStepIndex, this)) return;
 
-            if (this.activeGraphIndex < this.duplicateGraphs.length - 1) {
-                this.selectGraph(this.activeGraphIndex + 1);
+            if (this.activeStepIndex < this.reconcileSteps.length - 1) {
+                this.selectStep(this.activeStepIndex + 1);
             } else {
                 this.proceedToSummary(rootData);
             }

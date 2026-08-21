@@ -370,32 +370,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * Ensures a default duplicate graph exists for the cluster if no duplicate graph has been constructed yet.
-         */
-        ensureDefaultDuplicateGraph() {
-            if (!this.cluster || !Array.isArray(this.cluster.posts) || this.cluster.posts.length === 0) {
-                return;
-            }
-            const hasDuplicate = this.graphs.some(g => g.type === 'duplicate');
-            if (!hasDuplicate) {
-                const assignedPostIds = new Set();
-                for (const g of this.graphs) {
-                    for (const id of g.posts) assignedPostIds.add(id);
-                }
-                const unassignedPosts = this.cluster.posts.filter(p => !assignedPostIds.has(p.postId));
-                const targetPosts = unassignedPosts.length > 0 ? unassignedPosts : this.cluster.posts;
-                const postIds = targetPosts.map(p => p.postId);
-                const activePost = targetPosts.find(p => !p.isDeleted && !p.isFlagged);
-                const headId = activePost ? activePost.postId : postIds[0];
-                this.graphs.push({
-                    type: 'duplicate',
-                    posts: new Set(postIds),
-                    head: headId
-                });
-            }
-        },
-
-        /**
          * Retrieves a ResolutionPost by ID.
          * @param {number} postId
          * @returns {ResolutionPost|undefined}

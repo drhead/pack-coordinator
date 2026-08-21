@@ -1,58 +1,33 @@
 <div class="bg-gray-950/80 border border-gray-800/80 rounded-lg p-4 space-y-4 text-gray-200 text-xs">
 
-    <!-- 1. TOP ROW: Multi-Type Graph Selection Tabs -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-2 border-b border-gray-800/80">
-        <template x-for="(graph, idx) in reconcileGraphs" :key="idx">
-            <button @click="selectGraph(idx)"
-                class="text-xs px-3 py-1.5 rounded-md font-mono font-semibold transition border flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
-                :class="getGraphTabClass(graph, idx)">
-
-                <!-- Graph Label -->
-                <span x-text="getGraphTabLabel(graph, idx)"></span>
-
-                <!-- Dot indicator container -->
-                <div class="flex items-center gap-1 ml-0.5">
-                    <template x-for="post in (graph.posts || graph.nodes || graph)" :key="post.id || post">
-                        <span class="w-2 h-2 rounded-full transition-colors"
-                            :class="activeGraphIndex === idx ? 'bg-white' : 'bg-gray-400/70'"></span>
-                    </template>
-                </div>
-
-            </button>
-        </template>
-    </div>
-
-    <!-- 2. IMAGE PREVIEW GRID (Explicit 2-Column Layout) -->
+    <!-- 1. IMAGE PREVIEW GRID & CONTROLS -->
     <template x-if="currentGraph">
         <div class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
 
-                <!-- LHS Column: Kept Superior Post Only (aligned via JS padding-top) -->
-                <div class="flex flex-col space-y-2" x-ref="lhsColumn">
-                    <template x-if="selectedSuperiorId">
+                <!-- LHS Column: Kept Post (bottom-aligned with offset) -->
+                <div class="flex flex-col justify-end space-y-2 h-full" x-ref="lhsColumn">
+                    <template x-if="lhsPostId">
                         <!-- LHS Cohesive Card -->
-                        <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
+                        <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col" data-lhs-card>
 
                             <!-- Header Bar -->
                             <div
                                 class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800">
                                 <div class="flex items-center gap-2">
-                                    <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank"
+                                    <a :href="`https://e621.net/posts/${lhsPostId}`" target="_blank"
                                         rel="noopener noreferrer"
                                         class="font-mono font-bold text-blue-400 hover:text-blue-300 hover:underline"
-                                        x-text="`#${selectedSuperiorId}`"></a>
+                                        x-text="`#${lhsPostId}`"></a>
                                     
                                     <template x-if="currentGraph?.type === 'variant'">
-                                        <span class="text-[9px] uppercase font-black bg-purple-800 px-1.5 py-0.5 rounded text-purple-200">PARENT / HEAD</span>
-                                    </template>
-                                    <template x-if="currentGraph?.type === 'unrelated'">
-                                        <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-200">TARGET</span>
+                                        <span class="text-[9px] uppercase font-black bg-purple-800 px-1.5 py-0.5 rounded text-purple-200">VARIANT</span>
                                     </template>
                                     <template x-if="!currentGraph || currentGraph?.type === 'duplicate'">
-                                        <span class="text-[9px] uppercase font-black bg-blue-800 px-1.5 py-0.5 rounded text-blue-200">SUPERIOR</span>
+                                        <span class="text-[9px] uppercase font-black bg-amber-800 px-1.5 py-0.5 rounded text-amber-200">DUPLICATE</span>
                                     </template>
                                 </div>
-                                <a :href="`https://e621.net/posts/${selectedSuperiorId}`" target="_blank"
+                                <a :href="`https://e621.net/posts/${lhsPostId}`" target="_blank"
                                     rel="noopener noreferrer"
                                     class="text-[11px] font-semibold text-gray-400 hover:text-gray-200 hover:underline flex items-center gap-0.5">
                                     <span>e621</span>
@@ -63,52 +38,53 @@
                             <!-- Image Viewport (edge-to-edge) -->
                             <div data-image-viewport
                                 class="relative w-full h-72 bg-gray-950 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
-                                @click="openModal(getLocalClusterPost(selectedSuperiorId))">
+                                @click="openModal(getLocalClusterPost(lhsPostId))">
                                 <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
-                                    <img :src="getLocalClusterPost(selectedSuperiorId)?.fileUrl"
+                                    <img :src="getLocalClusterPost(lhsPostId)?.fileUrl"
                                         class="max-h-72 max-w-full object-contain">
                                     <load src="/templates/components/expand-image-button.html" />
                                 </div>
                             </div>
 
                             <!-- Description & Sources (integrated below image) -->
-                            <template x-if="getLocalClusterPost(selectedSuperiorId)">
+                            <template x-if="getLocalClusterPost(lhsPostId)">
                                 <div>
                                     <template
-                                        x-if="getLocalClusterPost(selectedSuperiorId)?.description && getLocalClusterPost(selectedSuperiorId)?.description.trim().length > 0">
-                                        <details class="text-[11px] group border-t border-gray-800">
-                                            <summary
+                                        x-if="getLocalClusterPost(lhsPostId)?.description && getLocalClusterPost(lhsPostId)?.description.trim().length > 0">
+                                        <div class="text-[11px] group border-t border-gray-800" x-data="{ isOpen: false }">
+                                            <div @click="isOpen = !isOpen; $nextTick(() => alignLhsImage())"
                                                 class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                                 <span>Description</span>
-                                                <span
-                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
-                                            </summary>
-                                            <div class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950"
-                                                x-text="getLocalClusterPost(selectedSuperiorId).description"></div>
-                                        </details>
+                                                <span class="text-[9px] text-gray-500 transition-transform duration-150"
+                                                    :class="isOpen ? 'rotate-180' : ''">▼</span>
+                                            </div>
+                                            <div x-show="isOpen"
+                                                class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950"
+                                                x-text="getLocalClusterPost(lhsPostId).description"></div>
+                                        </div>
                                     </template>
 
                                     <template
-                                        x-if="getLocalClusterPost(selectedSuperiorId)?.sources && getLocalClusterPost(selectedSuperiorId)?.sources.length > 0">
-                                        <details class="text-[11px] group border-t border-gray-800">
-                                            <summary
+                                        x-if="getLocalClusterPost(lhsPostId)?.sources && getLocalClusterPost(lhsPostId)?.sources.length > 0">
+                                        <div class="text-[11px] group border-t border-gray-800" x-data="{ isOpen: false }">
+                                            <div @click="isOpen = !isOpen; $nextTick(() => alignLhsImage())"
                                                 class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                                 <span
-                                                    x-text="`Sources (${getLocalClusterPost(selectedSuperiorId).sources.length})`"></span>
-                                                <span
-                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
-                                            </summary>
-                                            <div
+                                                    x-text="`Sources (${getLocalClusterPost(lhsPostId).sources.length})`"></span>
+                                                <span class="text-[9px] text-gray-500 transition-transform duration-150"
+                                                    :class="isOpen ? 'rotate-180' : ''">▼</span>
+                                            </div>
+                                            <div x-show="isOpen"
                                                 class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950">
                                                 <template
-                                                    x-for="(src, sIdx) in getLocalClusterPost(selectedSuperiorId).sources"
+                                                    x-for="(src, sIdx) in getLocalClusterPost(lhsPostId).sources"
                                                     :key="sIdx">
                                                     <a :href="src" target="_blank" rel="noopener noreferrer"
                                                         class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]"
                                                         x-text="src"></a>
                                                 </template>
                                             </div>
-                                        </details>
+                                        </div>
                                     </template>
                                 </div>
                             </template>
@@ -117,17 +93,16 @@
                     </template>
                 </div>
 
-                <!-- RHS Column: Inferior Posts Stack -->
-                <div class="space-y-4 flex flex-col" x-ref="rhsColumn" x-init="setupImageAlignment($el)">
+                <!-- RHS Column: Source Posts Stack -->
+                <div class="space-y-4 flex flex-col justify-end h-full" x-ref="rhsColumn" x-init="setupImageAlignment($el)">
                     <template x-for="pId in rhsPostIds" :key="pId">
                         <!-- RHS Cohesive Card (Collapsible Image) -->
-                        <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col"
-                            x-data="{ collapsed: false }">
+                        <div class="border border-gray-800 rounded-lg overflow-hidden bg-gray-950 flex flex-col">
 
                             <!-- Header Bar (click to collapse/expand image if not deleted) -->
                             <div class="bg-gray-900 px-2.5 py-1.5 flex items-center justify-between text-xs border-b border-gray-800 select-none"
                                 :class="isPostDeleted(pId) ? 'cursor-default' : 'cursor-pointer'"
-                                @click="if (!isPostDeleted(pId)) collapsed = !collapsed">
+                                @click="if (!isPostDeleted(pId)) togglePostCollapse(pId)">
                                 <div class="flex items-center gap-2">
                                     <template x-if="!isPostDeleted(pId)">
                                         <a :href="`https://e621.net/posts/${pId}`" target="_blank"
@@ -153,19 +128,16 @@
                                             <template x-if="currentGraph?.type === 'variant'">
                                                 <span class="text-[9px] uppercase font-black bg-purple-950 text-purple-300 border border-purple-800/50 px-1.5 py-0.5 rounded">VARIANT</span>
                                             </template>
-                                            <template x-if="currentGraph?.type === 'unrelated'">
-                                                <span class="text-[9px] uppercase font-black bg-gray-800 text-gray-400 border border-gray-700/50 px-1.5 py-0.5 rounded">REFERENCE</span>
-                                            </template>
                                             <template x-if="!currentGraph || currentGraph?.type === 'duplicate'">
-                                                <span class="text-[9px] uppercase font-black bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">INFERIOR</span>
+                                                <span class="text-[9px] uppercase font-black bg-amber-950 text-amber-300 border border-amber-800/50 px-1.5 py-0.5 rounded">DUPLICATE</span>
                                             </template>
                                         </div>
                                     </template>
 
                                     <!-- Collapse indicator chevron (only if not deleted) -->
                                     <template x-if="!isPostDeleted(pId)">
-                                        <span class="text-[9px] text-gray-500 transition-transform"
-                                            :class="collapsed ? '' : 'rotate-180'">▼</span>
+                                        <span class="text-[9px] text-gray-500 transition-transform duration-150"
+                                            :class="isPostCollapsed(pId) ? '' : 'rotate-180'">▼</span>
                                     </template>
                                 </div>
 
@@ -181,21 +153,15 @@
                             </div>
 
                             <!-- Image Viewport (collapsible, edge-to-edge) -->
-                            <div data-image-viewport>
-                                <div x-show="!isPostDeleted(pId) && !collapsed"
-                                    x-transition:enter="transition-all duration-200 ease-out"
-                                    x-transition:enter-start="opacity-0 max-h-0"
-                                    x-transition:enter-end="opacity-100 max-h-72"
-                                    x-transition:leave="transition-all duration-150 ease-in"
-                                    x-transition:leave-start="opacity-100 max-h-72"
-                                    x-transition:leave-end="opacity-0 max-h-0"
-                                    class="relative w-full h-72 bg-gray-950 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
-                                    @click="openModal(getLocalClusterPost(pId))">
-                                    <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
-                                        <img :src="getLocalClusterPost(pId)?.fileUrl"
-                                            class="max-h-72 max-w-full object-contain">
-                                        <load src="/templates/components/expand-image-button.html" />
-                                    </div>
+                            <div :data-post-viewport="pId"
+                                data-image-viewport
+                                x-show="!isPostDeleted(pId) && !isPostCollapsed(pId)"
+                                class="relative w-full h-72 bg-gray-950 flex items-center justify-center overflow-hidden select-none cursor-pointer group"
+                                @click="openModal(getLocalClusterPost(pId))">
+                                <div class="relative inline-flex items-center justify-center max-h-full max-w-full">
+                                    <img :src="getLocalClusterPost(pId)?.fileUrl"
+                                        class="max-h-72 max-w-full object-contain">
+                                    <load src="/templates/components/expand-image-button.html" />
                                 </div>
                             </div>
 
@@ -204,38 +170,40 @@
                                 <div>
                                     <template
                                         x-if="getLocalClusterPost(pId)?.description && getLocalClusterPost(pId)?.description.trim().length > 0">
-                                        <details class="text-[11px] group border-t border-gray-800">
-                                            <summary
+                                        <div class="text-[11px] group border-t border-gray-800" x-data="{ isOpen: false }">
+                                            <div @click="isOpen = !isOpen; $nextTick(() => alignLhsImage())"
                                                 class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                                 <span>Description</span>
-                                                <span
-                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
-                                            </summary>
-                                            <div class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950"
+                                                <span class="text-[9px] text-gray-500 transition-transform duration-150"
+                                                    :class="isOpen ? 'rotate-180' : ''">▼</span>
+                                            </div>
+                                            <div x-show="isOpen"
+                                                class="px-2.5 py-2 border-t border-gray-800 text-gray-300 whitespace-pre-wrap wrap-break-word max-h-36 overflow-y-auto bg-gray-950"
                                                 x-text="getLocalClusterPost(pId).description"></div>
-                                        </details>
+                                        </div>
                                     </template>
 
                                     <template
                                         x-if="getLocalClusterPost(pId)?.sources && getLocalClusterPost(pId)?.sources.length > 0">
-                                        <details class="text-[11px] group border-t border-gray-800">
-                                            <summary
+                                        <div class="text-[11px] group border-t border-gray-800" x-data="{ isOpen: false }">
+                                            <div @click="isOpen = !isOpen; $nextTick(() => alignLhsImage())"
                                                 class="bg-gray-900 px-2.5 py-1 font-semibold text-gray-400 hover:text-gray-200 cursor-pointer select-none flex items-center justify-between">
                                                 <span
                                                     x-text="`Sources (${getLocalClusterPost(pId).sources.length})`"></span>
-                                                <span
-                                                    class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
-                                            </summary>
-                                            <div
+                                                <span class="text-[9px] text-gray-500 transition-transform duration-150"
+                                                    :class="isOpen ? 'rotate-180' : ''">▼</span>
+                                            </div>
+                                            <div x-show="isOpen"
                                                 class="px-2.5 py-2 border-t border-gray-800 space-y-1 max-h-32 overflow-y-auto bg-gray-950">
-                                                <template x-for="(src, sIdx) in getLocalClusterPost(pId).sources"
+                                                <template
+                                                    x-for="(src, sIdx) in getLocalClusterPost(pId).sources"
                                                     :key="sIdx">
                                                     <a :href="src" target="_blank" rel="noopener noreferrer"
                                                         class="block truncate text-blue-400 hover:text-blue-300 hover:underline font-mono text-[10px]"
                                                         x-text="src"></a>
                                                 </template>
                                             </div>
-                                        </details>
+                                        </div>
                                     </template>
                                 </div>
                             </template>
@@ -246,23 +214,60 @@
 
             </div>
 
-            <!-- UNIFIED ACTION & NAVIGATION BAR -->
+            <!-- 2. GRAPH SELECTION TABS / SWITCHER (Centered between image cards and status bar) -->
+            <div class="flex items-center justify-center gap-2 overflow-x-auto py-1 max-w-full">
+                <template x-for="(graph, gIdx) in reconcileGraphs" :key="gIdx">
+                    <button @click="selectGraph(gIdx)"
+                        class="text-xs px-3 py-1.5 rounded-md font-mono font-semibold transition border flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
+                        :class="getGraphTabClass(graph, gIdx)">
+
+                        <!-- Graph Label -->
+                        <span x-text="getGraphTabLabel(graph, gIdx)"></span>
+
+                        <!-- Dot indicator container (Clicking dots manually switches active post) -->
+                        <div class="flex items-center gap-1.5 ml-0.5">
+                            <template x-for="pId in Array.from(graph.posts)" :key="pId">
+                                <span @click.stop="selectGraphPost(graph, pId)"
+                                    class="w-2.5 h-2.5 rounded-full transition-all cursor-pointer hover:scale-125"
+                                    :class="(activeGraphIndex === gIdx && lhsPostId === pId) 
+                                            ? 'bg-white ring-2 ring-white/80 shadow-md scale-110' 
+                                            : (activeGraphIndex === gIdx ? 'bg-white/40 hover:bg-white/80' : 'bg-gray-400/50 hover:bg-gray-300')"
+                                    :title="`Post #${pId}`"></span>
+                            </template>
+                        </div>
+
+                    </button>
+                </template>
+            </div>
+
+            <!-- 3. UNIFIED ACTION & NAVIGATION BAR (Status Bar) -->
             <div
                 class="bg-gray-900/90 border border-gray-800/80 rounded-lg p-3 relative min-h-15 flex items-center justify-between shadow-sm">
 
                 <!-- Instructions Center View -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
                     <span class="text-sm font-semibold text-amber-300 text-center">
-                        Transfer over any tags that apply to #<span x-text="selectedSuperiorId"></span> below, then
-                        click the button to proceed.
+                        <template x-if="currentGraph?.type === 'variant'">
+                            <span>
+                                Transfer tags to variant post #<span x-text="lhsPostId"></span>
+                                (<span x-text="((currentStep?.postIndexInGraph ?? 0) + 1) + ' of ' + (currentStep?.totalPostsInGraph ?? 1)"></span>)
+                                from other variants.
+                            </span>
+                        </template>
+                        <template x-if="!currentGraph || currentGraph?.type === 'duplicate'">
+                            <span>
+                                Transfer over any tags that apply to #<span x-text="lhsPostId"></span> below, then
+                                click the button to proceed.
+                            </span>
+                        </template>
                     </span>
                 </div>
 
                 <!-- Navigation Action Button -->
                 <div class="ml-auto flex items-center justify-end shrink-0 z-10">
-                    <button @click="advance($data)" :disabled="warnings && warnings.isBlocked(activeGraphIndex, $data)"
+                    <button @click="advance($data)" :disabled="warnings && warnings.isBlocked(activeStepIndex, $data)"
                         class="text-xs px-4 py-1.5 rounded-md font-bold transition shadow flex items-center gap-2"
-                        :class="(warnings && warnings.isBlocked(activeGraphIndex, $data)) 
+                        :class="(warnings && warnings.isBlocked(activeStepIndex, $data)) 
                                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700/60' 
                                 : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer'">
                         <span x-text="nextButtonLabel"></span>
@@ -271,8 +276,8 @@
                 </div>
             </div>
 
-            <!-- Warnings Stack Container (Positioned below top nav bar) -->
-            <div x-data="{ scopeId: activeGraphIndex }" class="w-full">
+            <!-- 4. WARNINGS STACK CONTAINER -->
+            <div x-data="{ scopeId: activeStepIndex }" class="w-full">
                 <load src="/templates/components/warning-banner.html" />
             </div>
         </div>

@@ -94,8 +94,8 @@
             <template x-if="mode === 'swipe'">
                 <div class="relative max-h-[85vh] max-w-[90vw] flex items-center justify-center cursor-ew-resize overflow-hidden"
                     @mousemove="handleModalSwipeMove($event, $el)">
-                    <img :src="src" class="max-h-[85vh] max-w-[90vw] object-contain block pointer-events-none">
-                    <img :src="srcB" class="absolute inset-0 w-full h-full object-contain block pointer-events-none"
+                    <img :src="srcB" class="max-h-[85vh] max-w-[90vw] object-contain block pointer-events-none">
+                    <img :src="src" class="absolute inset-0 w-full h-full object-contain block pointer-events-none"
                         :style="`clip-path: inset(0 ${100 - swipePos}% 0 0);`">
                     <div class="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] pointer-events-none"
                         :style="`left: ${swipePos}%;`"></div>
