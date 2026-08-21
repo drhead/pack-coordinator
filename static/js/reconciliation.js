@@ -15,9 +15,6 @@ import { getE621User } from './auth.js';
  * @property {string} activeView
  */
 
-/** @type {any} */
-let globalActiveReconciliation = null;
-
 /**
  * Alpine component factory for tag reconciliation and classification graphs.
  * @param {ResolutionManagerComponent} manager
@@ -532,10 +529,6 @@ export function ReconciliationManager(manager) {
         },
 
         async startReconciliation() {
-            if (globalActiveReconciliation && globalActiveReconciliation !== this) {
-                globalActiveReconciliation.closeReconciliation();
-            }
-            globalActiveReconciliation = this;
             if (this.resolutionManager) {
                 this.resolutionManager.activeReconciliation = this;
             }
@@ -847,10 +840,6 @@ export function ReconciliationManager(manager) {
 
             if (this.resolutionManager && this.resolutionManager.activeReconciliation === this) {
                 this.resolutionManager.activeReconciliation = null;
-            }
-
-            if (globalActiveReconciliation === this) {
-                globalActiveReconciliation = null;
             }
         },
 
